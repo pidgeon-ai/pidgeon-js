@@ -91,6 +91,10 @@ export type Identity = {
    * Your own opaque grouping for this address. Never parsed here.
    */
   tenant_id: string | null;
+  /**
+   * The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null.
+   */
+  pod_id: string;
 };
 
 export type Message = {
@@ -1040,6 +1044,27 @@ export type SearchHit = {
   identity: string | null;
 };
 
+export type Pod = {
+  id: string;
+  name: string;
+  /**
+   * Your own id for this pod — a customer id, whatever your side calls it.
+   */
+  client_id: string | null;
+  /**
+   * Where an address lands when a create call names no pod. Exactly one per account.
+   */
+  is_default: boolean;
+  /**
+   * Addresses in it.
+   */
+  identity_count: number;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+};
+
 export type Label = {
   id: string;
   identity_id: string;
@@ -1219,6 +1244,7 @@ export type IdentitiesListData = {
      */
     cursor?: string;
     tenant_id?: string;
+    pod_id?: string;
   };
   url: '/identities';
 };
@@ -1302,6 +1328,10 @@ export type IdentitiesCreateData = {
      * Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here.
      */
     tenant_id?: string | null;
+    /**
+     * The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one.
+     */
+    pod_id?: string | null;
   };
   path?: never;
   query?: never;
@@ -1436,6 +1466,10 @@ export type IdentitiesUpdateData = {
      * Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here.
      */
     tenant_id?: string | null;
+    /**
+     * The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one.
+     */
+    pod_id?: string | null;
   };
   path: {
     id: string;
@@ -1883,6 +1917,167 @@ export type IdentitiesSuspendTenantResponses = {
 
 export type IdentitiesSuspendTenantResponse =
   IdentitiesSuspendTenantResponses[keyof IdentitiesSuspendTenantResponses];
+
+export type PodsListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/pods';
+};
+
+export type PodsListErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type PodsListError = PodsListErrors[keyof PodsListErrors];
+
+export type PodsListResponses = {
+  /**
+   * Every pod.
+   */
+  200: {
+    data: Array<Pod>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type PodsListResponse = PodsListResponses[keyof PodsListResponses];
+
+export type PodsCreateData = {
+  body: {
+    name: string;
+    /**
+     * Your own id for this pod. Carried and returned, never parsed.
+     */
+    client_id?: string | null;
+  };
+  path?: never;
+  query?: never;
+  url: '/pods';
+};
+
+export type PodsCreateErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type PodsCreateError = PodsCreateErrors[keyof PodsCreateErrors];
+
+export type PodsCreateResponses = {
+  /**
+   * The pod.
+   */
+  201: {
+    data: Pod;
+  };
+};
+
+export type PodsCreateResponse = PodsCreateResponses[keyof PodsCreateResponses];
+
+export type PodsGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/pods/{id}';
+};
+
+export type PodsGetErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type PodsGetError = PodsGetErrors[keyof PodsGetErrors];
+
+export type PodsGetResponses = {
+  /**
+   * The pod.
+   */
+  200: {
+    data: Pod;
+  };
+};
+
+export type PodsGetResponse = PodsGetResponses[keyof PodsGetResponses];
+
+export type PodsUpdateData = {
+  body: {
+    name?: string;
+    /**
+     * Your own id for this pod. Carried and returned, never parsed.
+     */
+    client_id?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/pods/{id}';
+};
+
+export type PodsUpdateErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type PodsUpdateError = PodsUpdateErrors[keyof PodsUpdateErrors];
+
+export type PodsUpdateResponses = {
+  /**
+   * The pod.
+   */
+  200: {
+    data: Pod;
+  };
+};
+
+export type PodsUpdateResponse = PodsUpdateResponses[keyof PodsUpdateResponses];
 
 export type LabelsListData = {
   body?: never;

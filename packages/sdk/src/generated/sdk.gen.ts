@@ -252,6 +252,18 @@ import type {
   MetricsQueryData,
   MetricsQueryErrors,
   MetricsQueryResponses,
+  PodsCreateData,
+  PodsCreateErrors,
+  PodsCreateResponses,
+  PodsGetData,
+  PodsGetErrors,
+  PodsGetResponses,
+  PodsListData,
+  PodsListErrors,
+  PodsListResponses,
+  PodsUpdateData,
+  PodsUpdateErrors,
+  PodsUpdateResponses,
   RoutingCreateData,
   RoutingCreateErrors,
   RoutingCreateResponses,
@@ -680,6 +692,72 @@ export const identitiesSuspendTenant = <ThrowOnError extends boolean = false>(
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/tenants/{id}/suspend',
     ...options,
+  });
+
+/**
+ * List pods
+ *
+ * The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.
+ *
+ * **It is organisational, not a boundary.** A pod carries no sending reputation of its own, and a key is still a list of address ids rather than something scoped to a pod. Saying so plainly because the alternative is a reader assuming an isolation that is not there.
+ *
+ * Not paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.
+ */
+export const podsList = <ThrowOnError extends boolean = false>(
+  options?: Options<PodsListData, ThrowOnError>,
+): RequestResult<PodsListResponses, PodsListErrors, ThrowOnError> =>
+  (options?.client ?? client).get<PodsListResponses, PodsListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/pods',
+    ...options,
+  });
+
+/**
+ * Create a pod
+ *
+ * Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.
+ */
+export const podsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<PodsCreateData, ThrowOnError>,
+): RequestResult<PodsCreateResponses, PodsCreateErrors, ThrowOnError> =>
+  (options.client ?? client).post<PodsCreateResponses, PodsCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/pods',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Fetch one pod
+ */
+export const podsGet = <ThrowOnError extends boolean = false>(
+  options: Options<PodsGetData, ThrowOnError>,
+): RequestResult<PodsGetResponses, PodsGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<PodsGetResponses, PodsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/pods/{id}',
+    ...options,
+  });
+
+/**
+ * Rename a pod, or change its client id
+ *
+ * There is no delete. A container holding mailboxes is not a thing to remove with one call, and nothing yet moves addresses between pods — so the verb would either refuse every non-empty pod or destroy mail. Suspend the addresses instead.
+ */
+export const podsUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<PodsUpdateData, ThrowOnError>,
+): RequestResult<PodsUpdateResponses, PodsUpdateErrors, ThrowOnError> =>
+  (options.client ?? client).patch<PodsUpdateResponses, PodsUpdateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/pods/{id}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**

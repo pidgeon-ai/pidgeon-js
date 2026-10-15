@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -248,6 +248,10 @@
               "string",
               "null"
             ]
+          },
+          "pod_id": {
+            "type": "string",
+            "description": "The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null."
           }
         },
         "required": [
@@ -266,7 +270,8 @@
           "created_at",
           "expires_at",
           "send_policy",
-          "tenant_id"
+          "tenant_id",
+          "pod_id"
         ],
         "additionalProperties": false
       },
@@ -3513,6 +3518,47 @@
         ],
         "additionalProperties": false
       },
+      "Pod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "client_id": {
+            "description": "Your own id for this pod — a customer id, whatever your side calls it.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Where an address lands when a create call names no pod. Exactly one per account."
+          },
+          "identity_count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Addresses in it."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO-8601, UTC."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "client_id",
+          "is_default",
+          "identity_count",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
       "Label": {
         "type": "object",
         "properties": {
@@ -3940,6 +3986,16 @@
               "minLength": 1,
               "maxLength": 200
             }
+          },
+          {
+            "name": "pod_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
           }
         ],
         "responses": {
@@ -4117,6 +4173,19 @@
                       }
                     ],
                     "description": "Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here."
+                  },
+                  "pod_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
                   }
                 },
                 "additionalProperties": false
@@ -4339,6 +4408,19 @@
                       }
                     ],
                     "description": "Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here."
+                  },
+                  "pod_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
                   }
                 },
                 "additionalProperties": false
@@ -5285,6 +5367,341 @@
         },
         "tags": [
           "identities"
+        ]
+      }
+    },
+    "/pods": {
+      "get": {
+        "operationId": "podsList",
+        "summary": "List pods",
+        "description": "The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.\n\n**It is organisational, not a boundary.** A pod carries no sending reputation of its own, and a key is still a list of address ids rather than something scoped to a pod. Saying so plainly because the alternative is a reader assuming an isolation that is not there.\n\nNot paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.",
+        "responses": {
+          "200": {
+            "description": "Every pod.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Pod"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to continue. Null on the last page."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "pods"
+        ]
+      },
+      "post": {
+        "operationId": "podsCreate",
+        "summary": "Create a pod",
+        "description": "Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "client_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Your own id for this pod. Carried and returned, never parsed."
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The pod.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Pod"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{id}": {
+      "get": {
+        "operationId": "podsGet",
+        "summary": "Fetch one pod",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pod.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Pod"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "pods"
+        ]
+      },
+      "patch": {
+        "operationId": "podsUpdate",
+        "summary": "Rename a pod, or change its client id",
+        "description": "There is no delete. A container holding mailboxes is not a thing to remove with one call, and nothing yet moves addresses between pods — so the verb would either refuse every non-empty pod or destroy mail. Suspend the addresses instead.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "client_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Your own id for this pod. Carried and returned, never parsed."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The pod.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Pod"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "pods"
         ]
       }
     },
@@ -13396,6 +13813,9 @@
     },
     {
       "name": "identities"
+    },
+    {
+      "name": "pods"
     },
     {
       "name": "labels"

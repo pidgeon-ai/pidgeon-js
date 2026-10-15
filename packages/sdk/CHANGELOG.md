@@ -9,6 +9,29 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.5.0 — a container your customers live in
+
+**Additive.** Every account has exactly one pod already, every address is in
+it, and a caller who never mentions a pod cannot tell this release from the
+last one.
+
+**Added.** `podsList`, `podsCreate`, `podsGet`, `podsUpdate`, the `Pod` type,
+`pod_id` on an address, and `pod_id` as a filter on `identitiesList`.
+
+A **pod** holds addresses and domains: one of your customers, a client, or
+just test kept apart from production. It has a name and an optional
+`client_id` that is your own id for it, carried and never parsed.
+
+**It is organisational and not a boundary**, and the types say so because the
+risk in shipping the container before the isolation is a reader assuming the
+isolation. A pod carries no sending reputation of its own — one SES tenant
+per _account_, unchanged — and **a key is still a list of address ids**,
+never something scoped to a pod.
+
+**No delete.** The verb that destroys a container full of mailboxes is worth
+making somebody ask for, and nothing yet moves addresses between pods, so it
+would either refuse every non-empty pod or destroy mail.
+
 ## 1.4.0 — things the prose promised and the types did not have
 
 **Additive, and two corrections to descriptions that were wrong.**

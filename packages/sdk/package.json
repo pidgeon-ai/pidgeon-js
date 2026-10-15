@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Thin TypeScript client for the Pidgeon email API.",
   "keywords": [
     "pidgeon",

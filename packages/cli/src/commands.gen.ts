@@ -1355,6 +1355,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here."
+      },
+      {
+        "name": "pod_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
       }
     ]
   },
@@ -1413,6 +1420,12 @@ export const COMMANDS: Command[] = [
       },
       {
         "name": "tenant_id",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "pod_id",
         "kind": "string",
         "required": false,
         "where": "query"
@@ -1653,6 +1666,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here."
+      },
+      {
+        "name": "pod_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
       }
     ]
   },
@@ -2527,6 +2547,83 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": false,
         "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "pods",
+    "name": "create",
+    "operationId": "podsCreate",
+    "method": "POST",
+    "path": "/pods",
+    "summary": "Create a pod",
+    "flags": [
+      {
+        "name": "name",
+        "kind": "string",
+        "required": true,
+        "where": "body"
+      },
+      {
+        "name": "client_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Your own id for this pod. Carried and returned, never parsed."
+      }
+    ]
+  },
+  {
+    "group": "pods",
+    "name": "get",
+    "operationId": "podsGet",
+    "method": "GET",
+    "path": "/pods/{id}",
+    "summary": "Fetch one pod",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "pods",
+    "name": "list",
+    "operationId": "podsList",
+    "method": "GET",
+    "path": "/pods",
+    "summary": "List pods",
+    "flags": []
+  },
+  {
+    "group": "pods",
+    "name": "update",
+    "operationId": "podsUpdate",
+    "method": "PATCH",
+    "path": "/pods/{id}",
+    "summary": "Rename a pod, or change its client id",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "name",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
+        "name": "client_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Your own id for this pod. Carried and returned, never parsed."
       }
     ]
   },
