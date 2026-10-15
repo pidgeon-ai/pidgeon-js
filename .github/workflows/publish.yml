@@ -63,6 +63,12 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          # This repository carries no lockfile — it is generated wholesale
+          # on every sync and `pnpm install --frozen-lockfile=false` below is
+          # written for that. `setup-node` enables the pnpm cache by default
+          # and then fails the job outright when it cannot find one to key
+          # it on, which is how the first three tags here died.
+          package-manager-cache: false
 
       # npm's OIDC exchange needs a recent npm; the one bundled with Node 22
       # predates trusted publishing.
