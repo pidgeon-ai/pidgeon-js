@@ -831,9 +831,9 @@ export const messagesSend = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Search one mailbox
+ * Search messages
  *
- * Full-text, ranked by relevance, one mailbox at a time. Results carry the folder they were found in. Not paged: page two of a relevance ranking is a place nobody goes, so narrow the query instead.
+ * Full-text, ranked by relevance, across every address this credential can reach. Name an `identity_id` to search exactly one. Every result carries the address it was found in and the folder it is in, because a hit you cannot attribute to a mailbox is a hit you cannot open. Not paged: page two of a relevance ranking is a place nobody goes, so narrow the query instead.
  */
 export const messagesSearch = <ThrowOnError extends boolean = false>(
   options?: Options<MessagesSearchData, ThrowOnError>,

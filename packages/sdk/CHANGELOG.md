@@ -9,6 +9,76 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.3.0 — a day of API that never reached a registry
+
+**Additive, and one fix that was a blocker.**
+
+1.2.0 went out on 14 October and then the contract moved for a day without
+this number moving with it. A field test on 15 October installed the published
+package, called a search the live API had been accepting since the morning,
+and got a `TypeError` for an argument the contract no longer requires. It
+built what it needed with a hand-written HTTP client instead. Everything below
+had already shipped; none of it was installable.
+
+**Fixed.** `verifyWebhook` reads the signature headers whatever case the
+framework spells them in. The lookup was `headers[name] ?? headers[name
+.toLowerCase()]` and `name` is already a lowercase constant — so it read the
+same key twice, and a plain object keyed `X-Pidgeon-Signature` was rejected as
+unsigned. Every existing test passed, because they all hand it a `Headers` or
+a lowercase object and both are already normalised. The broken branch is
+reached by an object somebody built themselves, which is what API Gateway
+hands a Lambda. `pidgeon` on PyPI was always right about this.
+
+**Added.**
+
+- `meGet`. What a key is, what it may do, and how many addresses it reaches —
+  the first call a credential can make about itself.
+- `eventsStream`'s endpoint is in the document. The client does not wrap SSE,
+  because a generated client has nowhere to put a long-lived connection; the
+  path, the cursor header and the event shape are typed so hand-rolling it is
+  twenty lines rather than a reverse-engineering exercise.
+- `thread.created` is emitted and subscribable. It was declared, accepted by
+  `POST /webhooks`, and had never once fired.
+- `from_self` on `message.received`. A workspace with several addresses sees
+  its own outbound mail arrive at the others, genuinely inbound, with nothing
+  to distinguish it from a stranger — so a handler written the obvious way
+  answers its own reply. Check it before you reply.
+- Quota pacing on a refusal: `Retry-After` and `X-RateLimit-*-Day`, so a
+  client refused a send can compute when it may try again instead of guessing
+  a day.
+
+**Declared, having always been returned.** Three fields the API sends and the
+document did not mention, so the generated types dropped them and a caller had
+to cast to reach them:
+
+- `sync_cursor` on a folder listing. `GET /mailboxes/changes` documents
+  `since` as "the `sync_cursor` from a listing" and no listing declared one,
+  so the change feed was unreachable from a typed client without defeating
+  its own types.
+- `folder` on a search hit, and `identity` beside `identity_id` — the address
+  rather than the uuid, which is what the rest of the API already carries on a
+  thread row, on an event and on `GET /messages/{id}`. A search is the one
+  endpoint that spans mailboxes, so it was the one that most needed to name
+  them and the only one that would not. A hit is now its own type,
+  `SearchHit`, rather than a `MessageListItem` with two fields missing.
+- `colour` is the eight-value enum it has always been enforced as, not
+  `string`. The palette existed only in the refusal, so the first call
+  anybody writes fails — somebody who has written CSS passes a hex. The
+  refusal was already good and is kept word for word.
+
+**Widened.** `messagesSearch` no longer requires `identity_id`. It searches
+every address the credential reaches, which is what it has always done on the
+server and what `skill.md` has always said; the document said "one mailbox at
+a time" in prose while declaring the parameter optional, and the generator
+followed the prose. `MessageListItem` carries `identity_id`, `to`,
+`counterparty` and `counterparty_name`, so a hit can be attributed to a
+mailbox without a second call.
+
+**Also.** `identitiesCreate` on the shared domain, a 404 that stopped
+pretending an address it had just listed did not exist, and `repository`
+fields that resolve — all four packages pointed at a private repository that
+404s for everybody who installs one.
+
 ## 1.2.0 — the document says what its fields mean
 
 **Additive, and a correction.**

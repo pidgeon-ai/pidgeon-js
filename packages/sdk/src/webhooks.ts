@@ -40,10 +40,41 @@ export async function verifyWebhook(input: {
   toleranceSeconds?: number;
   now?: Date;
 }): Promise<WebhookEnvelope> {
-  const get = (name: string): string | undefined =>
-    input.headers instanceof Headers
-      ? (input.headers.get(name) ?? undefined)
-      : (input.headers[name] ?? input.headers[name.toLowerCase()]);
+  /*
+   * **However the framework spells it**, which this did not do.
+   *
+   * It read `headers[name] ?? headers[name.toLowerCase()]`, and `name` is
+   * already one of the lowercase constants above — so the fallback lowercased
+   * a string that was lowercase and looked up the same key twice. A plain
+   * object keyed `X-Pidgeon-Signature` was rejected as unsigned.
+   *
+   * It survived every test and every local run because `Headers` and Node's
+   * `req.headers` both lowercase their keys for you, so the broken branch is
+   * only reached by a plain object somebody built themselves — which is what
+   * API Gateway hands a Lambda, and what any test fixture written by hand
+   * looks like. `pidgeon` on PyPI has done this correctly at the same version
+   * number, and that module's docstring says keeping the two in step is the
+   * point of writing it twice.
+   *
+   * The rejection made it worse: *"This request is not signed."* is the same
+   * sentence `/docs/webhooks/verifying` tells you means *you parsed the body
+   * first*, so the documentation sent you to the wrong cause. Found by a
+   * field test on 15 October, against docs that promise case-insensitive
+   * matching in both clients.
+   */
+  const get = (name: string): string | undefined => {
+    if (input.headers instanceof Headers) return input.headers.get(name) ?? undefined;
+
+    const direct = input.headers[name];
+    if (direct !== undefined) return direct;
+
+    const wanted = name.toLowerCase();
+    for (const [key, value] of Object.entries(input.headers)) {
+      if (key.toLowerCase() === wanted) return value;
+    }
+
+    return undefined;
+  };
 
   const timestamp = get(TIMESTAMP_HEADER);
   const signature = get(SIGNATURE_HEADER);

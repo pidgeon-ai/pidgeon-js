@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Model Context Protocol server for Pidgeon. A protocol adapter over the API, and nothing more.",
   "keywords": [
     "pidgeon",

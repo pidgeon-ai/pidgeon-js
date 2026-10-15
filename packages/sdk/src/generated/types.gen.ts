@@ -942,11 +942,70 @@ export type Revoked = {
   revoked: boolean;
 };
 
+export type SearchHit = {
+  id: string;
+  identity_id: string | null;
+  thread_id: string;
+  direction: string;
+  /**
+   * The address that sent it.
+   */
+  from: string;
+  /**
+   * The sender’s display name, when it had one.
+   */
+  from_name: string | null;
+  /**
+   * Every address it was sent to.
+   */
+  to: Array<string>;
+  /**
+   * Who the row is about: the sender on a received message, the recipient on a sent one. What a mail client prints in the list.
+   */
+  counterparty: string;
+  /**
+   * The same party, as a name to show.
+   */
+  counterparty_name: string;
+  subject: string | null;
+  preview: string | null;
+  is_read: boolean;
+  is_starred: boolean;
+  is_draft: boolean;
+  is_spam: boolean;
+  has_attachments: boolean;
+  attachment_count: number;
+  message_count: number;
+  assignee_id: string | null;
+  /**
+   * ISO-8601, UTC.
+   */
+  timestamp: string;
+  /**
+   * The folder the hit was found in.
+   */
+  folder:
+    | 'inbox'
+    | 'starred'
+    | 'sent'
+    | 'drafts'
+    | 'scheduled'
+    | 'snoozed'
+    | 'archive'
+    | 'spam'
+    | 'trash'
+    | 'unauthenticated';
+  /**
+   * The mailbox it was found in, as the address. `identity_id` is the same row.
+   */
+  identity: string | null;
+};
+
 export type Label = {
   id: string;
   identity_id: string;
   name: string;
-  colour: string;
+  colour: 'slate' | 'red' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink';
   /**
    * ISO-8601, UTC.
    */
@@ -1835,7 +1894,7 @@ export type LabelsCreateData = {
      */
     identity_id: string;
     name: string;
-    colour?: string;
+    colour?: 'slate' | 'red' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink';
   };
   path?: never;
   query?: never;
@@ -1910,7 +1969,7 @@ export type LabelsDeleteResponse = LabelsDeleteResponses[keyof LabelsDeleteRespo
 export type LabelsUpdateData = {
   body: {
     name?: string;
-    colour?: string;
+    colour?: 'slate' | 'red' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink';
   };
   path: {
     id: string;
@@ -2249,7 +2308,7 @@ export type MessagesSearchResponses = {
    * What matched.
    */
   200: {
-    data: Array<MessageListItem>;
+    data: Array<SearchHit>;
     has_more: boolean;
     /**
      * Pass as `cursor` to continue. Null on the last page.
@@ -3435,6 +3494,10 @@ export type MailboxesListFolderResponses = {
      * Pass as `cursor` to continue. Null on the last page.
      */
     next_cursor: string | null;
+    /**
+     * Hand to `GET /mailboxes/changes` as `since` to be told what has changed since this page, rather than fetching it again. Not a page cursor — the two are different reads and each refuses the other.
+     */
+    sync_cursor: string;
   };
 };
 

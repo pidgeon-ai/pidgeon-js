@@ -564,6 +564,7 @@ export type {
   RoutingUpdateErrors,
   RoutingUpdateResponse,
   RoutingUpdateResponses,
+  SearchHit,
   SendRuleRemoved,
   SendRules,
   Sent,

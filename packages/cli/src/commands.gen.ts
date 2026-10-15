@@ -1784,6 +1784,16 @@ export const COMMANDS: Command[] = [
       {
         "name": "colour",
         "kind": "string",
+        "choices": [
+          "slate",
+          "red",
+          "amber",
+          "green",
+          "teal",
+          "blue",
+          "violet",
+          "pink"
+        ],
         "required": false,
         "where": "body"
       }
@@ -1844,6 +1854,16 @@ export const COMMANDS: Command[] = [
       {
         "name": "colour",
         "kind": "string",
+        "choices": [
+          "slate",
+          "red",
+          "amber",
+          "green",
+          "teal",
+          "blue",
+          "violet",
+          "pink"
+        ],
         "required": false,
         "where": "body"
       }
@@ -2274,7 +2294,7 @@ export const COMMANDS: Command[] = [
     "operationId": "messagesSearch",
     "method": "GET",
     "path": "/messages/search",
-    "summary": "Search one mailbox",
+    "summary": "Search messages",
     "flags": [
       {
         "name": "identity_id",
