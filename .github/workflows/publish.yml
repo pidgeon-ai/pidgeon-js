@@ -1,0 +1,111 @@
+name: Publish
+
+# Tag-driven, and the tag names the package — the same routing the private
+# repository used, moved here so the tarball can carry a provenance
+# attestation.
+#
+#   git tag sdk-v1.3.0 && git push origin sdk-v1.3.0
+#   git tag cli-v1.1.0 && git push origin cli-v1.1.0
+#   git tag mcp-v0.4.0 && git push origin mcp-v0.4.0
+#
+# **Provenance is the whole reason this workflow is here rather than there.**
+# npm attests which commit and which workflow produced a tarball, and
+# publishes that statement to a public transparency log — so it needs a
+# public source repository, because an attestation pointing at a commit
+# nobody can read proves nothing to anybody. The application that generates
+# these clients stays private; the clients do not need to be.
+on:
+  push:
+    tags: ['sdk-v*', 'cli-v*', 'mcp-v*']
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        required: true
+        type: choice
+        options: [sdk, cli, mcp]
+
+permissions:
+  contents: read
+  # npm trusted publishing exchanges this for a credential that lives for one
+  # job, so no long-lived npm token exists in this repository's secrets.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Which package
+        id: package
+        run: |
+          if [ -n "${{ inputs.package }}" ]; then
+            name="${{ inputs.package }}"
+          else
+            # `refs/tags/sdk-v1.3.0` → `sdk`
+            name="${GITHUB_REF_NAME%%-v*}"
+          fi
+
+          case "$name" in
+            sdk|cli|mcp) ;;
+            *) echo "Unknown package: $name" >&2; exit 1 ;;
+          esac
+
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "dir=packages/$name" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # npm's OIDC exchange needs a recent npm; the one bundled with Node 22
+      # predates trusted publishing.
+      - name: An npm that can do trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: The tag matches the version
+        if: github.event_name == 'push'
+        working-directory: ${{ steps.package.outputs.dir }}
+        run: |
+          declared=$(node -p "require('./package.json').version")
+          tagged="${GITHUB_REF_NAME#*-v}"
+
+          if [ "$declared" != "$tagged" ]; then
+            echo "Tag says $tagged; package.json says $declared." >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: pnpm --filter "@pidgeon-ai/${{ steps.package.outputs.name }}" build
+
+      - name: Publish
+        working-directory: ${{ steps.package.outputs.dir }}
+        run: |
+          tarball=$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)
+
+          # A `workspace:` protocol in the packed manifest means the rewrite
+          # did not happen and the artifact is uninstallable for everyone.
+          # `@pidgeon-ai/cli` and `@pidgeon-ai/mcp` both depend on the SDK
+          # that way, so this is the check that matters most here.
+          if tar -xzOf "$tarball" package/package.json | grep -q '"workspace:'; then
+            echo "The packed manifest still has a workspace: dependency." >&2
+            tar -xzOf "$tarball" package/package.json
+            exit 1
+          fi
+
+          # `--loglevel silly` permanently: npm's OIDC exchange never throws
+          # — trusted publishing is optional by design — so a refusal is
+          # reported at `log.silly` and the publish then falls through to a
+          # credential that does not exist, answering a bare 404 that reads
+          # like a permissions problem. The reason is one level below
+          # verbose. Tokens are redacted in npm's own log output.
+          npm publish "$tarball" --access public --provenance --loglevel silly

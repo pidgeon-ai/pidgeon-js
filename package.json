@@ -1,0 +1,7 @@
+{
+  "name": "@pidgeon-ai/clients",
+  "private": true,
+  "description": "A workspace root, so the three published packages build here. Not published.",
+  "packageManager": "pnpm@10.33.0",
+  "license": "MIT"
+}
