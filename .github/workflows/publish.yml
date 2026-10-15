@@ -90,8 +90,15 @@ jobs:
             exit 1
           fi
 
+      # The trailing `...` is "and its dependencies", and it is load-bearing:
+      # `@pidgeon-ai/cli` and `@pidgeon-ai/mcp` both import the SDK, and
+      # their `dts` step reads its emitted `.d.ts` rather than its source —
+      # so building the named package alone fails with `Cannot find module
+      # '@pidgeon-ai/sdk'`. In the private repository `pnpm packages:build`
+      # builds all three and hid this. Found by cloning the mirror and
+      # running it, which is the only way any of these are found.
       - name: Build
-        run: pnpm --filter "@pidgeon-ai/${{ steps.package.outputs.name }}" build
+        run: pnpm --filter "@pidgeon-ai/${{ steps.package.outputs.name }}..." build
 
       - name: Publish
         working-directory: ${{ steps.package.outputs.dir }}
