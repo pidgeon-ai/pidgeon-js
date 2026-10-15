@@ -57,8 +57,33 @@ export interface InitResult {
   ok: boolean;
   /** Addresses the key can reach, when the check ran. */
   addresses: string[];
+  /** The highest rung it reaches on any of them, from `GET /v1/me`. */
+  access: Access | null;
   wrote: string | null;
 }
+
+/** The rungs, lowest first. `admin` is what a key has unless narrowed. */
+export type Access = 'read' | 'send' | 'admin';
+
+/**
+ * What a model can actually do with this key, said plainly.
+ *
+ * The reason this command now makes a second call. It printed which
+ * addresses a key reaches and never what it may *do* with them, and an
+ * agent builder reported the consequence on 15 October: *"`read` is the
+ * thing that surprises someone later"* — later being the first time the
+ * agent tries to answer an email and is refused, inside a model's tool
+ * call, where the error is nobody's to read.
+ *
+ * A rung is also the one property of a key whose wrongness is silent at
+ * setup. A revoked key fails immediately; a key granted nothing prints an
+ * empty list. A key at `read` sets up perfectly and then cannot work.
+ */
+const WHAT_IT_CAN_DO: Record<Access, string> = {
+  read: 'It can read mail and nothing else — a model holding it cannot reply, send or change anything.',
+  send: 'It can read and send. It cannot create addresses, mint keys or grant access.',
+  admin: 'It can do everything the API offers, including creating addresses and granting access.',
+};
 
 export async function init(options: InitOptions): Promise<InitResult> {
   const { apiKey, baseUrl, cwd, write, force, fetch, out } = options;
@@ -70,7 +95,7 @@ export async function init(options: InitOptions): Promise<InitResult> {
     out('  PIDGEON_API_KEY=pgn_live_… npx -y @pidgeon-ai/mcp init');
     out('');
     out('Give it the narrowest access the agent needs — this hands it to a model.');
-    return { ok: false, addresses: [], wrote: null };
+    return { ok: false, addresses: [], access: null, wrote: null };
   }
 
   /*
@@ -80,8 +105,10 @@ export async function init(options: InitOptions): Promise<InitResult> {
    * list rather than an error, which is its own answer and a common one — a
    * key is created and the mailbox is granted separately.
    */
-  const addresses = await reachableAddresses({ apiKey, baseUrl, fetch, out });
-  if (addresses === null) return { ok: false, addresses: [], wrote: null };
+  const identity = await describeKey({ apiKey, baseUrl, fetch, out });
+  if (identity === null) return { ok: false, addresses: [], access: null, wrote: null };
+
+  const { addresses, access, reachesAll, expiresAt } = identity;
 
   if (addresses.length === 0) {
     out('That key works, and reaches no mailbox yet.');
@@ -90,9 +117,45 @@ export async function init(options: InitOptions): Promise<InitResult> {
     out('a snapshot, so an address created after the key is not in it.');
   } else {
     const shown = addresses.slice(0, 5);
-    out(`That key reaches ${addresses.length} address${addresses.length === 1 ? '' : 'es'}:`);
+    const reach = reachesAll
+      ? `That key reaches every address this workspace owns (${addresses.length} today):`
+      : `That key reaches ${addresses.length} address${addresses.length === 1 ? '' : 'es'}:`;
+
+    out(reach);
     for (const address of shown) out(`  ${address}`);
     if (addresses.length > shown.length) out(`  … and ${addresses.length - shown.length} more`);
+
+    if (reachesAll) {
+      out('');
+      out('An address created after this key will be in reach too, unlike a key');
+      out('granted a fixed list.');
+    }
+  }
+
+  /*
+   * The rung, on its own line, whatever the reach. Printed even for a key
+   * that reaches nothing: *what this key could do if you granted it
+   * something* is the thing somebody is about to get wrong.
+   */
+  if (access) {
+    out('');
+    out(`Access: ${access}. ${WHAT_IT_CAN_DO[access]}`);
+  }
+
+  /*
+   * And the date, which is the other way a key that works today stops.
+   * `§342` gave keys an end; nothing told the person setting one up.
+   */
+  if (expiresAt) {
+    const when = new Date(expiresAt);
+    const stale = Number.isNaN(when.getTime());
+
+    out('');
+    out(
+      stale
+        ? `This key expires: ${expiresAt}.`
+        : `This key stops working on ${when.toUTCString()}.`,
+    );
   }
 
   const block = configBlock(baseUrl);
@@ -104,7 +167,7 @@ export async function init(options: InitOptions): Promise<InitResult> {
     if (!result.ok) {
       out('');
       out(result.message);
-      return { ok: false, addresses, wrote: null };
+      return { ok: false, addresses, access, wrote: null };
     }
     wrote = path;
   }
@@ -117,7 +180,90 @@ export async function init(options: InitOptions): Promise<InitResult> {
   out('The key is read from the environment rather than written into the file,');
   out('so the config can be committed and the credential cannot.');
 
-  return { ok: true, addresses, wrote };
+  return { ok: true, addresses, access, wrote };
+}
+
+/**
+ * Everything this command knows about the key, or `null` when the key itself
+ * is the problem.
+ *
+ * **Two calls, in parallel, because they answer different questions.**
+ * `GET /identities` names the addresses; `GET /v1/me` says what the
+ * credential may do with them, which no other endpoint will tell you — the
+ * reason that endpoint was built. They go together rather than in sequence
+ * because neither depends on the other and this runs while somebody waits.
+ *
+ * `/v1/me` failing is not fatal on its own. It is newer than this command,
+ * and a client pointed at a deployment that predates it should still get the
+ * setup it came for — the rung is then simply unknown, which is honest, and
+ * better than refusing to write a config over a field that did not exist
+ * last month.
+ */
+async function describeKey(context: {
+  apiKey: string;
+  baseUrl: string;
+  fetch: typeof globalThis.fetch;
+  out: (line: string) => void;
+}): Promise<{
+  addresses: string[];
+  access: Access | null;
+  reachesAll: boolean;
+  expiresAt: string | null;
+} | null> {
+  const [addresses, me] = await Promise.all([
+    reachableAddresses(context),
+    describeCredential(context),
+  ]);
+
+  if (addresses === null) return null;
+
+  return {
+    addresses,
+    access: me?.key?.access ?? null,
+    reachesAll: me?.key?.reaches_all_addresses ?? false,
+    expiresAt: me?.key?.expires_at ?? null,
+  };
+}
+
+/** `GET /v1/me`, or null on any failure. See `describeKey` for why. */
+async function describeCredential(context: {
+  apiKey: string;
+  baseUrl: string;
+  fetch: typeof globalThis.fetch;
+}): Promise<{
+  key: { access: Access; reaches_all_addresses: boolean; expires_at: string | null } | null;
+} | null> {
+  const { apiKey, baseUrl, fetch } = context;
+
+  try {
+    const response = await fetch(`${baseUrl}/me`, {
+      headers: { authorization: `Bearer ${apiKey}`, accept: 'application/json' },
+    });
+
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as {
+      data?: {
+        key?: { access?: string; reaches_all_addresses?: boolean; expires_at?: string | null };
+      };
+    };
+
+    const key = body.data?.key;
+    if (!key?.access) return null;
+
+    // A rung this client does not know is a rung it must not print.
+    if (key.access !== 'read' && key.access !== 'send' && key.access !== 'admin') return null;
+
+    return {
+      key: {
+        access: key.access,
+        reaches_all_addresses: key.reaches_all_addresses ?? false,
+        expires_at: key.expires_at ?? null,
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
