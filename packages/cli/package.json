@@ -1,0 +1,63 @@
+{
+  "name": "@pidgeon-ai/cli",
+  "version": "1.0.1",
+  "description": "The Pidgeon API from a terminal. One command per endpoint, generated from the published contract.",
+  "keywords": [
+    "pidgeon",
+    "email",
+    "cli",
+    "api-client",
+    "agents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://pidgeon.ai",
+  "type": "module",
+  "bin": {
+    "pidgeon": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./commands": {
+      "import": {
+        "types": "./dist/commands.gen.d.ts",
+        "default": "./dist/commands.gen.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@pidgeon-ai/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  }
+}
