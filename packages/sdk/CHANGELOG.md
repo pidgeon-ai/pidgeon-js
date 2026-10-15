@@ -9,6 +9,70 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.4.0 — things the prose promised and the types did not have
+
+**Additive, and two corrections to descriptions that were wrong.**
+
+The rest of what a field test found on 15 October building a shared mailroom.
+Everything below was either returned and undeclared, or described in the
+documentation and absent from the product.
+
+**Added to `Message`.**
+
+- `headers`, which `skill.md` and the MCP `get_message` tool have both
+  promised for months — "its body **and its headers**" — against a schema
+  with no such property. It is a subset and the description says which:
+  `message-id`, `in-reply-to`, `references`, `date`, `reply-to`,
+  `return-path`, the four list and auto-reply headers, `x-mailer` and
+  `x-priority`. The whole envelope is `GET /messages/{id}/raw`. The
+  threading three are new to the kept set, because _will my reply land in
+  the right conversation_ is the question people open this for and nothing
+  answered it for mail between two Pidgeon addresses.
+- `authentication` — `spf`, `dkim`, `dmarc`. `/docs/rules` has said since it
+  was written that if you need to be certain who sent something you should
+  _"read the authentication results on the message rather than its `From:`"_.
+  There were none in the contract: no such field anywhere. The columns have
+  been written since inbound mail existed. **Null means not reported, not
+  failed** — rendering an absent verdict as a failed one is worse than
+  showing nothing.
+- `delivered_to` is the envelope recipient on every message. It was null
+  unless routing had moved the mail, while `message.received` carried it
+  every time, so the event and the read disagreed about the same message.
+
+**Added to `Thread`.** `folder`, `from`, `from_name`, `preview` and
+`has_attachments`, from the newest message. `GET /threads` is the only
+workspace-wide listing and a row could say which conversations exist without
+being able to draw one — so a merged inbox had to come from
+`GET /mailboxes/{folder}`, which takes one address and one folder. Three
+addresses and four folders is twelve calls for one screen, against a free
+plan's 120 requests a minute. It is one call now.
+
+**Added to `MailboxChange`.** `identity_id`, which was null on every row of
+the only endpoint whose first required parameter is the mailbox.
+
+**New error codes.** `blocked` and `not_permitted`, both `403`.
+`/docs/rules`: _"a refusal tells you which kind it was… an agent debugging a
+send needs to know which."_ Both answered `forbidden` and neither word
+appeared in the response, so the only way to tell was to match the sentence.
+The fix is different for each — remove a rule, or change the send policy —
+which is the whole reason to separate them.
+
+**Corrected.** Two descriptions that described something the API does not do:
+
+- `rejected` on a send is **what the provider would not accept at hand-off**,
+  not a recipient your own rules forbid. That refuses the whole send with
+  `403`, and nothing goes to anybody. The old sentence told callers to handle
+  a partial send that never happens, and not to expect the exception they
+  actually get.
+- `is_read` on `PATCH /messages/{id}`, and `read`/`unread` on
+  `POST /messages/actions`, are declared refused for an API key. They always
+  were — read state belongs to a person — but three surfaces advertised them
+  with no hint, including the MCP tool, whose description argued for a
+  capability it does not have to the one consumer that cannot check first.
+
+**Widened.** `colour` on a label now has to be one of the eight; the
+refusal's sentence is unchanged.
+
 ## 1.3.0 — a day of API that never reached a registry
 
 **Additive, and one fix that was a blocker.**

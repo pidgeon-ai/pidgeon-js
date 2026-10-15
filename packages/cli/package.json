@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/cli",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "The Pidgeon API from a terminal. One command per endpoint, generated from the published contract.",
   "keywords": [
     "pidgeon",

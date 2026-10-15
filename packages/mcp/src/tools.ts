@@ -170,10 +170,42 @@ export const TOOLS: ToolDefinition[] = [
      * the description concluded that *"where did that invoice go"* was not a
      * question Pidgeon could answer, which it had been for a while.
      */
+    /*
+     * **And every filter the endpoint has.**
+     *
+     * It took `{identity_id, q, limit}` and the endpoint takes six more, so
+     * "find it by sender", "find it in spam" and "find everything with this
+     * label" were REST-only — which is the same narrowing as above, one
+     * level down. A field test building a mailroom over MCP could not do
+     * any of the three. Reported 15 October.
+     *
+     * `limit` was declared `max(200)` and the server enforces 100, so the
+     * tool invited a call it then answered with a raw validator string.
+     */
     inputSchema: {
       identity_id: z.string().optional(),
-      q: z.string(),
-      limit: z.number().int().min(1).max(200).optional(),
+      q: z.string().optional(),
+      in: z
+        .enum([
+          'inbox',
+          'starred',
+          'sent',
+          'drafts',
+          'scheduled',
+          'snoozed',
+          'archive',
+          'spam',
+          'trash',
+          'unauthenticated',
+        ])
+        .optional(),
+      from: z.string().optional(),
+      to: z.string().optional(),
+      label_id: z.string().optional(),
+      has_attachment: z.boolean().optional(),
+      is_unread: z.boolean().optional(),
+      is_starred: z.boolean().optional(),
+      limit: z.number().int().min(1).max(100).optional(),
     },
   },
   {
@@ -236,10 +268,16 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: 'get_message',
     title: 'Read one message',
+    /*
+     * "Its headers" was true of nothing until 1.4.0 — the field did not
+     * exist. Now it does and it is a subset, so the sentence says which
+     * rather than letting a model conclude the envelope is here.
+     */
     description:
-      'One message, by id, with its body and its headers. **A webhook carries ids and never ' +
-      'a body**, so this is how a handler turns `message.received` into the thing it is ' +
-      'about.',
+      'One message, by id, with its body, the headers we keep, and what the sending ' +
+      'domain’s records proved — `authentication.spf`, `.dkim`, `.dmarc`, where null means ' +
+      'not reported rather than failed. **A webhook carries ids and never a body**, so ' +
+      'this is how a handler turns `message.received` into the thing it is about.',
     endpoint: 'GET /messages/{id}',
     readOnly: true,
     inputSchema: { id: z.string() },
@@ -282,15 +320,29 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: 'update_message',
     title: 'File a message',
+    /*
+     * **It said "mark one read or unread" and could not.**
+     *
+     * Read state belongs to a person and an API key is not one, so the
+     * server refuses both — and this description was a rationale for a
+     * capability the tool does not have, written for the one consumer that
+     * cannot check first. A model reads it, calls it, and is told no.
+     *
+     * `is_read` is gone from the schema rather than merely unmentioned: an
+     * argument the model cannot pass is an argument it cannot waste a turn
+     * on. The sentence that follows is the reason, because a tool that
+     * refuses without one invites a retry. Reported 15 October.
+     */
     description:
-      'Mark one read or unread, star it, or move it to `archive`, `spam` or `trash`. An ' +
-      'agent that has dealt with something should be able to say so, or the inbox it is ' +
-      'working is the same length tomorrow.',
+      'Star a message, or move it to `archive`, `spam` or `trash`. Archiving is how an ' +
+      'agent says it has dealt with something, or the inbox it is working is the same ' +
+      'length tomorrow. There is no read/unread here: read state belongs to a person and ' +
+      'this credential is not one — use `list_folder`’s `sync_cursor` to track what you ' +
+      'have already seen.',
     endpoint: 'PATCH /messages/{id}',
     readOnly: false,
     inputSchema: {
       id: z.string(),
-      is_read: z.boolean().optional(),
       is_starred: z.boolean().optional(),
       folder: z.enum(['inbox', 'archive', 'spam', 'trash']).optional(),
     },
@@ -321,5 +373,144 @@ export const TOOLS: ToolDefinition[] = [
     endpoint: 'GET /identities/{id}/receive-rules',
     readOnly: true,
     inputSchema: { id: z.string() },
+  },
+
+  /*
+   * **Folders, labels and the change feed, because without them this is not
+   * a mailbox.**
+   *
+   * The restraint above is about not shipping a tool for every endpoint. It
+   * is not a reason to ship a mail adapter that cannot say where a message
+   * is filed. A field test on 15 October built a three-address mailroom and
+   * found three of its seven requirements impossible over MCP: labels
+   * applied from code, search by folder, and staying in step without
+   * re-fetching. All three are endpoints; none had a tool.
+   *
+   * `list_threads` is per-address and carries no folder, so an MCP-only
+   * agent could not see where anything was. That is the gap.
+   *
+   * Rule *writes* stay out, and `/docs/rules` says why — an agent that can
+   * edit its own lists can quietly stop its own mail. **The reasoning does
+   * not carry to labels**, which was the unexamined part: a label destroys
+   * nothing, un-applies in one call, and is the ordinary way an automation
+   * says what it decided.
+   */
+  {
+    name: 'list_folders',
+    title: 'The folders of one mailbox',
+    description:
+      'Every folder of one address with its counts. `total` and `unread` are null where we ' +
+      'do not count that folder — null is "we do not say", not zero.',
+    endpoint: 'GET /mailboxes',
+    readOnly: true,
+    inputSchema: { identity_id: z.string() },
+  },
+  {
+    name: 'list_folder',
+    title: 'What is in a folder',
+    description:
+      'One folder of one address, newest first, a conversation per row — where ' +
+      '`list_threads` says which conversations exist, this says where they are filed and ' +
+      'what they look like in a list. The response carries a `sync_cursor`: hand it to ' +
+      '`list_changes` to be told what moved instead of reading the folder again.',
+    endpoint: 'GET /mailboxes/{folder}',
+    readOnly: true,
+    inputSchema: {
+      folder: z.enum([
+        'inbox',
+        'starred',
+        'sent',
+        'drafts',
+        'scheduled',
+        'snoozed',
+        'archive',
+        'spam',
+        'trash',
+        'unauthenticated',
+      ]),
+      identity_id: z.string(),
+      label_id: z.string().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+      cursor: z.string().optional(),
+    },
+  },
+  {
+    name: 'list_changes',
+    title: 'What has changed since you last looked',
+    description:
+      'Everything that moved in one mailbox since a `sync_cursor`, arrivals included, so a ' +
+      'long-running agent does not re-read a folder to find one new message. `since` is the ' +
+      '`sync_cursor` from `list_folder`, never a page cursor. A cursor older than thirty ' +
+      'days is refused with `resync`: list the folders again and start over.',
+    endpoint: 'GET /mailboxes/changes',
+    readOnly: true,
+    inputSchema: {
+      identity_id: z.string(),
+      since: z.string(),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
+  },
+  {
+    name: 'list_events',
+    title: 'The log of what happened',
+    description:
+      'Every event across every mailbox this credential reaches — mail received, sent, ' +
+      'delivered, bounced, filed. Workspace-wide unless you name an `identity_id`. Pass ' +
+      '`after` with a timestamp to read forward from a moment; with neither `after` nor ' +
+      '`cursor` it returns the newest first.',
+    endpoint: 'GET /events',
+    readOnly: true,
+    inputSchema: {
+      identity_id: z.string().optional(),
+      type: z.string().optional(),
+      after: z.string().optional(),
+      cursor: z.string().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
+  },
+  {
+    name: 'list_labels',
+    title: 'The labels on an address',
+    description:
+      'Labels belong to an address, not to the workspace, so the same name on three ' +
+      'addresses is three labels with three ids. Read this before applying one.',
+    endpoint: 'GET /labels',
+    readOnly: true,
+    inputSchema: { identity_id: z.string() },
+  },
+  {
+    name: 'create_label',
+    title: 'Make a label',
+    description:
+      'A label on one address. `colour` is one of eight names — slate, red, amber, green, ' +
+      'teal, blue, violet, pink — and defaults to slate; it is not a hex value.',
+    endpoint: 'POST /labels',
+    readOnly: false,
+    inputSchema: {
+      identity_id: z.string(),
+      name: z.string(),
+      colour: z
+        .enum(['slate', 'red', 'amber', 'green', 'teal', 'blue', 'violet', 'pink'])
+        .optional(),
+    },
+  },
+  {
+    name: 'apply_label',
+    title: 'Put a label on a conversation',
+    description:
+      'The label has to belong to the same address the conversation is in — `list_labels` ' +
+      'for that address gives you the right id. Applying is how an automation records what ' +
+      'it decided, since it cannot mark anything read.',
+    endpoint: 'POST /threads/{id}/labels',
+    readOnly: false,
+    inputSchema: { id: z.string(), label_id: z.string() },
+  },
+  {
+    name: 'remove_label',
+    title: 'Take a label off',
+    description: 'Removes one label from one conversation. The label itself is untouched.',
+    endpoint: 'DELETE /threads/{id}/labels',
+    readOnly: false,
+    inputSchema: { id: z.string(), label_id: z.string() },
   },
 ];

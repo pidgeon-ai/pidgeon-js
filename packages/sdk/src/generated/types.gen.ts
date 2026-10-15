@@ -141,6 +141,20 @@ export type Message = {
   reply_text: string;
   is_read: boolean;
   is_spam: boolean;
+  /**
+   * The headers we keep, lowercased: `message-id`, `in-reply-to`, `references`, `date`, `reply-to`, `return-path`, `list-id`, `list-unsubscribe`, `precedence`, `auto-submitted`, `x-auto-response-suppress`, `x-mailer` and `x-priority`. Not the whole envelope — that is `GET /messages/{id}/raw`. Empty when none were present.
+   */
+  headers: {
+    [key: string]: string;
+  };
+  /**
+   * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged.
+   */
+  authentication: {
+    spf: string | null;
+    dkim: string | null;
+    dmarc: string | null;
+  };
   attachments: Array<{
     id: string;
     filename: string;
@@ -205,6 +219,31 @@ export type Thread = {
   assignee_id: string | null;
   assigned_at: string | null;
   message_count: number;
+  /**
+   * Where the newest message is filed. Null on a thread with no messages.
+   */
+  folder:
+    | 'inbox'
+    | 'starred'
+    | 'sent'
+    | 'drafts'
+    | 'scheduled'
+    | 'snoozed'
+    | 'archive'
+    | 'spam'
+    | 'trash'
+    | 'unauthenticated'
+    | null;
+  /**
+   * Who sent the newest message.
+   */
+  from: string | null;
+  from_name: string | null;
+  /**
+   * The first line of the newest message.
+   */
+  preview: string | null;
+  has_attachments: boolean;
   last_message_at: string | null;
   /**
    * ISO-8601, UTC.
@@ -2322,6 +2361,9 @@ export type MessagesSearchResponse = MessagesSearchResponses[keyof MessagesSearc
 export type MessagesActData = {
   body: {
     message_ids: Array<string>;
+    /**
+     * `read` and `unread` are refused for an API key: read state belongs to a person and a key is not one. Every other action works.
+     */
     action:
       | 'read'
       | 'unread'
@@ -2444,6 +2486,9 @@ export type MessagesGetResponse = MessagesGetResponses[keyof MessagesGetResponse
 
 export type MessagesUpdateData = {
   body: {
+    /**
+     * Refused for an API key: read state belongs to a person and a key is not one. Archive the message, or track what you have seen with `GET /v1/mailboxes/changes`. A person signed in to the dashboard sets this.
+     */
     is_read?: boolean;
     is_starred?: boolean;
     folder?: 'inbox' | 'archive' | 'spam' | 'trash';

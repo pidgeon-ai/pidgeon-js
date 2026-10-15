@@ -815,7 +815,7 @@ export const messagesListInThread = <ThrowOnError extends boolean = false>(
 /**
  * Send a message
  *
- * Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — a recipient the address is not allowed to write to is refused here rather than failing later, so read `rejected` before assuming it went.
+ * Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — addresses the provider would not accept at hand-off, so read it before assuming every recipient got it. A recipient this address is not allowed to write to is a different thing and refuses the whole send: `403` with `blocked` when a rule says no, `not_permitted` when the send policy does. Nothing is sent to anybody in that case.
  */
 export const messagesSend = <ThrowOnError extends boolean = false>(
   options: Options<MessagesSendData, ThrowOnError>,
@@ -1452,6 +1452,8 @@ export const workspaceMembers = <ThrowOnError extends boolean = false>(
  * The same events a webhook delivers, readable after the fact — so a missed delivery is recoverable without replaying anything.
  *
  * **Two directions.** `cursor` pages backwards through history, newest first, which is what a dashboard shows. `after` tails the log forwards, oldest first, which is what a caller that cannot receive a webhook does: ask for everything since the last event you saw, act on it, and keep the last `created_at` as the next cursor. Naming both is refused — they are different reads.
+ *
+ * **Starting from nothing: pass `after=1970-01-01T00:00:00Z`.** With neither parameter this answers newest first, so a first-time consumer that takes the last row as its high-water mark stores the *oldest* event in the log and never advances. Any timestamp at or before the oldest event you hold will do; the epoch is the one nobody has to think about.
  *
  * A forward page is ordered oldest first precisely so its **last** row is the high-water mark to resume from; `next_cursor` is that row either way.
  */

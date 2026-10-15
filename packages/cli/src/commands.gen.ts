@@ -2016,7 +2016,8 @@ export const COMMANDS: Command[] = [
           "delete_forever"
         ],
         "required": true,
-        "where": "body"
+        "where": "body",
+        "describe": "`read` and `unread` are refused for an API key: read state belongs to a person and a key is not one. Every other action works."
       }
     ]
   },
@@ -2484,7 +2485,8 @@ export const COMMANDS: Command[] = [
         "name": "is_read",
         "kind": "boolean",
         "required": false,
-        "where": "body"
+        "where": "body",
+        "describe": "Refused for an API key: read state belongs to a person and a key is not one. Archive the message, or track what you have seen with `GET /v1/mailboxes/changes`. A person signed in to the dashboard sets this."
       },
       {
         "name": "is_starred",
