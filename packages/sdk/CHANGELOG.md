@@ -9,6 +9,24 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.6.0 — a pod is a boundary now
+
+**No field changed.** What changed is what a pod means, and that is worth a
+release because 1.5.0's own description told you the opposite.
+
+**Each pod has its own sending reputation.** Bounces and complaints from one
+customer's mail are counted against that customer's pod and nothing else, so
+one bad tenant cannot degrade delivery for the rest. Mail from an address in
+a pod sends under that pod whichever domain it is on, so two pods sharing one
+domain are still separate.
+
+1.5.0 said _"a pod carries no sending reputation of its own"_, which was true
+and is not. Leaving it would be the worse kind of stale documentation — a
+caller reading it would decline to use something they already have.
+
+A pod is still **not** a key scope. A key is a list of address ids, which is
+what makes its reach checkable.
+
 ## 1.5.0 — a container your customers live in
 
 **Additive.** Every account has exactly one pod already, every address is in

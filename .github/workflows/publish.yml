@@ -122,3 +122,34 @@ jobs:
           # like a permissions problem. The reason is one level below
           # verbose. Tokens are redacted in npm's own log output.
           npm publish "$tarball" --access public --provenance --loglevel silly
+
+      # The MCP server is also listed in the official registry,
+      # registry.modelcontextprotocol.io — which Glama and PulseMCP read from,
+      # and which is how a coding agent finds a server it was not told about
+      # (gtm.md §8). `packages/mcp/server.json` is the listing; its `name`
+      # must equal `mcpName` in the published package.json, which is how the
+      # registry checks the npm package is ours.
+      #
+      # Ownership of the `ai.pidgeon/` namespace is proved over HTTP: the
+      # application serves `v=MCPv1; k=ed25519; p=<public key>` at
+      # https://pidgeon.ai/.well-known/mcp-registry-auth, and
+      # MCP_REGISTRY_KEY is the private half as hex. A version there is
+      # immutable, exactly as on npm.
+      - name: List in the MCP registry
+        if: steps.package.outputs.name == 'mcp'
+        working-directory: packages/mcp
+        env:
+          MCP_REGISTRY_KEY: ${{ secrets.MCP_REGISTRY_KEY }}
+        run: |
+          curl -sSfL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+
+          # The registry reads the version from npm, which can take a moment
+          # to serve one it has just accepted.
+          version=$(node -p "require('./package.json').version")
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            npm view "@pidgeon-ai/mcp@$version" version >/dev/null 2>&1 && break
+            sleep 10
+          done
+
+          ./mcp-publisher login http --domain pidgeon.ai --private-key "$MCP_REGISTRY_KEY"
+          ./mcp-publisher publish

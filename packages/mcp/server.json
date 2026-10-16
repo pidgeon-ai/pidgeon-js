@@ -1,0 +1,58 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.pidgeon/mcp",
+  "title": "Pidgeon",
+  "description": "Mailboxes for AI agents: create addresses, send, receive, thread and hand off email.",
+  "websiteUrl": "https://pidgeon.ai/docs/mcp",
+  "repository": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.5.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@pidgeon-ai/mcp",
+      "version": "0.5.1",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PIDGEON_API_KEY",
+          "description": "Your Pidgeon API key (pgn_live_…). Make one under Developers → API keys, or let an agent sign itself up: https://pidgeon.ai/skill.md",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string",
+          "placeholder": "pgn_live_..."
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://pidgeon.ai/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Your Pidgeon API key as a bearer token",
+          "isRequired": true,
+          "isSecret": true,
+          "value": "Bearer {pidgeon_api_key}",
+          "variables": {
+            "pidgeon_api_key": {
+              "description": "Your Pidgeon API key (pgn_live_…)",
+              "isRequired": true,
+              "isSecret": true,
+              "placeholder": "pgn_live_..."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

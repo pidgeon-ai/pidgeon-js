@@ -699,7 +699,7 @@ export const identitiesSuspendTenant = <ThrowOnError extends boolean = false>(
  *
  * The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.
  *
- * **It is organisational, not a boundary.** A pod carries no sending reputation of its own, and a key is still a list of address ids rather than something scoped to a pod. Saying so plainly because the alternative is a reader assuming an isolation that is not there.
+ * **Each pod has its own sending reputation**, so bounces from one customer cannot degrade delivery for another — mail sends under the pod its address is in, whichever domain it is on. A key is still a list of address ids rather than something scoped to a pod.
  *
  * Not paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.
  */
