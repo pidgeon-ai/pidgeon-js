@@ -1,4 +1,4 @@
-# The three published packages, so `@pidgeon-ai/cli` and `@pidgeon-ai/mcp`
+# The published packages, so `@pidgeon-ai/cli`, `@pidgeon-ai/mcp` and `@pidgeon-ai/ai-sdk`
 # resolve the `workspace:*` SDK they depend on — and so `pnpm pack` rewrites
 # that protocol to a real version on the way out.
 packages:

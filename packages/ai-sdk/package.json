@@ -1,0 +1,63 @@
+{
+  "name": "@pidgeon-ai/ai-sdk",
+  "version": "0.1.0",
+  "description": "Pidgeon as Vercel AI SDK tools. A real mailbox for an agent, in one line.",
+  "keywords": [
+    "pidgeon",
+    "email",
+    "ai-sdk",
+    "vercel-ai-sdk",
+    "tools",
+    "agents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/ai-sdk"
+  },
+  "homepage": "https://pidgeon.ai",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "ai": "^7"
+  },
+  "dependencies": {
+    "@pidgeon-ai/sdk": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "ai": "^7.0.143",
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  }
+}

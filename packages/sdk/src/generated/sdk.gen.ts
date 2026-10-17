@@ -122,6 +122,8 @@ import type {
   EventsListData,
   EventsListErrors,
   EventsListResponses,
+  EventsSocketData,
+  EventsSocketErrors,
   EventsStreamData,
   EventsStreamErrors,
   EventsStreamResponse,
@@ -1575,6 +1577,26 @@ export const eventsList = <ThrowOnError extends boolean = false>(
   (options?.client ?? client).get<EventsListResponses, EventsListErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/events',
+    ...options,
+  });
+
+/**
+ * Events over a WebSocket
+ *
+ * The event log over a WebSocket — `wss://pidgeon.ai/api/v1/events/socket` — with the same `type`, `identity_id` and `after` as `GET /events/stream`. All frames are JSON text.
+ *
+ * **Authenticate** with the `Authorization` header on the upgrade, or — from a browser, which cannot set one — send `{"type":"auth","api_key":"pgn_live_…"}` as the first message within ten seconds. Never put the key in the URL.
+ *
+ * **The server sends** `{"type":"ready","cursor"}`, then `{"type":"event","event":Event}` per event, oldest first. Before about 280 seconds it sends `{"type":"reconnect","cursor"}` and closes with 4000: reconnect with `after` set to that cursor and nothing is missed. 4401 means no key or a bad one; 4500 means the read failed — reconnect with the last cursor you saw.
+ *
+ * Like the stream, it polls the log on our side of the wire every two seconds.
+ */
+export const eventsSocket = <ThrowOnError extends boolean = false>(
+  options?: Options<EventsSocketData, ThrowOnError>,
+): RequestResult<unknown, EventsSocketErrors, ThrowOnError> =>
+  (options?.client ?? client).get<unknown, EventsSocketErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/events/socket',
     ...options,
   });
 

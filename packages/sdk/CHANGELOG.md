@@ -9,6 +9,24 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.11.0 — a key for one pod
+
+`apiKeysCreate` takes `pod_id` in place of `identity_ids`: the key reaches
+every address in that pod, including ones added later, and may create,
+verify and remove that pod's domains — the key a platform hands one of its
+customers. Only a key over the whole account (or an owner, in the dashboard)
+can mint one. Every key now reports `pod_id`, null for keys that are not
+pod keys.
+
+## 1.10.0 — events over a WebSocket
+
+`GET /v1/events/socket` is the event log over a WebSocket, with the same
+filters and `after` cursor as the stream. The generated `eventsSocket` can
+only show you the contract — open it with a WebSocket client
+(`new WebSocket('wss://pidgeon.ai/api/v1/events/socket')`) and send
+`{"type":"auth","api_key":…}` first if you cannot set a header. The
+protocol is in the reference.
+
 ## 1.9.0 — export over the API
 
 **`exportMail`** (`GET /v1/export`) streams every message the key can read as

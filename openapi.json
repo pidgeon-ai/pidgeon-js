@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.9.0",
+    "version": "1.11.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3163,6 +3163,13 @@
               "type": "string"
             }
           },
+          "pod_id": {
+            "description": "The pod this key belongs to, or null. A pod key reaches every address in the pod — `identity_ids` lists them today — and the addresses the pod gains later.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "access": {
             "type": "string",
             "enum": [
@@ -3210,6 +3217,7 @@
           "name",
           "prefix",
           "identity_ids",
+          "pod_id",
           "access",
           "created_by_key_id",
           "last_used_at",
@@ -10307,6 +10315,12 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   },
+                  "pod_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
+                  },
                   "access": {
                     "type": "string",
                     "enum": [
@@ -10331,8 +10345,7 @@
                   }
                 },
                 "required": [
-                  "name",
-                  "identity_ids"
+                  "name"
                 ],
                 "additionalProperties": false
               }
@@ -11144,6 +11157,101 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/events/socket": {
+      "get": {
+        "operationId": "eventsSocket",
+        "summary": "Events over a WebSocket",
+        "description": "The event log over a WebSocket — `wss://pidgeon.ai/api/v1/events/socket` — with the same `type`, `identity_id` and `after` as `GET /events/stream`. All frames are JSON text.\n\n**Authenticate** with the `Authorization` header on the upgrade, or — from a browser, which cannot set one — send `{\"type\":\"auth\",\"api_key\":\"pgn_live_…\"}` as the first message within ten seconds. Never put the key in the URL.\n\n**The server sends** `{\"type\":\"ready\",\"cursor\"}`, then `{\"type\":\"event\",\"event\":Event}` per event, oldest first. Before about 280 seconds it sends `{\"type\":\"reconnect\",\"cursor\"}` and closes with 4000: reconnect with `after` set to that cursor and nothing is missed. 4401 means no key or a bad one; 4500 means the read failed — reconnect with the last cursor you saw.\n\nLike the stream, it polls the log on our side of the wire every two seconds.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "From a previous page’s `next_cursor`. Opaque — do not parse it."
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "Switching protocols: the socket is open."
           },
           "401": {
             "description": "No API key, or one that is not valid.",

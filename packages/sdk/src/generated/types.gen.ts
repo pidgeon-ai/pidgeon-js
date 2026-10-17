@@ -898,6 +898,10 @@ export type ApiKey = {
   prefix: string;
   identity_ids: Array<string>;
   /**
+   * The pod this key belongs to, or null. A pod key reaches every address in the pod — `identity_ids` lists them today — and the addresses the pod gains later.
+   */
+  pod_id: string | null;
+  /**
    * The highest rung on any address. Composed with the grant; lower wins.
    */
   access: 'read' | 'send' | 'admin';
@@ -4064,7 +4068,11 @@ export type KeysListResponse = KeysListResponses[keyof KeysListResponses];
 export type KeysCreateData = {
   body: {
     name: string;
-    identity_ids: Array<string>;
+    identity_ids?: Array<string>;
+    /**
+     * The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one.
+     */
+    pod_id?: string;
     /**
      * What a key may do. Give an agent the narrowest one that works.
      */
@@ -4500,6 +4508,39 @@ export type EventsListResponses = {
 };
 
 export type EventsListResponse = EventsListResponses[keyof EventsListResponses];
+
+export type EventsSocketData = {
+  body?: never;
+  path?: never;
+  query?: {
+    limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
+    type?: string;
+    identity_id?: string;
+    after?: string;
+  };
+  url: '/events/socket';
+};
+
+export type EventsSocketErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type EventsSocketError = EventsSocketErrors[keyof EventsSocketErrors];
 
 export type EventsStreamData = {
   body?: never;

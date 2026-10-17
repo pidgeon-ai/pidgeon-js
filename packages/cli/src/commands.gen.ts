@@ -1131,6 +1131,47 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "events",
+    "name": "socket",
+    "operationId": "eventsSocket",
+    "method": "GET",
+    "path": "/events/socket",
+    "summary": "Events over a WebSocket",
+    "flags": [
+      {
+        "name": "limit",
+        "kind": "number",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
+      },
+      {
+        "name": "type",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "after",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "events",
     "name": "stream",
     "operationId": "eventsStream",
     "method": "GET",
@@ -1709,8 +1750,15 @@ export const COMMANDS: Command[] = [
       {
         "name": "identity_ids",
         "kind": "list",
-        "required": true,
+        "required": false,
         "where": "body"
+      },
+      {
+        "name": "pod_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
       },
       {
         "name": "access",

@@ -8,6 +8,7 @@ you own, so they can run email like you would — [pidgeon.ai](https://pidgeon.a
 | [`@pidgeon-ai/sdk`](packages/sdk) | `npm install @pidgeon-ai/sdk` | The API client |
 | [`@pidgeon-ai/cli`](packages/cli) | `npm install -g @pidgeon-ai/cli` | Every endpoint as a command |
 | [`@pidgeon-ai/mcp`](packages/mcp) | `npx -y @pidgeon-ai/mcp init` | The MCP server, for clients that cannot send a header |
+| [`@pidgeon-ai/ai-sdk`](packages/ai-sdk) | `npm install @pidgeon-ai/ai-sdk` | The same tools, for the Vercel AI SDK |
 
 A hosted MCP server needs no install at all: point any client that can send a
 header at `https://pidgeon.ai/api/mcp`.

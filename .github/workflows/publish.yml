@@ -7,6 +7,7 @@ name: Publish
 #   git tag sdk-v1.3.0 && git push origin sdk-v1.3.0
 #   git tag cli-v1.1.0 && git push origin cli-v1.1.0
 #   git tag mcp-v0.4.0 && git push origin mcp-v0.4.0
+#   git tag ai-sdk-v0.1.0 && git push origin ai-sdk-v0.1.0
 #
 # **Provenance is the whole reason this workflow is here rather than there.**
 # npm attests which commit and which workflow produced a tarball, and
@@ -16,14 +17,14 @@ name: Publish
 # these clients stays private; the clients do not need to be.
 on:
   push:
-    tags: ['sdk-v*', 'cli-v*', 'mcp-v*']
+    tags: ['sdk-v*', 'cli-v*', 'mcp-v*', 'ai-sdk-v*']
   workflow_dispatch:
     inputs:
       package:
         description: Which package to publish
         required: true
         type: choice
-        options: [sdk, cli, mcp]
+        options: [sdk, cli, mcp, ai-sdk]
 
 permissions:
   contents: read
@@ -51,7 +52,7 @@ jobs:
           fi
 
           case "$name" in
-            sdk|cli|mcp) ;;
+            sdk|cli|mcp|ai-sdk) ;;
             *) echo "Unknown package: $name" >&2; exit 1 ;;
           esac
 
