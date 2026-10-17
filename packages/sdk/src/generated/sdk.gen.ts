@@ -216,6 +216,9 @@ import type {
   MessagesActData,
   MessagesActErrors,
   MessagesActResponses,
+  MessagesAwaitData,
+  MessagesAwaitErrors,
+  MessagesAwaitResponses,
   MessagesForwardData,
   MessagesForwardErrors,
   MessagesForwardResponses,
@@ -956,6 +959,20 @@ export const messagesUndo = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Wait for the next message
+ *
+ * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came.
+ */
+export const messagesAwait = <ThrowOnError extends boolean = false>(
+  options: Options<MessagesAwaitData, ThrowOnError>,
+): RequestResult<MessagesAwaitResponses, MessagesAwaitErrors, ThrowOnError> =>
+  (options.client ?? client).get<MessagesAwaitResponses, MessagesAwaitErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/messages/await',
+    ...options,
   });
 
 /**
@@ -2073,7 +2090,7 @@ export const draftsRemoveAttachment = <ThrowOnError extends boolean = false>(
 /**
  * What happened to the mail
  *
- * Counted from the event log rather than from the messages: a message row says what was sent, and whether it bounced is something the provider told us afterwards. `identity_id` narrows it to one mailbox, which is the question worth asking when you run several — reputation belongs to the address that sent the mail. `delivery_rate` is null rather than zero when nothing was sent.
+ * Counted from the event log rather than from the messages: a message row says what was sent, and whether it bounced is something the provider told us afterwards. `identity_id` narrows it to one mailbox, which is the question worth asking when you run several — reputation belongs to the address that sent the mail. `pod_id` narrows it to one pod, which is the question a platform asks: sending reputation is isolated per pod, so this is the scope that isolation is claimed at, and the response carries `reputation.sending` — `paused` is the provider having suspended that pod and nobody else. `delivery_rate` is null rather than zero when nothing was sent. An unknown parameter is refused rather than ignored.
  */
 export const metricsQuery = <ThrowOnError extends boolean = false>(
   options?: Options<MetricsQueryData, ThrowOnError>,

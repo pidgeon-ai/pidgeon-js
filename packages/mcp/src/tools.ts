@@ -45,14 +45,15 @@ export const TOOLS: ToolDefinition[] = [
     name: 'list_addresses',
     title: 'List addresses',
     description:
-      'The addresses this credential can reach. Use `tenant_id` to list the addresses ' +
-      'belonging to one of your own customers.',
+      'The addresses this credential can reach. Use `pod_id` to list one pod’s — one of ' +
+      'your own customers — or `tenant_id` for your own opaque grouping.',
     endpoint: 'GET /identities',
     readOnly: true,
     inputSchema: {
       limit: z.number().int().min(1).max(200).optional(),
       cursor: z.string().optional(),
       tenant_id: z.string().optional(),
+      pod_id: z.string().optional(),
     },
   },
   {
@@ -65,7 +66,9 @@ export const TOOLS: ToolDefinition[] = [
       'open it; without one it becomes an event and your webhook fires. ' +
       '`send_policy: "reply_only"` makes it unable to write to anybody who has not written to ' +
       'it first, which is the right default for an agent. `expires_at` gives it an end date, ' +
-      'after which it stops accepting mail.',
+      'after which it stops accepting mail. **`pod_id` puts it in one of your customers’ ' +
+      'pods**, which is what keeps their sending reputation theirs — `list_pods` has the ' +
+      'ids, and your account’s default pod is used when you name none.',
     endpoint: 'POST /identities',
     readOnly: false,
     inputSchema: {
@@ -91,6 +94,16 @@ export const TOOLS: ToolDefinition[] = [
       send_policy: z.enum(['open', 'reply_only', 'list']).optional(),
       expires_at: z.string().optional(),
       tenant_id: z.string().optional(),
+      /*
+       * **Absent for the whole of the launch.** Pods shipped as the headline
+       * feature with a REST field, a CLI flag and both SDKs — all generated
+       * from the contract — and the two hand-written surfaces, this file and
+       * `public/skill.md`, had no mention of them. So an agent following the
+       * document we tell agent builders to adopt first could not put an
+       * address in a pod, which is the one operation the feature is for.
+       * Field test 3, 16 October.
+       */
+      pod_id: z.string().optional(),
     },
   },
   {
@@ -281,6 +294,34 @@ export const TOOLS: ToolDefinition[] = [
     endpoint: 'GET /messages/{id}',
     readOnly: true,
     inputSchema: { id: z.string() },
+  },
+  /*
+   * One more row in a list a model reads on every call, which is a real cost
+   * — and the reason it earns it: signing up for something and reading the
+   * code back is the most common thing an agent does with an address, and
+   * without this a model writes a polling loop out of `list_messages`.
+   * `prd/verification-codes.md` §5.
+   */
+  {
+    name: 'await_message',
+    title: 'Wait for the next message',
+    description:
+      'Waits until a message arrives at an address — after you submit a sign-up form, say ' +
+      '— and returns it with `extracted.codes` and `extracted.links`: verification codes and ' +
+      'confirm links, most likely first. Narrow it with `from` (address or domain), ' +
+      '`subject_contains`, or `has_code: "true"` to skip a welcome email. Answers ' +
+      '`timed_out: true` after `timeout` seconds (default 60, at most 280); pass the returned ' +
+      '`cursor` as `after` to keep waiting without missing anything.',
+    endpoint: 'GET /messages/await',
+    readOnly: true,
+    inputSchema: {
+      identity_id: z.string(),
+      from: z.string().optional(),
+      subject_contains: z.string().optional(),
+      has_code: z.enum(['true', 'false']).optional(),
+      after: z.string().optional(),
+      timeout: z.number().int().min(1).max(280).optional(),
+    },
   },
   {
     name: 'reply_to_message',
@@ -512,5 +553,81 @@ export const TOOLS: ToolDefinition[] = [
     endpoint: 'DELETE /threads/{id}/labels',
     readOnly: false,
     inputSchema: { id: z.string(), label_id: z.string() },
+  },
+
+  /*
+   * ---------------------------------------------------------------------
+   * Pods, and the numbers that prove one is isolated.
+   *
+   * **The launch feature had no tool.** Pods shipped on 16 October as the
+   * thing announced, with `GET/POST /v1/pods`, `pod_id` on an address and a
+   * switcher in the console — and nothing here, so an agent reaching this
+   * product the way `skill.md` tells it to could not see a pod, make one, or
+   * put an address in one. Everything generated from the contract got pods
+   * for free; the two hand-written surfaces got nothing, which is exactly
+   * where a gap like this hides.
+   *
+   * Two of the four endpoints, by the restraint at the top of this file.
+   * `list_pods` and `create_pod` are the loop a platform runs — a customer
+   * signs up, it provisions a container, it creates addresses in it.
+   * `GET /pods/{id}` is `list_pods` with a filter the caller already has,
+   * and `PATCH` renames one, which is a thing a person does once in a
+   * browser. Both stay out.
+   *
+   * `get_metrics` is here with them rather than beside the mail tools,
+   * because `pod_id` is what makes it worth a tool at all: it is how a
+   * caller sees that one customer's bounces are that customer's. An agent
+   * deciding whether to keep sending needs this more than a person
+   * refreshing a page does, which is the argument the endpoint's own route
+   * has made since it was written.
+   * ---------------------------------------------------------------------
+   */
+  {
+    name: 'list_pods',
+    title: 'The pods in this account',
+    description:
+      'A pod is a container for one of your own customers: it holds addresses and domains, ' +
+      'and **mail sent from it lands on its own sending reputation**, so one customer ' +
+      'cannot damage another’s delivery. Every account has one to start with, marked ' +
+      '`is_default` — that is where an address goes when you name no pod.',
+    endpoint: 'GET /pods',
+    readOnly: true,
+    inputSchema: {},
+  },
+  {
+    name: 'create_pod',
+    title: 'Make a pod',
+    description:
+      'A container for one of your customers, with its own sending reputation. Give it a ' +
+      '`name` a person would recognise and, if your own system has an id for this customer, ' +
+      '`client_id` — carried and returned, never parsed. Then pass the new pod’s id as ' +
+      '`pod_id` to `create_address`. There is no delete: a pod holds mailboxes, and the ' +
+      'verb that destroys hundreds of them at once is not one to hand an agent.',
+    endpoint: 'POST /pods',
+    readOnly: false,
+    inputSchema: {
+      name: z.string(),
+      client_id: z.string().nullish(),
+    },
+  },
+  {
+    name: 'get_metrics',
+    title: 'What happened to the mail',
+    description:
+      'Sent, delivered, bounced, rejected, complained, received and spam over a window of ' +
+      '`days` — counted from the event log, so it includes outcomes the provider reported ' +
+      'afterwards. Narrow it with `identity_id` for one address or **`pod_id` for one of ' +
+      'your customers**, which is the scope sending reputation is isolated at. With a pod, ' +
+      'the answer carries `reputation.sending`: `paused` means the provider has suspended ' +
+      'that pod and nobody else, and is the reason mail from it is queueing. ' +
+      '`delivery_rate` is null rather than zero when nothing was sent. Read this before ' +
+      'deciding to keep sending — a rising bounce rate is the signal to stop.',
+    endpoint: 'GET /metrics',
+    readOnly: true,
+    inputSchema: {
+      days: z.number().int().min(1).max(90).optional(),
+      identity_id: z.string().optional(),
+      pod_id: z.string().optional(),
+    },
   },
 ];

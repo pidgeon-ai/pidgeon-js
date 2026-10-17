@@ -209,9 +209,202 @@ export type Message = {
    */
   calendar_event_id: string | null;
   /**
+   * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
+   */
+  extracted: {
+    /**
+     * Verification codes, most likely first. Empty when nothing looked like one.
+     */
+    codes: Array<{
+      /**
+       * The code as it would be typed: spaces removed.
+       */
+      value: string;
+      kind: 'numeric' | 'alphanumeric';
+      /**
+       * Where in the text it was found, or -1 when it was in the subject.
+       */
+      index: number;
+    }>;
+    /**
+     * Links, verification links first. Unsubscribe and social links are left out.
+     */
+    links: Array<{
+      url: string;
+      /**
+       * `verification` for confirm, verify, sign-in and magic links.
+       */
+      kind: 'verification' | 'other';
+      /**
+       * The link text, when it had any.
+       */
+      text: string | null;
+    }>;
+  };
+  /**
    * ISO-8601, UTC.
    */
   created_at: string;
+};
+
+export type AwaitedMessage = {
+  /**
+   * The first matching message to arrive, or null when `timeout` passed first.
+   */
+  message: {
+    id: string;
+    thread_id: string;
+    /**
+     * The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.
+     */
+    identity_id: string | null;
+    identity: string | null;
+    direction: string;
+    /**
+     * A mailbox, with the display name when one was given.
+     */
+    from: {
+      email: string;
+      name?: string | null;
+    };
+    to: Array<{
+      email: string;
+      name?: string | null;
+    }>;
+    cc: Array<{
+      email: string;
+      name?: string | null;
+    }>;
+    subject: string | null;
+    /**
+     * The envelope recipient, which is not always in `to`.
+     */
+    delivered_to: string | null;
+    text: string | null;
+    /**
+     * Sanitised server-side: our policy travels with the content.
+     */
+    html: string;
+    /**
+     * `html` with the quoted history taken off: what the sender wrote this time.
+     */
+    reply_html: string;
+    /**
+     * The history the reply quoted, or null when there was nothing to fold.
+     */
+    quoted_html: string | null;
+    /**
+     * The reply as plain text. `text` is the message’s own text part, quote and all.
+     */
+    reply_text: string;
+    is_read: boolean;
+    is_spam: boolean;
+    /**
+     * The headers we keep, lowercased: `message-id`, `in-reply-to`, `references`, `date`, `reply-to`, `return-path`, `list-id`, `list-unsubscribe`, `precedence`, `auto-submitted`, `x-auto-response-suppress`, `x-mailer` and `x-priority`. Not the whole envelope — that is `GET /messages/{id}/raw`. Empty when none were present.
+     */
+    headers: {
+      [key: string]: string;
+    };
+    /**
+     * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged.
+     */
+    authentication: {
+      spf: string | null;
+      dkim: string | null;
+      dmarc: string | null;
+    };
+    attachments: Array<{
+      id: string;
+      filename: string;
+      content_type: string;
+      size: number;
+      /**
+       * False when there is metadata but no object store behind it.
+       */
+      downloadable: boolean;
+    }>;
+    /**
+     * The calendar part this message carried, or null — the invitation, who was asked, and what they answered.
+     */
+    invitation: {
+      method: string | null;
+      uid: string;
+      sequence: number;
+      status: string | null;
+      summary: string | null;
+      description: string | null;
+      location: string | null;
+      /**
+       * The local wall time the sender wrote. This and `timezone` are the truth.
+       */
+      start: string | null;
+      end: string | null;
+      /**
+       * The same moment as a UTC instant.
+       */
+      starts_at: string | null;
+      ends_at: string | null;
+      all_day: boolean;
+      timezone: string | null;
+      organizer_email: string | null;
+      organizer_name: string | null;
+      attendees: Array<{
+        email: string;
+        name: string | null;
+        status: string;
+        optional: boolean;
+        rsvp: boolean;
+      }>;
+      recurrence_rule: string | null;
+      is_instance: boolean;
+    } | null;
+    /**
+     * The event the calendar made of that invitation, or null. A different fact from `invitation`: that is what the mail said, this is what the calendar now holds — a meeting later moved still reports the time this message invited you to.
+     */
+    calendar_event_id: string | null;
+    /**
+     * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
+     */
+    extracted: {
+      /**
+       * Verification codes, most likely first. Empty when nothing looked like one.
+       */
+      codes: Array<{
+        /**
+         * The code as it would be typed: spaces removed.
+         */
+        value: string;
+        kind: 'numeric' | 'alphanumeric';
+        /**
+         * Where in the text it was found, or -1 when it was in the subject.
+         */
+        index: number;
+      }>;
+      /**
+       * Links, verification links first. Unsubscribe and social links are left out.
+       */
+      links: Array<{
+        url: string;
+        /**
+         * `verification` for confirm, verify, sign-in and magic links.
+         */
+        kind: 'verification' | 'other';
+        /**
+         * The link text, when it had any.
+         */
+        text: string | null;
+      }>;
+    };
+    /**
+     * ISO-8601, UTC.
+     */
+    created_at: string;
+  } | null;
+  timed_out: boolean;
+  /**
+   * Pass as `after` on the next call, so a message arriving between two calls is not missed.
+   */
+  cursor: string;
 };
 
 export type Thread = {
@@ -548,6 +741,13 @@ export type Metrics = {
   until: string;
   days: number;
   identity: string | null;
+  pod: {
+    id: string;
+    name: string;
+  } | null;
+  reputation: {
+    sending: 'enabled' | 'paused' | 'unknown';
+  } | null;
   outbound: {
     sent: number;
     delivered: number;
@@ -1329,7 +1529,7 @@ export type IdentitiesCreateData = {
      */
     tenant_id?: string | null;
     /**
-     * The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one.
+     * The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one.
      */
     pod_id?: string | null;
   };
@@ -1467,7 +1667,7 @@ export type IdentitiesUpdateData = {
      */
     tenant_id?: string | null;
     /**
-     * The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one.
+     * The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one.
      */
     pod_id?: string | null;
   };
@@ -2641,6 +2841,48 @@ export type MessagesUndoResponses = {
 };
 
 export type MessagesUndoResponse = MessagesUndoResponses[keyof MessagesUndoResponses];
+
+export type MessagesAwaitData = {
+  body?: never;
+  path?: never;
+  query: {
+    identity_id: string;
+    from?: string;
+    subject_contains?: string;
+    has_code?: 'true' | 'false';
+    after?: string;
+    timeout?: number;
+  };
+  url: '/messages/await';
+};
+
+export type MessagesAwaitErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type MessagesAwaitError = MessagesAwaitErrors[keyof MessagesAwaitErrors];
+
+export type MessagesAwaitResponses = {
+  /**
+   * The message, or that none came in time.
+   */
+  200: {
+    data: AwaitedMessage;
+  };
+};
+
+export type MessagesAwaitResponse = MessagesAwaitResponses[keyof MessagesAwaitResponses];
 
 export type MessagesGetData = {
   body?: never;
@@ -5670,6 +5912,7 @@ export type MetricsQueryData = {
   query?: {
     days?: number;
     identity_id?: string;
+    pod_id?: string;
   };
   url: '/metrics';
 };

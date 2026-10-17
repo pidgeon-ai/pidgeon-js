@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.6.0",
+    "version": "1.8.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -648,6 +648,82 @@
               "null"
             ]
           },
+          "extracted": {
+            "type": "object",
+            "properties": {
+              "codes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "description": "The code as it would be typed: spaces removed."
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "numeric",
+                        "alphanumeric"
+                      ]
+                    },
+                    "index": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Where in the text it was found, or -1 when it was in the subject."
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "kind",
+                    "index"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Verification codes, most likely first. Empty when nothing looked like one."
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "verification",
+                        "other"
+                      ],
+                      "description": "`verification` for confirm, verify, sign-in and magic links."
+                    },
+                    "text": {
+                      "description": "The link text, when it had any.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "kind",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Links, verification links first. Unsubscribe and social links are left out."
+              }
+            },
+            "required": [
+              "codes",
+              "links"
+            ],
+            "additionalProperties": false,
+            "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found."
+          },
           "created_at": {
             "type": "string",
             "description": "ISO-8601, UTC."
@@ -676,7 +752,516 @@
           "attachments",
           "invitation",
           "calendar_event_id",
+          "extracted",
           "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "AwaitedMessage": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "thread_id": {
+                    "type": "string"
+                  },
+                  "identity_id": {
+                    "description": "The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "identity": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "direction": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A mailbox, with the display name when one was given."
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "email"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A mailbox, with the display name when one was given."
+                    }
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "email"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A mailbox, with the display name when one was given."
+                    }
+                  },
+                  "subject": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "delivered_to": {
+                    "description": "The envelope recipient, which is not always in `to`.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "html": {
+                    "type": "string",
+                    "description": "Sanitised server-side: our policy travels with the content."
+                  },
+                  "reply_html": {
+                    "type": "string",
+                    "description": "`html` with the quoted history taken off: what the sender wrote this time."
+                  },
+                  "quoted_html": {
+                    "description": "The history the reply quoted, or null when there was nothing to fold.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reply_text": {
+                    "type": "string",
+                    "description": "The reply as plain text. `text` is the message’s own text part, quote and all."
+                  },
+                  "is_read": {
+                    "type": "boolean"
+                  },
+                  "is_spam": {
+                    "type": "boolean"
+                  },
+                  "headers": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The headers we keep, lowercased: `message-id`, `in-reply-to`, `references`, `date`, `reply-to`, `return-path`, `list-id`, `list-unsubscribe`, `precedence`, `auto-submitted`, `x-auto-response-suppress`, `x-mailer` and `x-priority`. Not the whole envelope — that is `GET /messages/{id}/raw`. Empty when none were present."
+                  },
+                  "authentication": {
+                    "type": "object",
+                    "properties": {
+                      "spf": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "dkim": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "dmarc": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "spf",
+                      "dkim",
+                      "dmarc"
+                    ],
+                    "additionalProperties": false,
+                    "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged."
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "filename": {
+                          "type": "string"
+                        },
+                        "content_type": {
+                          "type": "string"
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "downloadable": {
+                          "type": "boolean",
+                          "description": "False when there is metadata but no object store behind it."
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "filename",
+                        "content_type",
+                        "size",
+                        "downloadable"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "invitation": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "method": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "uid": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "summary": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "description": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "location": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "start": {
+                            "description": "The local wall time the sender wrote. This and `timezone` are the truth.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "end": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "starts_at": {
+                            "description": "The same moment as a UTC instant.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ends_at": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "all_day": {
+                            "type": "boolean"
+                          },
+                          "timezone": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "organizer_email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "organizer_name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "attendees": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "optional": {
+                                  "type": "boolean"
+                                },
+                                "rsvp": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "email",
+                                "name",
+                                "status",
+                                "optional",
+                                "rsvp"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "recurrence_rule": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "is_instance": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "method",
+                          "uid",
+                          "sequence",
+                          "status",
+                          "summary",
+                          "description",
+                          "location",
+                          "start",
+                          "end",
+                          "starts_at",
+                          "ends_at",
+                          "all_day",
+                          "timezone",
+                          "organizer_email",
+                          "organizer_name",
+                          "attendees",
+                          "recurrence_rule",
+                          "is_instance"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The calendar part this message carried, or null — the invitation, who was asked, and what they answered."
+                  },
+                  "calendar_event_id": {
+                    "description": "The event the calendar made of that invitation, or null. A different fact from `invitation`: that is what the mail said, this is what the calendar now holds — a meeting later moved still reports the time this message invited you to.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "extracted": {
+                    "type": "object",
+                    "properties": {
+                      "codes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "description": "The code as it would be typed: spaces removed."
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "numeric",
+                                "alphanumeric"
+                              ]
+                            },
+                            "index": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Where in the text it was found, or -1 when it was in the subject."
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "kind",
+                            "index"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "description": "Verification codes, most likely first. Empty when nothing looked like one."
+                      },
+                      "links": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "verification",
+                                "other"
+                              ],
+                              "description": "`verification` for confirm, verify, sign-in and magic links."
+                            },
+                            "text": {
+                              "description": "The link text, when it had any.",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "url",
+                            "kind",
+                            "text"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "description": "Links, verification links first. Unsubscribe and social links are left out."
+                      }
+                    },
+                    "required": [
+                      "codes",
+                      "links"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found."
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "description": "ISO-8601, UTC."
+                  }
+                },
+                "required": [
+                  "id",
+                  "thread_id",
+                  "identity_id",
+                  "identity",
+                  "direction",
+                  "from",
+                  "to",
+                  "cc",
+                  "subject",
+                  "delivered_to",
+                  "text",
+                  "html",
+                  "reply_html",
+                  "quoted_html",
+                  "reply_text",
+                  "is_read",
+                  "is_spam",
+                  "headers",
+                  "authentication",
+                  "attachments",
+                  "invitation",
+                  "calendar_event_id",
+                  "extracted",
+                  "created_at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first matching message to arrive, or null when `timeout` passed first."
+          },
+          "timed_out": {
+            "type": "boolean"
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Pass as `after` on the next call, so a message arriving between two calls is not missed."
+          }
+        },
+        "required": [
+          "message",
+          "timed_out",
+          "cursor"
         ],
         "additionalProperties": false
       },
@@ -1874,6 +2459,53 @@
               "null"
             ]
           },
+          "pod": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reputation": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sending": {
+                    "type": "string",
+                    "enum": [
+                      "enabled",
+                      "paused",
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "sending"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "outbound": {
             "type": "object",
             "properties": {
@@ -1931,6 +2563,8 @@
           "until",
           "days",
           "identity",
+          "pod",
+          "reputation",
           "outbound",
           "inbound"
         ],
@@ -4185,7 +4819,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
+                    "description": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
                   }
                 },
                 "additionalProperties": false
@@ -4420,7 +5054,7 @@
                         "type": "null"
                       }
                     ],
-                    "description": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
+                    "description": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
                   }
                 },
                 "additionalProperties": false
@@ -6945,6 +7579,131 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Restored"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "messages"
+        ]
+      }
+    },
+    "/messages/await": {
+      "get": {
+        "operationId": "messagesAwait",
+        "summary": "Wait for the next message",
+        "description": "Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came.",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          },
+          {
+            "name": "subject_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "has_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 280
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The message, or that none came in time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AwaitedMessage"
                     }
                   },
                   "required": [
@@ -13575,7 +14334,7 @@
       "get": {
         "operationId": "metricsQuery",
         "summary": "What happened to the mail",
-        "description": "Counted from the event log rather than from the messages: a message row says what was sent, and whether it bounced is something the provider told us afterwards. `identity_id` narrows it to one mailbox, which is the question worth asking when you run several — reputation belongs to the address that sent the mail. `delivery_rate` is null rather than zero when nothing was sent.",
+        "description": "Counted from the event log rather than from the messages: a message row says what was sent, and whether it bounced is something the provider told us afterwards. `identity_id` narrows it to one mailbox, which is the question worth asking when you run several — reputation belongs to the address that sent the mail. `pod_id` narrows it to one pod, which is the question a platform asks: sending reputation is isolated per pod, so this is the scope that isolation is claimed at, and the response carries `reputation.sending` — `paused` is the provider having suspended that pod and nobody else. `delivery_rate` is null rather than zero when nothing was sent. An unknown parameter is refused rather than ignored.",
         "parameters": [
           {
             "name": "days",
@@ -13589,6 +14348,16 @@
           },
           {
             "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "pod_id",
             "in": "query",
             "required": false,
             "schema": {

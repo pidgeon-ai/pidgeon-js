@@ -9,6 +9,28 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.8.0 — wait for a message, and read the code out of it
+
+**`messagesAwait`** (`GET /v1/messages/await`) holds the request open until a
+message matching your filters arrives at an address — `from`, `subject_contains`,
+`has_code` — or `timeout` seconds pass, up to 280. It answers
+`{ message, timed_out, cursor }`; pass `cursor` back as `after` so a message
+arriving between two calls is never missed. One call where an agent waiting
+for a sign-up code used to write a polling loop.
+
+**Every `Message` carries `extracted`**: `codes` and `links`, most likely
+first, each with its kind. Candidates rather than one answer, because
+extraction is a heuristic — take the first, and when it fails the second is
+right there. Read from the new text, never the quoted history.
+
+## 1.7.0 — a pod's reputation you can see
+
+`GET /metrics` takes `pod_id`, and its window carries `pod` and `reputation`.
+1.6.0 claimed each pod had its own sending reputation and gave no way to
+check it; this is the check. `/metrics` also rejects an unknown query
+parameter instead of ignoring it, so a caller passing a misspelt filter is
+told rather than answered for the whole account.
+
 ## 1.6.0 — a pod is a boundary now
 
 **No field changed.** What changed is what a pod means, and that is worth a

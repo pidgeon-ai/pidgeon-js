@@ -1361,7 +1361,7 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": false,
         "where": "body",
-        "describe": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
+        "describe": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
       }
     ]
   },
@@ -1672,7 +1672,7 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": false,
         "where": "body",
-        "describe": "The pod this belongs to. Your account’s default when you name none. A container, not a boundary: it does not change what an address can do, and no key is scoped to one."
+        "describe": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
       }
     ]
   },
@@ -2038,6 +2038,56 @@ export const COMMANDS: Command[] = [
         "required": true,
         "where": "body",
         "describe": "`read` and `unread` are refused for an API key: read state belongs to a person and a key is not one. Every other action works."
+      }
+    ]
+  },
+  {
+    "group": "messages",
+    "name": "await",
+    "operationId": "messagesAwait",
+    "method": "GET",
+    "path": "/messages/await",
+    "summary": "Wait for the next message",
+    "flags": [
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": true,
+        "where": "query"
+      },
+      {
+        "name": "from",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "subject_contains",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "has_code",
+        "kind": "string",
+        "choices": [
+          "true",
+          "false"
+        ],
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "after",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "timeout",
+        "kind": "number",
+        "required": false,
+        "where": "query"
       }
     ]
   },
@@ -2544,6 +2594,12 @@ export const COMMANDS: Command[] = [
       },
       {
         "name": "identity_id",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "pod_id",
         "kind": "string",
         "required": false,
         "where": "query"

@@ -56,21 +56,22 @@ local checkout.
 
 ## Tools
 
-| Tool               | What it does                                                |
-| ------------------ | ----------------------------------------------------------- |
-| `list_addresses`   | The addresses the key can reach; filter by `tenant_id`      |
-| `create_address`   | A new address, optionally `reply_only` and with an end date |
-| `get_address`      | One address, its capabilities and its send policy           |
-| `list_threads`     | Conversations in one address                                |
-| `get_thread`       | One conversation, by the `thread_id` a webhook gave you     |
-| `list_messages`    | The messages of a conversation                              |
-| `search_messages`  | Full-text within one mailbox                                |
-| `get_message`      | One message with its body — a webhook carries only its id   |
-| `send_message`     | Send, subject to the address's send policy                  |
-| `reply_to_message` | Answer one; recipients and subject come off the original    |
-| `update_thread`    | Hand a conversation to a person, or take it back            |
-| `update_message`   | Mark read, star, or move to archive, spam or trash          |
-| `list_send_rules`  | Why a send was refused                                      |
+| Tool               | What it does                                                 |
+| ------------------ | ------------------------------------------------------------ |
+| `list_addresses`   | The addresses the key can reach; filter by `tenant_id`       |
+| `create_address`   | A new address, optionally `reply_only` and with an end date  |
+| `get_address`      | One address, its capabilities and its send policy            |
+| `list_threads`     | Conversations in one address                                 |
+| `get_thread`       | One conversation, by the `thread_id` a webhook gave you      |
+| `list_messages`    | The messages of a conversation                               |
+| `search_messages`  | Full-text within one mailbox                                 |
+| `get_message`      | One message with its body — a webhook carries only its id    |
+| `await_message`    | Wait for the next message, codes and links already extracted |
+| `send_message`     | Send, subject to the address's send policy                   |
+| `reply_to_message` | Answer one; recipients and subject come off the original     |
+| `update_thread`    | Hand a conversation to a person, or take it back             |
+| `update_message`   | Mark read, star, or move to archive, spam or trash           |
+| `list_send_rules`  | Why a send was refused                                       |
 
 ## Handing a conversation to a person
 
