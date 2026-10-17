@@ -52,7 +52,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.6.0';
+export const VERSION = '0.7.0';
 
 export function createServer(context: { baseUrl: string; apiKey: string }): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });

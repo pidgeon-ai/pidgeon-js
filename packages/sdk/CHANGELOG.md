@@ -9,6 +9,16 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.12.0 — Pidgeon Firewall
+
+Every inbound `Message` carries `firewall`: a `verdict` (`clean` or
+`suspicious`) and the `signals` that produced it — hidden text, instructions
+addressed to an AI, impersonated chat turns, directives buried in quoted
+history, look-alike senders, display-name spoofing, and requests to send
+secrets out — each with where it fired and a sentence quoting it.
+`message.received` carries the verdict and the signal kinds. Observe-only:
+nothing is held or changed. Read it before acting on what a message asks.
+
 ## 1.11.0 — a key for one pod
 
 `apiKeysCreate` takes `pod_id` in place of `identity_ids`: the key reaches

@@ -209,6 +209,39 @@ export type Message = {
    */
   calendar_event_id: string | null;
   /**
+   * Pidgeon Firewall: does this message try to steer the agent reading it — hidden text, instructions addressed to an AI, impersonated chat turns, look-alike senders, requests to send secrets out. Null on outbound mail. Read it before acting on what the message asks.
+   */
+  firewall: {
+    /**
+     * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+     */
+    verdict: 'clean' | 'suspicious';
+    /**
+     * The rules that fired, most specific first. Empty when the verdict is `clean`.
+     */
+    signals: Array<{
+      kind:
+        | 'hidden_text'
+        | 'invisible_characters'
+        | 'assistant_directive'
+        | 'role_spoof'
+        | 'quoted_directive'
+        | 'lookalike_sender'
+        | 'display_name_spoof'
+        | 'unauthenticated_with_directive'
+        | 'exfiltration_request';
+      /**
+       * What was found, with a short quote of it.
+       */
+      detail: string;
+      where: 'subject' | 'text' | 'html' | 'from' | 'quoted';
+    }>;
+    /**
+     * Bumped when the rules change in a way that could change a verdict.
+     */
+    version: number;
+  } | null;
+  /**
    * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
    */
   extracted: {
@@ -362,6 +395,39 @@ export type AwaitedMessage = {
      * The event the calendar made of that invitation, or null. A different fact from `invitation`: that is what the mail said, this is what the calendar now holds — a meeting later moved still reports the time this message invited you to.
      */
     calendar_event_id: string | null;
+    /**
+     * Pidgeon Firewall: does this message try to steer the agent reading it — hidden text, instructions addressed to an AI, impersonated chat turns, look-alike senders, requests to send secrets out. Null on outbound mail. Read it before acting on what the message asks.
+     */
+    firewall: {
+      /**
+       * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+       */
+      verdict: 'clean' | 'suspicious';
+      /**
+       * The rules that fired, most specific first. Empty when the verdict is `clean`.
+       */
+      signals: Array<{
+        kind:
+          | 'hidden_text'
+          | 'invisible_characters'
+          | 'assistant_directive'
+          | 'role_spoof'
+          | 'quoted_directive'
+          | 'lookalike_sender'
+          | 'display_name_spoof'
+          | 'unauthenticated_with_directive'
+          | 'exfiltration_request';
+        /**
+         * What was found, with a short quote of it.
+         */
+        detail: string;
+        where: 'subject' | 'text' | 'html' | 'from' | 'quoted';
+      }>;
+      /**
+       * Bumped when the rules change in a way that could change a verdict.
+       */
+      version: number;
+    } | null;
     /**
      * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
      */

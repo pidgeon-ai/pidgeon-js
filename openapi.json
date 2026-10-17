@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.11.0",
+    "version": "1.12.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -648,6 +648,82 @@
               "null"
             ]
           },
+          "firewall": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "clean",
+                      "suspicious"
+                    ],
+                    "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                  },
+                  "signals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "hidden_text",
+                            "invisible_characters",
+                            "assistant_directive",
+                            "role_spoof",
+                            "quoted_directive",
+                            "lookalike_sender",
+                            "display_name_spoof",
+                            "unauthenticated_with_directive",
+                            "exfiltration_request"
+                          ]
+                        },
+                        "detail": {
+                          "type": "string",
+                          "description": "What was found, with a short quote of it."
+                        },
+                        "where": {
+                          "type": "string",
+                          "enum": [
+                            "subject",
+                            "text",
+                            "html",
+                            "from",
+                            "quoted"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "detail",
+                        "where"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "The rules that fired, most specific first. Empty when the verdict is `clean`."
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991,
+                    "description": "Bumped when the rules change in a way that could change a verdict."
+                  }
+                },
+                "required": [
+                  "verdict",
+                  "signals",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pidgeon Firewall: does this message try to steer the agent reading it — hidden text, instructions addressed to an AI, impersonated chat turns, look-alike senders, requests to send secrets out. Null on outbound mail. Read it before acting on what the message asks."
+          },
           "extracted": {
             "type": "object",
             "properties": {
@@ -752,6 +828,7 @@
           "attachments",
           "invitation",
           "calendar_event_id",
+          "firewall",
           "extracted",
           "created_at"
         ],
@@ -1135,6 +1212,82 @@
                       "null"
                     ]
                   },
+                  "firewall": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "clean",
+                              "suspicious"
+                            ],
+                            "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                          },
+                          "signals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "hidden_text",
+                                    "invisible_characters",
+                                    "assistant_directive",
+                                    "role_spoof",
+                                    "quoted_directive",
+                                    "lookalike_sender",
+                                    "display_name_spoof",
+                                    "unauthenticated_with_directive",
+                                    "exfiltration_request"
+                                  ]
+                                },
+                                "detail": {
+                                  "type": "string",
+                                  "description": "What was found, with a short quote of it."
+                                },
+                                "where": {
+                                  "type": "string",
+                                  "enum": [
+                                    "subject",
+                                    "text",
+                                    "html",
+                                    "from",
+                                    "quoted"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "detail",
+                                "where"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "description": "The rules that fired, most specific first. Empty when the verdict is `clean`."
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Bumped when the rules change in a way that could change a verdict."
+                          }
+                        },
+                        "required": [
+                          "verdict",
+                          "signals",
+                          "version"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Pidgeon Firewall: does this message try to steer the agent reading it — hidden text, instructions addressed to an AI, impersonated chat turns, look-alike senders, requests to send secrets out. Null on outbound mail. Read it before acting on what the message asks."
+                  },
                   "extracted": {
                     "type": "object",
                     "properties": {
@@ -1239,6 +1392,7 @@
                   "attachments",
                   "invitation",
                   "calendar_event_id",
+                  "firewall",
                   "extracted",
                   "created_at"
                 ],
