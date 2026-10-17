@@ -2120,6 +2120,16 @@ export const COMMANDS: Command[] = [
         "where": "query"
       },
       {
+        "name": "body",
+        "kind": "string",
+        "choices": [
+          "original",
+          "clean"
+        ],
+        "required": false,
+        "where": "query"
+      },
+      {
         "name": "from",
         "kind": "string",
         "required": false,
@@ -2226,6 +2236,16 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "body",
+        "kind": "string",
+        "choices": [
+          "original",
+          "clean"
+        ],
+        "required": false,
+        "where": "query"
       }
     ]
   },

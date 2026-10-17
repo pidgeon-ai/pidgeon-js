@@ -237,6 +237,10 @@ export type Message = {
       where: 'subject' | 'text' | 'html' | 'from' | 'quoted';
     }>;
     /**
+     * What an agent should read: the new text with hidden content and invisible characters removed and lines posing as a chat turn marked, under a one-line note saying what changed. The new text unchanged when nothing needed it. Ask for `body=clean` to get it in place of the body.
+     */
+    clean_text: string;
+    /**
      * Bumped when the rules change in a way that could change a verdict.
      */
     version: number;
@@ -423,6 +427,10 @@ export type AwaitedMessage = {
         detail: string;
         where: 'subject' | 'text' | 'html' | 'from' | 'quoted';
       }>;
+      /**
+       * What an agent should read: the new text with hidden content and invisible characters removed and lines posing as a chat turn marked, under a one-line note saying what changed. The new text unchanged when nothing needed it. Ask for `body=clean` to get it in place of the body.
+       */
+      clean_text: string;
       /**
        * Bumped when the rules change in a way that could change a verdict.
        */
@@ -2917,6 +2925,7 @@ export type MessagesAwaitData = {
   path?: never;
   query: {
     identity_id: string;
+    body?: 'original' | 'clean';
     from?: string;
     subject_contains?: string;
     has_code?: 'true' | 'false';
@@ -2959,7 +2968,9 @@ export type MessagesGetData = {
   path: {
     id: string;
   };
-  query?: never;
+  query?: {
+    body?: 'original' | 'clean';
+  };
   url: '/messages/{id}';
 };
 

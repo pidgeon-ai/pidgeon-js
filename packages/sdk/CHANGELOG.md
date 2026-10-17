@@ -9,6 +9,16 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.13.0 — what the agent reads
+
+`firewall.clean_text` on every inbound message: the new text with hidden
+content and invisible characters removed, and lines posing as a chat turn
+marked, under a one-line note saying what changed. `body=clean` on
+`GET /messages/{id}` and `GET /messages/await` returns it as `text` and
+`reply_text`, with `html` and `reply_html` empty. The default is still
+`original`. The MCP server and the AI SDK ask for `clean` unless told
+otherwise.
+
 ## 1.12.0 — Pidgeon Firewall
 
 Every inbound `Message` carries `firewall`: a `verdict` (`clean` or

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.12.0",
+    "version": "1.13.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -704,6 +704,10 @@
                     },
                     "description": "The rules that fired, most specific first. Empty when the verdict is `clean`."
                   },
+                  "clean_text": {
+                    "type": "string",
+                    "description": "What an agent should read: the new text with hidden content and invisible characters removed and lines posing as a chat turn marked, under a one-line note saying what changed. The new text unchanged when nothing needed it. Ask for `body=clean` to get it in place of the body."
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": -9007199254740991,
@@ -714,6 +718,7 @@
                 "required": [
                   "verdict",
                   "signals",
+                  "clean_text",
                   "version"
                 ],
                 "additionalProperties": false
@@ -1268,6 +1273,10 @@
                             },
                             "description": "The rules that fired, most specific first. Empty when the verdict is `clean`."
                           },
+                          "clean_text": {
+                            "type": "string",
+                            "description": "What an agent should read: the new text with hidden content and invisible characters removed and lines posing as a chat turn marked, under a one-line note saying what changed. The new text unchanged when nothing needed it. Ask for `body=clean` to get it in place of the body."
+                          },
                           "version": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -1278,6 +1287,7 @@
                         "required": [
                           "verdict",
                           "signals",
+                          "clean_text",
                           "version"
                         ],
                         "additionalProperties": false
@@ -7803,6 +7813,19 @@
             }
           },
           {
+            "name": "body",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "original",
+              "type": "string",
+              "enum": [
+                "original",
+                "clean"
+              ]
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "required": false,
@@ -7922,6 +7945,19 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "body",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "original",
+              "type": "string",
+              "enum": [
+                "original",
+                "clean"
+              ]
             }
           }
         ],
