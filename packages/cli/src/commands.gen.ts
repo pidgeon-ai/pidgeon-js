@@ -1171,6 +1171,22 @@ export const COMMANDS: Command[] = [
     ]
   },
   {
+    "group": "export",
+    "name": "mail",
+    "operationId": "exportMail",
+    "method": "GET",
+    "path": "/export",
+    "summary": "Export mail as mbox",
+    "flags": [
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      }
+    ]
+  },
+  {
     "group": "identities",
     "name": "accessCreate",
     "operationId": "identitiesAccessCreate",

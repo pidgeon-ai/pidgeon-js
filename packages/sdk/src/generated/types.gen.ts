@@ -3186,6 +3186,41 @@ export type MessagesRawResponses = {
 
 export type MessagesRawResponse = MessagesRawResponses[keyof MessagesRawResponses];
 
+export type ExportMailData = {
+  body?: never;
+  path?: never;
+  query?: {
+    identity_id?: string;
+  };
+  url: '/export';
+};
+
+export type ExportMailErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type ExportMailError = ExportMailErrors[keyof ExportMailErrors];
+
+export type ExportMailResponses = {
+  /**
+   * The mbox.
+   */
+  200: string;
+};
+
+export type ExportMailResponse = ExportMailResponses[keyof ExportMailResponses];
+
 export type ThreadsListData = {
   body?: never;
   path?: never;

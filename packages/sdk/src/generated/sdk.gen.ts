@@ -126,6 +126,9 @@ import type {
   EventsStreamErrors,
   EventsStreamResponse,
   EventsStreamResponses,
+  ExportMailData,
+  ExportMailErrors,
+  ExportMailResponses,
   IdentitiesAccessCreateData,
   IdentitiesAccessCreateErrors,
   IdentitiesAccessCreateResponses,
@@ -1070,6 +1073,20 @@ export const messagesRaw = <ThrowOnError extends boolean = false>(
   (options.client ?? client).get<MessagesRawResponses, MessagesRawErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/messages/{id}/raw',
+    ...options,
+  });
+
+/**
+ * Export mail as mbox
+ *
+ * Every message the key can read, as one `application/mbox` file, streamed — or one address of it with `identity_id`. Each message carries `X-Pidgeon-Mailbox` so a file holding several addresses can be split again; originals are byte for byte where storage still holds them. Four an hour per workspace.
+ */
+export const exportMail = <ThrowOnError extends boolean = false>(
+  options?: Options<ExportMailData, ThrowOnError>,
+): RequestResult<ExportMailResponses, ExportMailErrors, ThrowOnError> =>
+  (options?.client ?? client).get<ExportMailResponses, ExportMailErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/export',
     ...options,
   });
 

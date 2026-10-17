@@ -9,6 +9,14 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.9.0 — export over the API
+
+**`exportMail`** (`GET /v1/export`) streams every message the key can read as
+one `application/mbox` file — the export the dashboard has always offered,
+now for software. Pass `identity_id` for one address. Each message carries
+`X-Pidgeon-Mailbox`, so one file holding several addresses can be split
+again. Four an hour per workspace.
+
 ## 1.8.0 — wait for a message, and read the code out of it
 
 **`messagesAwait`** (`GET /v1/messages/await`) holds the request open until a
