@@ -9,6 +9,15 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.14.0 — clean bodies in a conversation
+
+`body=clean` on `GET /messages`, as on `GET /messages/{id}` and
+`/messages/await`: every message in the conversation comes back with
+Pidgeon Firewall's `clean_text` as its text and empty HTML. The MCP
+`list_messages` tool asks for it by default. And a message the Firewall
+calls suspicious is stored with a preview cut from its cleaned text, so a
+hidden instruction no longer shows in search results or folder listings.
+
 ## 1.13.0 — what the agent reads
 
 `firewall.clean_text` on every inbound message: the new text with hidden

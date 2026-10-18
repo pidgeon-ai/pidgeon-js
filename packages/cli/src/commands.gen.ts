@@ -2275,6 +2275,16 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "body",
+        "kind": "string",
+        "choices": [
+          "original",
+          "clean"
+        ],
+        "required": false,
+        "where": "query"
       }
     ]
   },

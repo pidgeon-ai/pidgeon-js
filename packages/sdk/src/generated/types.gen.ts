@@ -2655,6 +2655,7 @@ export type MessagesListInThreadData = {
      */
     cursor?: string;
     thread_id: string;
+    body?: 'original' | 'clean';
   };
   url: '/messages';
 };
