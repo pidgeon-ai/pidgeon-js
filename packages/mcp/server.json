@@ -2,20 +2,20 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.pidgeon/mcp",
   "title": "Pidgeon",
-  "description": "Mailboxes for AI agents: create addresses, send, receive, thread and hand off email.",
+  "description": "MCP server that gives your AI agent its own email inbox (Pidgeon).",
   "websiteUrl": "https://pidgeon.ai/docs/mcp",
   "repository": {
     "url": "https://github.com/pidgeon-ai/pidgeon-js",
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "0.9.0",
+  "version": "0.9.1",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "0.9.0",
+      "version": "0.9.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

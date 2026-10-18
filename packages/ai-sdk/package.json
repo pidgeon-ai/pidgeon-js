@@ -1,12 +1,19 @@
 {
   "name": "@pidgeon-ai/ai-sdk",
   "version": "0.1.0",
-  "description": "Pidgeon as Vercel AI SDK tools. A real mailbox for an agent, in one line.",
+  "description": "Email inboxes for AI agents as Vercel AI SDK tools (Pidgeon): create addresses, send, receive and reply.",
   "keywords": [
-    "pidgeon",
-    "email",
-    "ai-sdk",
     "vercel-ai-sdk",
+    "ai-sdk",
+    "email",
+    "email-api",
+    "inbox",
+    "ai-agents",
+    "agent",
+    "llm",
+    "otp",
+    "verification-code",
+    "pidgeon",
     "tools",
     "agents"
   ],

@@ -9,6 +9,13 @@ call shapes, the result shape — not to the API behind it.
 
 ## Unreleased
 
+## 1.14.1 — the README leads with the job
+
+No change to the API or the exported surface. The README opens with
+creating an address, sending, waiting for the answer and replying with
+`messagesReply`, and the package's description and keywords say what it is
+for: email inboxes for AI agents.
+
 ## 1.14.0 — clean bodies in a conversation
 
 `body=clean` on `GET /messages`, as on `GET /messages/{id}` and

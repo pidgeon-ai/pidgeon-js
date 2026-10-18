@@ -1,10 +1,18 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "1.14.0",
-  "description": "Thin TypeScript client for the Pidgeon email API.",
+  "version": "1.14.1",
+  "description": "Email inboxes for AI agents — TypeScript SDK for Pidgeon: create addresses, send, receive and reply.",
   "keywords": [
-    "pidgeon",
     "email",
+    "email-api",
+    "inbox",
+    "ai-agents",
+    "agent",
+    "llm",
+    "mcp",
+    "otp",
+    "verification-code",
+    "pidgeon",
     "webhooks",
     "api-client"
   ],

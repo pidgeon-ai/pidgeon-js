@@ -1,16 +1,73 @@
 # @pidgeon-ai/sdk
 
-A TypeScript client for the [Pidgeon](https://pidgeon.ai) email API,
-generated from `openapi.json`: one typed function per operation, plus a
-webhook verifier.
-
-**Zero dependencies.** Needs `fetch` and `crypto.subtle`, so it runs on
-Node 18+, Bun, Deno, Cloudflare Workers and Vercel functions. ESM and
-CommonJS.
+Pidgeon is the email inbox API for AI agents. It gives agents their own inboxes
+so they can work with emails just like a human. This is its TypeScript client:
+one typed function per operation, plus a webhook verifier.
 
 ```bash
-pnpm add @pidgeon-ai/sdk
+npm install @pidgeon-ai/sdk
 ```
+
+Or `pnpm add @pidgeon-ai/sdk`. **Zero dependencies.** Needs `fetch` and
+`crypto.subtle`, so it runs on Node 18+, Bun, Deno, Cloudflare Workers and
+Vercel functions. ESM and CommonJS.
+
+## Create an address, send, receive, reply
+
+```ts
+import {
+  client,
+  identitiesCreate,
+  messagesAwait,
+  messagesReply,
+  messagesSend,
+} from '@pidgeon-ai/sdk';
+
+client.setConfig({ auth: () => process.env.PIDGEON_API_KEY! });
+
+// 1. An address of its own. Any free name on pidgeon.email works with no DNS.
+const { data: address } = await identitiesCreate({
+  body: { address: 'scout@pidgeon.email', type: 'agent' },
+  throwOnError: true,
+});
+
+// 2. Send from it.
+await messagesSend({
+  body: {
+    from: address.data.email,
+    to: 'ops@example.com',
+    subject: 'Staging access',
+    text: 'Could you send me the access code?',
+  },
+  throwOnError: true,
+});
+
+// 3. Receive: one held-open request until the answer arrives, up to 60 seconds.
+const { data: awaited } = await messagesAwait({
+  query: { identity_id: address.data.id, timeout: 60 },
+  throwOnError: true,
+});
+
+// 4. Reply into the same conversation. Recipients and subject come off the original.
+if (awaited.data.message) {
+  console.log(awaited.data.message.extracted.codes);
+  await messagesReply({
+    path: { id: awaited.data.message.id },
+    body: { text: 'Thanks, that worked.' },
+    throwOnError: true,
+  });
+}
+```
+
+`PIDGEON_API_KEY` is a `pgn_live_…` key. Make one at
+[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys), or
+let your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md)
+is two calls, and the only thing it needs from a person is a six-digit code.
+
+In production, take a [signed webhook](#receiving-mail) rather than holding a
+request open. Documentation: [pidgeon.ai/docs](https://pidgeon.ai/docs) ·
+[API reference](https://pidgeon.ai/docs/reference) ·
+[OpenAPI](https://pidgeon.ai/openapi.json).
 
 ## The shape
 
@@ -38,7 +95,7 @@ Mail arriving at an address your code owns becomes an event, and your
 endpoint is called with a signed payload.
 
 ```ts
-import { client, messagesGet, messagesSend, verifyWebhook } from '@pidgeon-ai/sdk';
+import { client, messagesGet, messagesReply, verifyWebhook } from '@pidgeon-ai/sdk';
 
 client.setConfig({ auth: () => process.env.PIDGEON_API_KEY! });
 
@@ -59,15 +116,10 @@ export async function POST(request: Request) {
     throwOnError: true,
   });
 
-  await messagesSend({
-    body: {
-      from: mail.data.to[0]!.email,
-      to: mail.data.from.email,
-      subject: `Re: ${mail.data.subject}`,
-      text: 'Got it — someone will be in touch.',
-      // Keeps the conversation together in the recipient's client too.
-      in_reply_to: mail.data.id,
-    },
+  // Into the same conversation, threaded in the recipient's client too.
+  await messagesReply({
+    path: { id: mail.data.id },
+    body: { text: 'Got it — someone will be in touch.' },
     throwOnError: true,
   });
 
@@ -174,4 +226,13 @@ Versioned independently of the API. The API is `/v1`; this package is
 `1.x`, and semver applies to its own surface — the exported types, the
 method signatures, the error shape. See `CHANGELOG.md`.
 
-MIT.
+## Contributing
+
+This package is generated from [`openapi.json`](https://pidgeon.ai/openapi.json),
+the contract the API validates against, and published from
+[pidgeon-ai/pidgeon-js](https://github.com/pidgeon-ai/pidgeon-js). A pull
+request against generated code cannot be merged as written — the fix belongs
+in the schema. [Open an issue](https://github.com/pidgeon-ai/pidgeon-js/issues)
+and say what is wrong, or email [support@pidgeon.ai](mailto:support@pidgeon.ai).
+
+MIT licensed.
