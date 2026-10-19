@@ -69,6 +69,9 @@ your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 | [`@pidgeon-ai/mcp`](packages/mcp) | `npx -y @pidgeon-ai/mcp init` | The MCP server, run on your machine |
 | [`@pidgeon-ai/ai-sdk`](packages/ai-sdk) | Not yet published | The same tools, for the Vercel AI SDK |
 
+[`examples/openai-agents`](examples/openai-agents) is an OpenAI Agents SDK
+agent on the hosted server, which needs no package of ours.
+
 **An MCP client needs no package at all.** Point it at
 `https://pidgeon.ai/api/mcp` and it signs you in with OAuth:
 

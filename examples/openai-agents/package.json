@@ -1,0 +1,23 @@
+{
+  "name": "@pidgeon-ai/example-openai-agents",
+  "private": true,
+  "description": "A Pidgeon mailbox for an OpenAI Agents SDK agent. Not published.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "tsx main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openai/agents": "^0.20.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
