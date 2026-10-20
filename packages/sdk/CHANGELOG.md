@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.16.1 — a refused send says so
+
+The contract declares `400` and `403` on every send — `messagesSend`,
+`messagesReply`, `messagesReplyAll`, `messagesForward`, `draftsSend` — and
+`409` on `messagesSend`. No request or success shape changes. The Python
+client returned `None` for a `403` (a sending limit, a rule, the send
+policy) because the status was not in the document; it returns the `Error`
+now, so check for it before treating a send as done.
+
 ## 1.16.0 — an attachment as text
 
 `attachmentsText` (`GET /attachments/{id}/text`) returns a text attachment —

@@ -2813,13 +2813,25 @@ export type MessagesSendData = {
 
 export type MessagesSendErrors = {
   /**
+   * The request is not valid. `error.param` names the field when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
   /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
+  /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
+  /**
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   */
+  409: Error;
   /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
@@ -3155,9 +3167,17 @@ export type MessagesReplyData = {
 
 export type MessagesReplyErrors = {
   /**
+   * The request is not valid. `error.param` names the field when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
@@ -3217,9 +3237,17 @@ export type MessagesReplyAllData = {
 
 export type MessagesReplyAllErrors = {
   /**
+   * The request is not valid. `error.param` names the field when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
@@ -3279,9 +3307,17 @@ export type MessagesForwardData = {
 
 export type MessagesForwardErrors = {
   /**
+   * The request is not valid. `error.param` names the field when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
@@ -6001,9 +6037,17 @@ export type DraftsSendData = {
 
 export type DraftsSendErrors = {
   /**
+   * The request is not valid. `error.param` names the field when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */

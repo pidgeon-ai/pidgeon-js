@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.16.0",
+    "version": "1.16.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -7553,6 +7553,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request is not valid. `error.param` names the field when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No API key, or one that is not valid.",
             "content": {
@@ -7563,8 +7573,28 @@
               }
             }
           },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8383,8 +8413,28 @@
               }
             }
           },
+          "400": {
+            "description": "The request is not valid. `error.param` names the field when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8516,8 +8566,28 @@
               }
             }
           },
+          "400": {
+            "description": "The request is not valid. `error.param` names the field when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8649,8 +8719,28 @@
               }
             }
           },
+          "400": {
+            "description": "The request is not valid. `error.param` names the field when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -14615,8 +14705,28 @@
               }
             }
           },
+          "400": {
+            "description": "The request is not valid. `error.param` names the field when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
