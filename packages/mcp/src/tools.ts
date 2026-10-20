@@ -470,9 +470,10 @@ export const TOOLS: ToolDefinition[] = [
       'Writes a message without sending it, for a human to read and send — use it when you ' +
       'are asked to prepare replies for sign-off. It is filed in the address’s `drafts` ' +
       'folder and opens in the web inbox, where a person edits and sends it; there is no ' +
-      'tool here that sends it. **To answer a message, pass its id as `in_reply_to`, its ' +
-      'sender as `to`, and a `subject`** — “Re: ” and the original’s: unlike ' +
-      '`reply_to_message`, a draft reads nothing off the message it answers.',
+      'tool here that sends it. **To answer a message, pass its id as `in_reply_to` and its ' +
+      'sender as `to`**: unlike `reply_to_message`, a draft reads no recipients off the ' +
+      'message. It is sent as a reply to it, and with `subject` left off it takes “Re: ” ' +
+      'and the original’s.',
     endpoint: 'POST /drafts',
     annotations: ADD,
     inputSchema: {
