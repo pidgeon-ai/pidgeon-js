@@ -52,7 +52,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.9.1';
+export const VERSION = '0.11.0';
 
 export function createServer(context: { baseUrl: string; apiKey: string }): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
@@ -64,16 +64,8 @@ export function createServer(context: { baseUrl: string; apiKey: string }): McpS
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        annotations: {
-          readOnlyHint: tool.readOnly,
-          /*
-           * Sending mail is not undoable and reaches somebody who did not ask
-           * to be part of this. A client that asks before a destructive call
-           * should be asking before that one.
-           */
-          destructiveHint: !tool.readOnly,
-          openWorldHint: true,
-        },
+        /* Per tool, in `tools.ts` — and so the same on npm and at `/api/mcp`. */
+        annotations: tool.annotations,
       },
       async (input: Record<string, unknown>) => {
         try {

@@ -7,7 +7,26 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
-## Unreleased
+## 1.16.0 — an attachment as text
+
+`attachmentsText` (`GET /attachments/{id}/text`) returns a text attachment —
+CSV, log, JSON, calendar — as text, up to 5 MB and 200,000 characters, with
+a Pidgeon Firewall verdict judged with the message's sender. `body: 'clean'`
+returns the cleaned text. HTML, PDF, Office files and images are refused.
+
+## 1.15.0 — a read says what it held back
+
+`GET /messages/await` returns `held_back`: matching messages that arrived
+and were filed as spam, by count and id, so a wait that times out on a code
+from a sender whose authentication failed no longer reads as "nothing came".
+`include_spam=true` returns such a message instead. The inbox page of
+`GET /mailboxes/{folder}` carries `held_back.spam`, the unread messages in
+Spam, because an inbox that looks empty may not be.
+
+## 1.14.2 — the PyPI page is the Python README
+
+No change to the API or the exported surface. Released with the Python
+client, whose PyPI page is now its own README rather than a shorter copy.
 
 ## 1.14.1 — the README leads with the job
 

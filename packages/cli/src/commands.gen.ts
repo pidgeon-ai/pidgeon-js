@@ -177,6 +177,32 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "attachments",
+    "name": "text",
+    "operationId": "attachmentsText",
+    "method": "GET",
+    "path": "/attachments/{id}/text",
+    "summary": "Read a text attachment",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "body",
+        "kind": "string",
+        "choices": [
+          "original",
+          "clean"
+        ],
+        "required": false,
+        "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "attachments",
     "name": "upload",
     "operationId": "attachmentsUpload",
     "method": "POST",
@@ -2150,6 +2176,17 @@ export const COMMANDS: Command[] = [
         ],
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "include_spam",
+        "kind": "string",
+        "choices": [
+          "true",
+          "false"
+        ],
+        "required": false,
+        "where": "query",
+        "describe": "Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id."
       },
       {
         "name": "after",

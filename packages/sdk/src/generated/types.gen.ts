@@ -479,6 +479,23 @@ export type AwaitedMessage = {
    * Pass as `after` on the next call, so a message arriving between two calls is not missed.
    */
   cursor: string;
+  /**
+   * What matched and was not returned. A wait that times out with `spam` above zero did not miss the message: it was filed as spam.
+   */
+  held_back: {
+    /**
+     * Matching messages that arrived and were filed as spam.
+     */
+    spam: number;
+    /**
+     * Their ids, for `GET /messages/{id}`.
+     */
+    message_ids: Array<string>;
+    /**
+     * What to do about them, in a sentence. Null when nothing was held back.
+     */
+    how_to_include: string | null;
+  };
 };
 
 export type Thread = {
@@ -1366,6 +1383,57 @@ export type AttachmentUrl = {
    * Short-lived and signed. It expires; do not store it.
    */
   url: string;
+};
+
+export type AttachmentText = {
+  id: string;
+  filename: string;
+  content_type: string;
+  /**
+   * Bytes, as stored.
+   */
+  size: number;
+  /**
+   * The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed.
+   */
+  text: string;
+  /**
+   * True when the file ran past 200,000 characters and the rest was cut.
+   */
+  truncated: boolean;
+  /**
+   * Whether the text tries to steer the agent reading it, judged with the sender of the message it came with. Null on mail this account sent.
+   */
+  firewall: {
+    /**
+     * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+     */
+    verdict: 'clean' | 'suspicious';
+    /**
+     * The rules that fired, most specific first. Empty when the verdict is `clean`.
+     */
+    signals: Array<{
+      kind:
+        | 'hidden_text'
+        | 'invisible_characters'
+        | 'assistant_directive'
+        | 'role_spoof'
+        | 'quoted_directive'
+        | 'lookalike_sender'
+        | 'display_name_spoof'
+        | 'unauthenticated_with_directive'
+        | 'exfiltration_request';
+      /**
+       * What was found, with a short quote of it.
+       */
+      detail: string;
+      where: 'subject' | 'text' | 'html' | 'from' | 'quoted';
+    }>;
+    /**
+     * Bumped when the rules change in a way that could change a verdict.
+     */
+    version: number;
+  } | null;
 };
 
 export type Error = {
@@ -2930,6 +2998,10 @@ export type MessagesAwaitData = {
     from?: string;
     subject_contains?: string;
     has_code?: 'true' | 'false';
+    /**
+     * Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id.
+     */
+    include_spam?: 'true' | 'false';
     after?: string;
     timeout?: number;
   };
@@ -4097,6 +4169,19 @@ export type MailboxesListFolderResponses = {
      * Hand to `GET /mailboxes/changes` as `since` to be told what has changed since this page, rather than fetching it again. Not a page cursor — the two are different reads and each refuses the other.
      */
     sync_cursor: string;
+    /**
+     * On `inbox` only. Spam is never in the inbox, so an inbox that looks empty may not be: `spam` counts the unread messages filed there.
+     */
+    held_back?: {
+      /**
+       * Unread messages filed as spam.
+       */
+      spam: number;
+      /**
+       * What to do about them, in a sentence. Null when there are none.
+       */
+      how_to_include: string | null;
+    };
   };
 };
 
@@ -6176,3 +6261,42 @@ export type AttachmentsDownloadUrlResponses = {
 
 export type AttachmentsDownloadUrlResponse =
   AttachmentsDownloadUrlResponses[keyof AttachmentsDownloadUrlResponses];
+
+export type AttachmentsTextData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: {
+    body?: 'original' | 'clean';
+  };
+  url: '/attachments/{id}/text';
+};
+
+export type AttachmentsTextErrors = {
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+};
+
+export type AttachmentsTextError = AttachmentsTextErrors[keyof AttachmentsTextErrors];
+
+export type AttachmentsTextResponses = {
+  /**
+   * The text.
+   */
+  200: {
+    data: AttachmentText;
+  };
+};
+
+export type AttachmentsTextResponse = AttachmentsTextResponses[keyof AttachmentsTextResponses];

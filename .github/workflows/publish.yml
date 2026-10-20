@@ -1,13 +1,13 @@
 name: Publish
 
-# Tag-driven, and the tag names the package — the same routing the private
-# repository used, moved here so the tarball can carry a provenance
-# attestation.
+# Tag-driven, and the tag names the package: `sdk-v1.3.0` publishes
+# `@pidgeon-ai/sdk` 1.3.0. The release job in the private repository
+# (`scripts/release.ts`) cuts the tags, after the sync that put this tree here
+# succeeded. Nobody tags by hand.
 #
-#   git tag sdk-v1.3.0 && git push origin sdk-v1.3.0
-#   git tag cli-v1.1.0 && git push origin cli-v1.1.0
-#   git tag mcp-v0.4.0 && git push origin mcp-v0.4.0
-#   git tag ai-sdk-v0.1.0 && git push origin ai-sdk-v0.1.0
+# **A version npm already has is skipped, not refused**, so a tag can mark a
+# version a person published by hand (a package's first) and a rerun of a
+# half-finished release only does the half that is missing.
 #
 # **Provenance is the whole reason this workflow is here rather than there.**
 # npm attests which commit and which workflow produced a tarball, and
@@ -104,6 +104,13 @@ jobs:
       - name: Publish
         working-directory: ${{ steps.package.outputs.dir }}
         run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
+            echo "::notice::npm already has $name $version. Skipping the publish."
+            exit 0
+          fi
+
           tarball=$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)
 
           # A `workspace:` protocol in the packed manifest means the rewrite
@@ -152,5 +159,18 @@ jobs:
             sleep 10
           done
 
+          listed() {
+            curl -sSf "https://registry.modelcontextprotocol.io/v0/servers?search=ai.pidgeon/mcp&limit=100" \
+              | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>process.exit(JSON.parse(s).servers.some(e=>e.server.name==='ai.pidgeon/mcp'&&e.server.version===process.argv[1])?0:1))" "$version"
+          }
+
+          if listed; then
+            echo "::notice::The MCP registry already lists $version."
+            exit 0
+          fi
+
           ./mcp-publisher login http --domain pidgeon.ai --private-key "$MCP_REGISTRY_KEY"
           ./mcp-publisher publish
+
+          # 0.8.0 never reached the registry and nothing said so. Ask it.
+          listed || { echo "The MCP registry does not list $version after publishing." >&2; exit 1; }

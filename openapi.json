@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.14.1",
+    "version": "1.16.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -1420,12 +1420,45 @@
           "cursor": {
             "type": "string",
             "description": "Pass as `after` on the next call, so a message arriving between two calls is not missed."
+          },
+          "held_back": {
+            "type": "object",
+            "properties": {
+              "spam": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Matching messages that arrived and were filed as spam."
+              },
+              "message_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Their ids, for `GET /messages/{id}`."
+              },
+              "how_to_include": {
+                "description": "What to do about them, in a sentence. Null when nothing was held back.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "spam",
+              "message_ids",
+              "how_to_include"
+            ],
+            "additionalProperties": false,
+            "description": "What matched and was not returned. A wait that times out with `spam` above zero did not miss the message: it was filed as spam."
           }
         },
         "required": [
           "message",
           "timed_out",
-          "cursor"
+          "cursor",
+          "held_back"
         ],
         "additionalProperties": false
       },
@@ -4438,6 +4471,120 @@
         "required": [
           "id",
           "url"
+        ],
+        "additionalProperties": false
+      },
+      "AttachmentText": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Bytes, as stored."
+          },
+          "text": {
+            "type": "string",
+            "description": "The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when the file ran past 200,000 characters and the rest was cut."
+          },
+          "firewall": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "verdict": {
+                    "type": "string",
+                    "enum": [
+                      "clean",
+                      "suspicious"
+                    ],
+                    "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                  },
+                  "signals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "hidden_text",
+                            "invisible_characters",
+                            "assistant_directive",
+                            "role_spoof",
+                            "quoted_directive",
+                            "lookalike_sender",
+                            "display_name_spoof",
+                            "unauthenticated_with_directive",
+                            "exfiltration_request"
+                          ]
+                        },
+                        "detail": {
+                          "type": "string",
+                          "description": "What was found, with a short quote of it."
+                        },
+                        "where": {
+                          "type": "string",
+                          "enum": [
+                            "subject",
+                            "text",
+                            "html",
+                            "from",
+                            "quoted"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "detail",
+                        "where"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "The rules that fired, most specific first. Empty when the verdict is `clean`."
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991,
+                    "description": "Bumped when the rules change in a way that could change a verdict."
+                  }
+                },
+                "required": [
+                  "verdict",
+                  "signals",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the text tries to steer the agent reading it, judged with the sender of the message it came with. Null on mail this account sent."
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "content_type",
+          "size",
+          "text",
+          "truncated",
+          "firewall"
         ],
         "additionalProperties": false
       },
@@ -7813,7 +7960,7 @@
       "get": {
         "operationId": "messagesAwait",
         "summary": "Wait for the next message",
-        "description": "Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came.",
+        "description": "Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.",
         "parameters": [
           {
             "name": "identity_id",
@@ -7863,6 +8010,19 @@
             "in": "query",
             "required": false,
             "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "include_spam",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id.",
               "type": "string",
               "enum": [
                 "true",
@@ -10293,6 +10453,27 @@
                     "sync_cursor": {
                       "type": "string",
                       "description": "Hand to `GET /mailboxes/changes` as `since` to be told what has changed since this page, rather than fetching it again. Not a page cursor — the two are different reads and each refuses the other."
+                    },
+                    "held_back": {
+                      "type": "object",
+                      "description": "On `inbox` only. Spam is never in the inbox, so an inbox that looks empty may not be: `spam` counts the unread messages filed there.",
+                      "properties": {
+                        "spam": {
+                          "type": "integer",
+                          "description": "Unread messages filed as spam."
+                        },
+                        "how_to_include": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "What to do about them, in a sentence. Null when there are none."
+                        }
+                      },
+                      "required": [
+                        "spam",
+                        "how_to_include"
+                      ]
                     }
                   },
                   "required": [
@@ -14905,6 +15086,89 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/AttachmentUrl"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attachments"
+        ]
+      }
+    },
+    "/attachments/{id}/text": {
+      "get": {
+        "operationId": "attachmentsText",
+        "summary": "Read a text attachment",
+        "description": "A CSV, a log, JSON or another text format, as text — up to 5 MB, and the first 200,000 characters of it. Screened by Pidgeon Firewall with the sender of the message it came with, because a file in an email is mail a model reads: `firewall` says whether it tries to steer you, and `body=clean` returns it with hidden characters removed and lines posing as a chat turn marked. HTML, PDF, Office files and images are refused; `GET /attachments/{id}` gives a link to those.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "body",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "original",
+              "type": "string",
+              "enum": [
+                "original",
+                "clean"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AttachmentText"
                     }
                   },
                   "required": [

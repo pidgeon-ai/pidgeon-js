@@ -32,6 +32,9 @@ import type {
   AttachmentsDownloadUrlData,
   AttachmentsDownloadUrlErrors,
   AttachmentsDownloadUrlResponses,
+  AttachmentsTextData,
+  AttachmentsTextErrors,
+  AttachmentsTextResponses,
   AttachmentsUploadData,
   AttachmentsUploadErrors,
   AttachmentsUploadResponses,
@@ -969,7 +972,7 @@ export const messagesUndo = <ThrowOnError extends boolean = false>(
 /**
  * Wait for the next message
  *
- * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came.
+ * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.
  */
 export const messagesAwait = <ThrowOnError extends boolean = false>(
   options: Options<MessagesAwaitData, ThrowOnError>,
@@ -2178,5 +2181,19 @@ export const attachmentsDownloadUrl = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/attachments/{id}',
+    ...options,
+  });
+
+/**
+ * Read a text attachment
+ *
+ * A CSV, a log, JSON or another text format, as text — up to 5 MB, and the first 200,000 characters of it. Screened by Pidgeon Firewall with the sender of the message it came with, because a file in an email is mail a model reads: `firewall` says whether it tries to steer you, and `body=clean` returns it with hidden characters removed and lines posing as a chat turn marked. HTML, PDF, Office files and images are refused; `GET /attachments/{id}` gives a link to those.
+ */
+export const attachmentsText = <ThrowOnError extends boolean = false>(
+  options: Options<AttachmentsTextData, ThrowOnError>,
+): RequestResult<AttachmentsTextResponses, AttachmentsTextErrors, ThrowOnError> =>
+  (options.client ?? client).get<AttachmentsTextResponses, AttachmentsTextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/attachments/{id}/text',
     ...options,
   });

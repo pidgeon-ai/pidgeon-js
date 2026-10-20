@@ -15,6 +15,8 @@ import {
   messagesGet,
   messagesListInThread,
   messagesReply,
+  draftsCreate,
+  attachmentsText,
   messagesSearch,
   messagesSend,
   messagesUpdate,
@@ -75,6 +77,8 @@ export type PidgeonToolName =
   | 'get_message'
   | 'await_message'
   | 'reply_to_message'
+  | 'create_draft'
+  | 'read_attachment'
   | 'update_thread'
   | 'update_message'
   | 'list_send_rules'
@@ -103,6 +107,8 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   get_message: messagesGet,
   await_message: messagesAwait,
   reply_to_message: messagesReply,
+  create_draft: draftsCreate,
+  read_attachment: attachmentsText,
   update_thread: threadsUpdate,
   update_message: messagesUpdate,
   list_send_rules: identitiesSendRulesGet,
@@ -123,9 +129,9 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
 export type PidgeonTools = Record<PidgeonToolName, Tool<Record<string, unknown>, unknown>>;
 
 /** The tools that change something: sending, replying, creating, filing, handing over. */
-export const WRITE_TOOLS: readonly PidgeonToolName[] = TOOLS.filter((t) => !t.readOnly).map(
-  (t) => t.name as PidgeonToolName,
-);
+export const WRITE_TOOLS: readonly PidgeonToolName[] = TOOLS.filter(
+  (t) => !t.annotations.readOnlyHint,
+).map((t) => t.name as PidgeonToolName);
 
 export interface PidgeonToolsOptions {
   /** A Pidgeon API key. Read from `PIDGEON_API_KEY` when absent. */
@@ -228,7 +234,7 @@ function build(
   return tool({
     description: definition.description,
     inputSchema: z.object(shape) as unknown as z.ZodType<Record<string, unknown>>,
-    metadata: { readOnly: definition.readOnly, endpoint: definition.endpoint },
+    metadata: { readOnly: definition.annotations.readOnlyHint, endpoint: definition.endpoint },
     execute: async (input, { abortSignal }) => {
       const remaining: Record<string, unknown> = { ...input };
 
