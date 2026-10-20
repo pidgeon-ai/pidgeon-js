@@ -622,7 +622,8 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'One folder of one address, newest first, a conversation per row — where ' +
       '`list_threads` says which conversations exist, this says where they are filed and ' +
-      'what they look like in a list. Spam is never in `inbox`: the inbox page carries ' +
+      'what they look like in a list. `sent` is the way to read what this address sent, ' +
+      'from any client, with `to` on each row. Spam is never in `inbox`: the inbox page carries ' +
       '`held_back.spam`, the unread messages filed there, so an empty inbox with spam ' +
       'above zero means read `spam` next. The response carries a `sync_cursor`: hand it ' +
       'to `list_changes` to be told what moved instead of reading the folder again.',
