@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.18.0 — the key you mint comes back with its token
+
+`POST /api-keys` is typed as `ApiKeyCreated`: the key plus its `token`,
+returned once and never again. The API always sent the token; the published
+type left it out, so `keysCreate` had no typed field for it and the Python
+client's `ApiKey` model dropped it.
+
 ## 1.17.0 — a hand-off says why
 
 `threadsUpdate` takes an optional `reason` (up to 500 characters): why the

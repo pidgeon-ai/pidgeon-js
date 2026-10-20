@@ -1005,6 +1005,32 @@ export type ApiKey = {
   created_at: string;
 };
 
+export type ApiKeyCreated = {
+  id: string;
+  name: string;
+  prefix: string;
+  identity_ids: Array<string>;
+  /**
+   * The pod this key belongs to, or null. A pod key reaches every address in the pod — `identity_ids` lists them today — and the addresses the pod gains later.
+   */
+  pod_id: string | null;
+  /**
+   * The highest rung on any address. Composed with the grant; lower wins.
+   */
+  access: 'read' | 'send' | 'admin';
+  created_by_key_id: string | null;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+  /**
+   * The secret. Shown once, here, and never again.
+   */
+  token: string;
+};
+
 export type AppPassword = {
   id: string;
   name: string;
@@ -4309,7 +4335,7 @@ export type KeysCreateResponses = {
    * The key, with its token.
    */
   201: {
-    data: ApiKey;
+    data: ApiKeyCreated;
   };
 };
 

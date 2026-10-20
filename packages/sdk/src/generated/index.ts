@@ -132,6 +132,7 @@ export type {
   AgentVerifyResponse,
   AgentVerifyResponses,
   ApiKey,
+  ApiKeyCreated,
   AppPassword,
   AppPasswordsCreateData,
   AppPasswordsCreateError,
