@@ -1126,7 +1126,7 @@ export const threadsGet = <ThrowOnError extends boolean = false>(
 /**
  * Update a thread
  *
- * Its status and who owns it — the state a conversation carries.
+ * Its status and who owns it — the state a conversation carries. Handing it to a person notifies them: the assignee if you name one, otherwise everybody who can answer as the address. `reason` is shown in that notification.
  */
 export const threadsUpdate = <ThrowOnError extends boolean = false>(
   options: Options<ThreadsUpdateData, ThrowOnError>,

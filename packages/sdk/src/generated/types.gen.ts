@@ -3506,6 +3506,7 @@ export type ThreadsUpdateData = {
     status?: 'open' | 'waiting' | 'resolved' | 'human_review';
     owner_type?: 'human' | 'automation' | 'agent';
     assignee_id?: string | null;
+    reason?: string;
   };
   path: {
     id: string;

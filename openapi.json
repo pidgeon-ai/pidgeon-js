@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.16.1",
+    "version": "1.17.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -9126,7 +9126,7 @@
       "patch": {
         "operationId": "threadsUpdate",
         "summary": "Update a thread",
-        "description": "Its status and who owns it — the state a conversation carries.",
+        "description": "Its status and who owns it — the state a conversation carries. Handing it to a person notifies them: the assignee if you name one, otherwise everybody who can answer as the address. `reason` is shown in that notification.",
         "parameters": [
           {
             "name": "id",
@@ -9172,6 +9172,11 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
                   }
                 },
                 "additionalProperties": false

@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.17.0 — a hand-off says why
+
+`threadsUpdate` takes an optional `reason` (up to 500 characters): why the
+conversation is being handed over, shown to the person in their notification
+and carried on `thread.updated` and `thread.assigned`.
+
 ## 1.16.1 — a refused send says so
 
 The contract declares `400` and `403` on every send — `messagesSend`,

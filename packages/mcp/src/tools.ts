@@ -513,10 +513,11 @@ export const TOOLS: ToolDefinition[] = [
     name: 'update_thread',
     title: 'Hand a conversation over, or take it back',
     description:
-      'Who owns a conversation and where it has got to. `owner_type: "human"` hands it to a ' +
-      'person — it appears in the web inbox and `thread.updated` tells whatever was driving ' +
-      'it that it no longer is; `"agent"` takes it back. `status` is the queue it sits in, ' +
-      'and `assignee_id` names which person has it.',
+      'Who owns a conversation and where it has got to. `owner_type: "human"` with `status: ' +
+      '"human_review"` hands it to a person: the people who can answer as the address are ' +
+      'notified, or only `assignee_id` when you name one. Say why in `reason` — it is in ' +
+      'their notification. `"agent"` takes it back. A person replying from the inbox or a ' +
+      'mail client takes it over themselves, and `thread.updated` tells you.',
     endpoint: 'PATCH /threads/{id}',
     annotations: FILE,
     inputSchema: {
@@ -524,6 +525,7 @@ export const TOOLS: ToolDefinition[] = [
       status: z.enum(['open', 'waiting', 'resolved', 'human_review']).optional(),
       owner_type: z.enum(['human', 'automation', 'agent']).optional(),
       assignee_id: z.string().optional(),
+      reason: z.string().max(500).optional(),
     },
   },
   {

@@ -3058,6 +3058,12 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": false,
         "where": "body"
+      },
+      {
+        "name": "reason",
+        "kind": "string",
+        "required": false,
+        "where": "body"
       }
     ]
   },
