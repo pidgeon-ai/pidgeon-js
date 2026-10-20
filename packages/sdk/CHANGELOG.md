@@ -7,6 +7,25 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.19.0 — every status is declared, and Python raises
+
+The contract declares every status a route can answer with, read off the
+code rather than written from memory: `400`, `403`, `409`, `500` and `503`
+on every operation beside the `401`, `404` and `429` it had, `402` where a
+plan can say no, and `410` on calendar events and `mailboxesChanges`. In
+this package that widens each operation's error type; no request or success
+shape changes, and `error` held every failure already.
+
+**The Python client raises.** A status from 400 up raises
+`pidgeon.errors.PidgeonError`, carrying `status_code`, `code`, `message`,
+`field` and `retry_after`, instead of returning `Error` for a declared status
+and `None` for any other. A call returns its success model or raises, so a
+refused send can no longer pass for a sent one. Code that checked
+`isinstance(result, Error)` sees the exception instead.
+
+**The CLI** (1.8.4) exits 1 on a refusal and prints `403 abuse_blocked: …`;
+it exited 2 with the sentence alone, as if the flags were wrong.
+
 ## 1.18.0 — the key you mint comes back with its token
 
 `POST /api-keys` is typed as `ApiKeyCreated`: the key plus its `token`,

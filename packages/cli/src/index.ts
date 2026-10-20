@@ -26,6 +26,22 @@ export interface Parsed {
 
 export class UsageError extends Error {}
 
+/**
+ * The API said no. Not a `UsageError`: the command was well-formed and the
+ * answer is the API's, so it exits 1 and leads with the API's `code`, which
+ * is what a script or an agent branches on. A refused send used to exit 2
+ * with only the sentence, which reads like a typo in the flags.
+ */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string | undefined,
+    message: string,
+  ) {
+    super(code ? `${status} ${code}: ${message}` : `${status}: ${message}`);
+  }
+}
+
 /** One flag's value, in the shape the API declared. */
 function coerce(flag: Flag, raw: string): unknown {
   if (flag.kind === 'number') {
@@ -206,9 +222,19 @@ export async function run(argv: string[], env: NodeJS.ProcessEnv): Promise<strin
     ...(Object.keys(parsed.body).length > 0 ? { body: parsed.body } : {}),
   });
 
+  /*
+   * Any status that is not a success, declared in the contract or not: the
+   * client puts every one of them in `error`, so an undeclared refusal fails
+   * here the same as a declared one.
+   */
   if (error !== undefined) {
-    const detail = (error as { error?: { message?: string; code?: string } }).error;
-    throw new UsageError(detail?.message ?? `The request failed with ${response.status}.`);
+    const detail = (error as { error?: { message?: string; code?: string } } | undefined)?.error;
+    throw new ApiError(
+      response.status,
+      detail?.code,
+      detail?.message ??
+        (typeof error === 'string' && error ? error.slice(0, 500) : 'The request failed.'),
+    );
   }
 
   return JSON.stringify(data, null, 2);

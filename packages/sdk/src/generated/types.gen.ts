@@ -1495,17 +1495,41 @@ export type AgentSignUpData = {
 
 export type AgentSignUpErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AgentSignUpError = AgentSignUpErrors[keyof AgentSignUpErrors];
@@ -1539,17 +1563,37 @@ export type AgentAttachHumanData = {
 
 export type AgentAttachHumanErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AgentAttachHumanError = AgentAttachHumanErrors[keyof AgentAttachHumanErrors];
@@ -1580,17 +1624,41 @@ export type AgentVerifyData = {
 
 export type AgentVerifyErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AgentVerifyError = AgentVerifyErrors[keyof AgentVerifyErrors];
@@ -1623,17 +1691,37 @@ export type IdentitiesListData = {
 
 export type IdentitiesListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesListError = IdentitiesListErrors[keyof IdentitiesListErrors];
@@ -1712,17 +1800,41 @@ export type IdentitiesCreateData = {
 
 export type IdentitiesCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesCreateError = IdentitiesCreateErrors[keyof IdentitiesCreateErrors];
@@ -1749,17 +1861,37 @@ export type IdentitiesDeleteData = {
 
 export type IdentitiesDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesDeleteError = IdentitiesDeleteErrors[keyof IdentitiesDeleteErrors];
@@ -1786,17 +1918,37 @@ export type IdentitiesGetData = {
 
 export type IdentitiesGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesGetError = IdentitiesGetErrors[keyof IdentitiesGetErrors];
@@ -1852,17 +2004,37 @@ export type IdentitiesUpdateData = {
 
 export type IdentitiesUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesUpdateError = IdentitiesUpdateErrors[keyof IdentitiesUpdateErrors];
@@ -1891,17 +2063,37 @@ export type IdentitiesAccessDeleteData = {
 
 export type IdentitiesAccessDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesAccessDeleteError =
@@ -1930,17 +2122,37 @@ export type IdentitiesAccessGetData = {
 
 export type IdentitiesAccessGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesAccessGetError = IdentitiesAccessGetErrors[keyof IdentitiesAccessGetErrors];
@@ -1976,17 +2188,37 @@ export type IdentitiesAccessCreateData = {
 
 export type IdentitiesAccessCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesAccessCreateError =
@@ -2017,17 +2249,37 @@ export type IdentitiesSendRulesDeleteData = {
 
 export type IdentitiesSendRulesDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesSendRulesDeleteError =
@@ -2056,17 +2308,37 @@ export type IdentitiesSendRulesGetData = {
 
 export type IdentitiesSendRulesGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesSendRulesGetError =
@@ -2098,17 +2370,37 @@ export type IdentitiesSendRulesCreateData = {
 
 export type IdentitiesSendRulesCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesSendRulesCreateError =
@@ -2139,17 +2431,37 @@ export type IdentitiesReceiveRulesDeleteData = {
 
 export type IdentitiesReceiveRulesDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesReceiveRulesDeleteError =
@@ -2178,17 +2490,37 @@ export type IdentitiesReceiveRulesGetData = {
 
 export type IdentitiesReceiveRulesGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesReceiveRulesGetError =
@@ -2220,17 +2552,37 @@ export type IdentitiesReceiveRulesCreateData = {
 
 export type IdentitiesReceiveRulesCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesReceiveRulesCreateError =
@@ -2262,17 +2614,37 @@ export type IdentitiesSuspendTenantData = {
 
 export type IdentitiesSuspendTenantErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type IdentitiesSuspendTenantError =
@@ -2299,17 +2671,37 @@ export type PodsListData = {
 
 export type PodsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type PodsListError = PodsListErrors[keyof PodsListErrors];
@@ -2345,17 +2737,41 @@ export type PodsCreateData = {
 
 export type PodsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type PodsCreateError = PodsCreateErrors[keyof PodsCreateErrors];
@@ -2382,17 +2798,37 @@ export type PodsGetData = {
 
 export type PodsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type PodsGetError = PodsGetErrors[keyof PodsGetErrors];
@@ -2425,17 +2861,37 @@ export type PodsUpdateData = {
 
 export type PodsUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type PodsUpdateError = PodsUpdateErrors[keyof PodsUpdateErrors];
@@ -2462,17 +2918,37 @@ export type LabelsListData = {
 
 export type LabelsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type LabelsListError = LabelsListErrors[keyof LabelsListErrors];
@@ -2509,17 +2985,37 @@ export type LabelsCreateData = {
 
 export type LabelsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type LabelsCreateError = LabelsCreateErrors[keyof LabelsCreateErrors];
@@ -2546,17 +3042,37 @@ export type LabelsDeleteData = {
 
 export type LabelsDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type LabelsDeleteError = LabelsDeleteErrors[keyof LabelsDeleteErrors];
@@ -2586,17 +3102,37 @@ export type LabelsUpdateData = {
 
 export type LabelsUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type LabelsUpdateError = LabelsUpdateErrors[keyof LabelsUpdateErrors];
@@ -2625,17 +3161,37 @@ export type ThreadsLabelsDeleteData = {
 
 export type ThreadsLabelsDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsLabelsDeleteError = ThreadsLabelsDeleteErrors[keyof ThreadsLabelsDeleteErrors];
@@ -2663,17 +3219,37 @@ export type ThreadsLabelsGetData = {
 
 export type ThreadsLabelsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsLabelsGetError = ThreadsLabelsGetErrors[keyof ThreadsLabelsGetErrors];
@@ -2707,17 +3283,37 @@ export type ThreadsLabelsCreateData = {
 
 export type ThreadsLabelsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsLabelsCreateError = ThreadsLabelsCreateErrors[keyof ThreadsLabelsCreateErrors];
@@ -2756,17 +3352,37 @@ export type MessagesListInThreadData = {
 
 export type MessagesListInThreadErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesListInThreadError =
@@ -2839,7 +3455,7 @@ export type MessagesSendData = {
 
 export type MessagesSendErrors = {
   /**
-   * The request is not valid. `error.param` names the field when there is one.
+   * The request is not valid. `error.field` names the input at fault when there is one.
    */
   400: Error;
   /**
@@ -2862,6 +3478,14 @@ export type MessagesSendErrors = {
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesSendError = MessagesSendErrors[keyof MessagesSendErrors];
@@ -2907,17 +3531,37 @@ export type MessagesSearchData = {
 
 export type MessagesSearchErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesSearchError = MessagesSearchErrors[keyof MessagesSearchErrors];
@@ -2964,17 +3608,37 @@ export type MessagesActData = {
 
 export type MessagesActErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesActError = MessagesActErrors[keyof MessagesActErrors];
@@ -3001,17 +3665,37 @@ export type MessagesUndoData = {
 
 export type MessagesUndoErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesUndoError = MessagesUndoErrors[keyof MessagesUndoErrors];
@@ -3048,17 +3732,37 @@ export type MessagesAwaitData = {
 
 export type MessagesAwaitErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesAwaitError = MessagesAwaitErrors[keyof MessagesAwaitErrors];
@@ -3087,17 +3791,37 @@ export type MessagesGetData = {
 
 export type MessagesGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesGetError = MessagesGetErrors[keyof MessagesGetErrors];
@@ -3131,17 +3855,37 @@ export type MessagesUpdateData = {
 
 export type MessagesUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesUpdateError = MessagesUpdateErrors[keyof MessagesUpdateErrors];
@@ -3193,7 +3937,7 @@ export type MessagesReplyData = {
 
 export type MessagesReplyErrors = {
   /**
-   * The request is not valid. `error.param` names the field when there is one.
+   * The request is not valid. `error.field` names the input at fault when there is one.
    */
   400: Error;
   /**
@@ -3209,9 +3953,21 @@ export type MessagesReplyErrors = {
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesReplyError = MessagesReplyErrors[keyof MessagesReplyErrors];
@@ -3263,7 +4019,7 @@ export type MessagesReplyAllData = {
 
 export type MessagesReplyAllErrors = {
   /**
-   * The request is not valid. `error.param` names the field when there is one.
+   * The request is not valid. `error.field` names the input at fault when there is one.
    */
   400: Error;
   /**
@@ -3279,9 +4035,21 @@ export type MessagesReplyAllErrors = {
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesReplyAllError = MessagesReplyAllErrors[keyof MessagesReplyAllErrors];
@@ -3333,7 +4101,7 @@ export type MessagesForwardData = {
 
 export type MessagesForwardErrors = {
   /**
-   * The request is not valid. `error.param` names the field when there is one.
+   * The request is not valid. `error.field` names the input at fault when there is one.
    */
   400: Error;
   /**
@@ -3349,9 +4117,21 @@ export type MessagesForwardErrors = {
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesForwardError = MessagesForwardErrors[keyof MessagesForwardErrors];
@@ -3378,17 +4158,37 @@ export type MessagesRawData = {
 
 export type MessagesRawErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesRawError = MessagesRawErrors[keyof MessagesRawErrors];
@@ -3413,17 +4213,37 @@ export type ExportMailData = {
 
 export type ExportMailErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ExportMailError = ExportMailErrors[keyof ExportMailErrors];
@@ -3459,17 +4279,37 @@ export type ThreadsListData = {
 
 export type ThreadsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsListError = ThreadsListErrors[keyof ThreadsListErrors];
@@ -3501,17 +4341,37 @@ export type ThreadsGetData = {
 
 export type ThreadsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsGetError = ThreadsGetErrors[keyof ThreadsGetErrors];
@@ -3543,17 +4403,37 @@ export type ThreadsUpdateData = {
 
 export type ThreadsUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type ThreadsUpdateError = ThreadsUpdateErrors[keyof ThreadsUpdateErrors];
@@ -3584,17 +4464,37 @@ export type DomainsListData = {
 
 export type DomainsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsListError = DomainsListErrors[keyof DomainsListErrors];
@@ -3630,17 +4530,41 @@ export type DomainsCreateData = {
 
 export type DomainsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsCreateError = DomainsCreateErrors[keyof DomainsCreateErrors];
@@ -3667,17 +4591,37 @@ export type DomainsZoneFileData = {
 
 export type DomainsZoneFileErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsZoneFileError = DomainsZoneFileErrors[keyof DomainsZoneFileErrors];
@@ -3707,17 +4651,37 @@ export type DomainsGetSetupLinkData = {
 
 export type DomainsGetSetupLinkErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsGetSetupLinkError = DomainsGetSetupLinkErrors[keyof DomainsGetSetupLinkErrors];
@@ -3745,17 +4709,37 @@ export type DomainsVerifyData = {
 
 export type DomainsVerifyErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsVerifyError = DomainsVerifyErrors[keyof DomainsVerifyErrors];
@@ -3782,17 +4766,37 @@ export type DomainsDeleteData = {
 
 export type DomainsDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsDeleteError = DomainsDeleteErrors[keyof DomainsDeleteErrors];
@@ -3819,17 +4823,37 @@ export type DomainsGetData = {
 
 export type DomainsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsGetError = DomainsGetErrors[keyof DomainsGetErrors];
@@ -3858,17 +4882,37 @@ export type DomainsUpdateData = {
 
 export type DomainsUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DomainsUpdateError = DomainsUpdateErrors[keyof DomainsUpdateErrors];
@@ -3895,17 +4939,37 @@ export type RoutingListData = {
 
 export type RoutingListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type RoutingListError = RoutingListErrors[keyof RoutingListErrors];
@@ -3955,17 +5019,41 @@ export type RoutingCreateData = {
 
 export type RoutingCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type RoutingCreateError = RoutingCreateErrors[keyof RoutingCreateErrors];
@@ -3992,17 +5080,37 @@ export type RoutingDeleteData = {
 
 export type RoutingDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type RoutingDeleteError = RoutingDeleteErrors[keyof RoutingDeleteErrors];
@@ -4031,17 +5139,37 @@ export type RoutingUpdateData = {
 
 export type RoutingUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type RoutingUpdateError = RoutingUpdateErrors[keyof RoutingUpdateErrors];
@@ -4068,17 +5196,37 @@ export type MailboxesListData = {
 
 export type MailboxesListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MailboxesListError = MailboxesListErrors[keyof MailboxesListErrors];
@@ -4112,17 +5260,41 @@ export type MailboxesChangesData = {
 
 export type MailboxesChangesErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * `resync`: the cursor is older than the record of what was deleted. List the mailbox again and take its `sync_cursor`.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MailboxesChangesError = MailboxesChangesErrors[keyof MailboxesChangesErrors];
@@ -4156,17 +5328,37 @@ export type MailboxesEmptyTrashData = {
 
 export type MailboxesEmptyTrashErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MailboxesEmptyTrashError = MailboxesEmptyTrashErrors[keyof MailboxesEmptyTrashErrors];
@@ -4202,17 +5394,37 @@ export type MailboxesListFolderData = {
 
 export type MailboxesListFolderErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MailboxesListFolderError = MailboxesListFolderErrors[keyof MailboxesListFolderErrors];
@@ -4260,17 +5472,37 @@ export type KeysListData = {
 
 export type KeysListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type KeysListError = KeysListErrors[keyof KeysListErrors];
@@ -4315,17 +5547,41 @@ export type KeysCreateData = {
 
 export type KeysCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type KeysCreateError = KeysCreateErrors[keyof KeysCreateErrors];
@@ -4352,17 +5608,37 @@ export type KeysRevokeData = {
 
 export type KeysRevokeErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type KeysRevokeError = KeysRevokeErrors[keyof KeysRevokeErrors];
@@ -4389,17 +5665,37 @@ export type KeysGetData = {
 
 export type KeysGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type KeysGetError = KeysGetErrors[keyof KeysGetErrors];
@@ -4428,17 +5724,37 @@ export type KeysUpdateData = {
 
 export type KeysUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type KeysUpdateError = KeysUpdateErrors[keyof KeysUpdateErrors];
@@ -4465,17 +5781,37 @@ export type AppPasswordsListData = {
 
 export type AppPasswordsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AppPasswordsListError = AppPasswordsListErrors[keyof AppPasswordsListErrors];
@@ -4511,17 +5847,41 @@ export type AppPasswordsCreateData = {
 
 export type AppPasswordsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AppPasswordsCreateError = AppPasswordsCreateErrors[keyof AppPasswordsCreateErrors];
@@ -4549,17 +5909,37 @@ export type AppPasswordsRevokeData = {
 
 export type AppPasswordsRevokeErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AppPasswordsRevokeError = AppPasswordsRevokeErrors[keyof AppPasswordsRevokeErrors];
@@ -4585,17 +5965,37 @@ export type MeGetData = {
 
 export type MeGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MeGetError = MeGetErrors[keyof MeGetErrors];
@@ -4620,17 +6020,37 @@ export type WorkspaceGetData = {
 
 export type WorkspaceGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WorkspaceGetError = WorkspaceGetErrors[keyof WorkspaceGetErrors];
@@ -4655,17 +6075,37 @@ export type WorkspaceMembersData = {
 
 export type WorkspaceMembersErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WorkspaceMembersError = WorkspaceMembersErrors[keyof WorkspaceMembersErrors];
@@ -4704,17 +6144,37 @@ export type EventsListData = {
 
 export type EventsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type EventsListError = EventsListErrors[keyof EventsListErrors];
@@ -4753,17 +6213,37 @@ export type EventsSocketData = {
 
 export type EventsSocketErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type EventsSocketError = EventsSocketErrors[keyof EventsSocketErrors];
@@ -4786,17 +6266,37 @@ export type EventsStreamData = {
 
 export type EventsStreamErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type EventsStreamError = EventsStreamErrors[keyof EventsStreamErrors];
@@ -4821,17 +6321,37 @@ export type EventsGetData = {
 
 export type EventsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type EventsGetError = EventsGetErrors[keyof EventsGetErrors];
@@ -4862,17 +6382,37 @@ export type WebhooksListData = {
 
 export type WebhooksListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksListError = WebhooksListErrors[keyof WebhooksListErrors];
@@ -4938,17 +6478,41 @@ export type WebhooksCreateData = {
 
 export type WebhooksCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksCreateError = WebhooksCreateErrors[keyof WebhooksCreateErrors];
@@ -4975,17 +6539,37 @@ export type WebhooksDeleteData = {
 
 export type WebhooksDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksDeleteError = WebhooksDeleteErrors[keyof WebhooksDeleteErrors];
@@ -5012,17 +6596,37 @@ export type WebhooksGetData = {
 
 export type WebhooksGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksGetError = WebhooksGetErrors[keyof WebhooksGetErrors];
@@ -5051,17 +6655,37 @@ export type WebhooksUpdateData = {
 
 export type WebhooksUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksUpdateError = WebhooksUpdateErrors[keyof WebhooksUpdateErrors];
@@ -5088,17 +6712,37 @@ export type WebhooksGetHeadersData = {
 
 export type WebhooksGetHeadersErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksGetHeadersError = WebhooksGetHeadersErrors[keyof WebhooksGetHeadersErrors];
@@ -5130,17 +6774,37 @@ export type WebhooksUpdateHeadersData = {
 
 export type WebhooksUpdateHeadersErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksUpdateHeadersError =
@@ -5170,17 +6834,37 @@ export type WebhooksDeliveriesData = {
 
 export type WebhooksDeliveriesErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksDeliveriesError = WebhooksDeliveriesErrors[keyof WebhooksDeliveriesErrors];
@@ -5213,17 +6897,37 @@ export type WebhooksReplayData = {
 
 export type WebhooksReplayErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type WebhooksReplayError = WebhooksReplayErrors[keyof WebhooksReplayErrors];
@@ -5253,17 +6957,37 @@ export type MessagesRespondToInvitationData = {
 
 export type MessagesRespondToInvitationErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MessagesRespondToInvitationError =
@@ -5298,17 +7022,37 @@ export type CalendarGetData = {
 
 export type CalendarGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarGetError = CalendarGetErrors[keyof CalendarGetErrors];
@@ -5346,17 +7090,37 @@ export type CalendarUpdateData = {
 
 export type CalendarUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarUpdateError = CalendarUpdateErrors[keyof CalendarUpdateErrors];
@@ -5389,17 +7153,37 @@ export type CalendarListEventsData = {
 
 export type CalendarListEventsErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarListEventsError = CalendarListEventsErrors[keyof CalendarListEventsErrors];
@@ -5457,17 +7241,37 @@ export type CalendarCreateEventData = {
 
 export type CalendarCreateEventErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarCreateEventError = CalendarCreateEventErrors[keyof CalendarCreateEventErrors];
@@ -5506,17 +7310,41 @@ export type CalendarRespondToEventData = {
 
 export type CalendarRespondToEventErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * It was here and is not any more. Forget the id.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarRespondToEventError =
@@ -5550,17 +7378,41 @@ export type CalendarListEventInstancesData = {
 
 export type CalendarListEventInstancesErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * It was here and is not any more. Forget the id.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarListEventInstancesError =
@@ -5599,17 +7451,37 @@ export type CalendarGetAgendaData = {
 
 export type CalendarGetAgendaErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarGetAgendaError = CalendarGetAgendaErrors[keyof CalendarGetAgendaErrors];
@@ -5654,17 +7526,41 @@ export type CalendarDeleteEventData = {
 
 export type CalendarDeleteEventErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * It was here and is not any more. Forget the id.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarDeleteEventError = CalendarDeleteEventErrors[keyof CalendarDeleteEventErrors];
@@ -5693,17 +7589,41 @@ export type CalendarGetEventData = {
 
 export type CalendarGetEventErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * It was here and is not any more. Forget the id.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarGetEventError = CalendarGetEventErrors[keyof CalendarGetEventErrors];
@@ -5767,17 +7687,41 @@ export type CalendarUpdateEventData = {
 
 export type CalendarUpdateEventErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * It was here and is not any more. Forget the id.
+   */
+  410: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type CalendarUpdateEventError = CalendarUpdateEventErrors[keyof CalendarUpdateEventErrors];
@@ -5806,17 +7750,37 @@ export type DraftsListData = {
 
 export type DraftsListErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsListError = DraftsListErrors[keyof DraftsListErrors];
@@ -5887,17 +7851,37 @@ export type DraftsCreateData = {
 
 export type DraftsCreateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsCreateError = DraftsCreateErrors[keyof DraftsCreateErrors];
@@ -5924,17 +7908,37 @@ export type DraftsDeleteData = {
 
 export type DraftsDeleteErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsDeleteError = DraftsDeleteErrors[keyof DraftsDeleteErrors];
@@ -5961,17 +7965,37 @@ export type DraftsGetData = {
 
 export type DraftsGetErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsGetError = DraftsGetErrors[keyof DraftsGetErrors];
@@ -6027,17 +8051,37 @@ export type DraftsUpdateData = {
 
 export type DraftsUpdateErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsUpdateError = DraftsUpdateErrors[keyof DraftsUpdateErrors];
@@ -6064,7 +8108,7 @@ export type DraftsSendData = {
 
 export type DraftsSendErrors = {
   /**
-   * The request is not valid. `error.param` names the field when there is one.
+   * The request is not valid. `error.field` names the input at fault when there is one.
    */
   400: Error;
   /**
@@ -6080,9 +8124,21 @@ export type DraftsSendErrors = {
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsSendError = DraftsSendErrors[keyof DraftsSendErrors];
@@ -6109,17 +8165,37 @@ export type DraftsCancelScheduleData = {
 
 export type DraftsCancelScheduleErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsCancelScheduleError =
@@ -6150,17 +8226,37 @@ export type DraftsScheduleData = {
 
 export type DraftsScheduleErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsScheduleError = DraftsScheduleErrors[keyof DraftsScheduleErrors];
@@ -6188,17 +8284,37 @@ export type DraftsRemoveAttachmentData = {
 
 export type DraftsRemoveAttachmentErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type DraftsRemoveAttachmentError =
@@ -6229,17 +8345,37 @@ export type MetricsQueryData = {
 
 export type MetricsQueryErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type MetricsQueryError = MetricsQueryErrors[keyof MetricsQueryErrors];
@@ -6267,17 +8403,37 @@ export type AttachmentsUploadData = {
 
 export type AttachmentsUploadErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AttachmentsUploadError = AttachmentsUploadErrors[keyof AttachmentsUploadErrors];
@@ -6305,17 +8461,37 @@ export type AttachmentsDownloadUrlData = {
 
 export type AttachmentsDownloadUrlErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AttachmentsDownloadUrlError =
@@ -6346,17 +8522,37 @@ export type AttachmentsTextData = {
 
 export type AttachmentsTextErrors = {
   /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
    * No API key, or one that is not valid.
    */
   401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
   /**
    * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
    */
   404: Error;
   /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
    * Rate limited. `X-RateLimit-Reset` says when to retry.
    */
   429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
 };
 
 export type AttachmentsTextError = AttachmentsTextErrors[keyof AttachmentsTextErrors];

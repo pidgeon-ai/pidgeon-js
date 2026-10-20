@@ -48,6 +48,14 @@ describes one command, with its endpoint and its flags. Documentation:
 - A nested object takes JSON: `--some_field '{"a":1}'`.
 - `PIDGEON_BASE_URL` points it somewhere other than production.
 
+## When it fails
+
+A refusal from the API exits 1 and prints the status, the API's code and
+its sentence, as in `403 abuse_blocked: That message has already gone to a
+lot of people today…`. Branch on the code. A mistake in the command itself,
+such as a missing flag, exits 2. Before 1.8.4 a refusal also exited 2 and
+printed only the sentence.
+
 ## It is generated
 
 One command per operation in [the published
