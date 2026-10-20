@@ -172,5 +172,12 @@ jobs:
           ./mcp-publisher login http --domain pidgeon.ai --private-key "$MCP_REGISTRY_KEY"
           ./mcp-publisher publish
 
-          # 0.8.0 never reached the registry and nothing said so. Ask it.
-          listed || { echo "The MCP registry does not list $version after publishing." >&2; exit 1; }
+          # 0.8.0 never reached the registry and nothing said so. Ask it, for
+          # a minute: 0.11.1 was listed a few seconds after the publish that
+          # reported it missing (20 October).
+          for attempt in 1 2 3 4 5 6; do
+            listed && exit 0
+            sleep 10
+          done
+          echo "The MCP registry does not list $version a minute after publishing." >&2
+          exit 1
