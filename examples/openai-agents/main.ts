@@ -19,9 +19,9 @@ if (!apiKey) {
 }
 
 /*
- * `await_message` holds one request open until mail arrives, 60 seconds by
+ * `await_message` holds one request open until mail arrives, 50 seconds by
  * default and at most 280. The SDK gives up on a request at 60 seconds
- * unless told otherwise, so a wait that runs its full length would fail.
+ * unless told otherwise, so any longer wait would fail.
  */
 const WAIT_SECONDS = 300;
 

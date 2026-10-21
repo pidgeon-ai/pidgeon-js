@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.19.1 — the default wait is under a minute
+
+`GET /messages/await` waits 50 seconds when no `timeout` is given, down
+from 60. Clients that give up on a request at 60 seconds — the TypeScript
+Agents SDK, Claude Code's MCP client — failed the default wait exactly when
+no message came. An explicit `timeout` up to 280 behaves as before.
+
 ## 1.19.0 — every status is declared, and Python raises
 
 The contract declares every status a route can answer with, read off the

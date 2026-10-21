@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.19.0",
+    "version": "1.19.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -9871,7 +9871,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "default": 60,
+              "default": 50,
               "type": "integer",
               "minimum": 1,
               "maximum": 280

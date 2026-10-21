@@ -426,8 +426,10 @@ export const TOOLS: ToolDefinition[] = [
       '— and returns it with `extracted.codes` and `extracted.links`: verification codes and ' +
       'confirm links, most likely first. Narrow it with `from` (address or domain), ' +
       '`subject_contains`, or `has_code: "true"` to skip a welcome email. Answers ' +
-      '`timed_out: true` after `timeout` seconds (default 60, at most 280); pass the returned ' +
-      '`cursor` as `after` to keep waiting without missing anything. A matching message ' +
+      '`timed_out: true` after `timeout` seconds (default 50, at most 280); pass the returned ' +
+      '`cursor` as `after` to keep waiting without missing anything. Most MCP clients give up ' +
+      'on a call at 60 seconds, so keep each wait under that and chain them with `after`, ' +
+      'unless you know your client allows longer. A matching message ' +
       'filed as spam is not returned: it is counted in `held_back` with its id, so check ' +
       'there before deciding nothing came, and pass `include_spam: "true"` to have it ' +
       'returned. Its text is cleaned by Pidgeon Firewall unless you pass ' +
