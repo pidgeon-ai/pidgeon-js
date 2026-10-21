@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.19.2 — what `/raw` answers
+
+The description of `GET /messages/{id}/raw` said it 404s once the original
+has aged out. It does not: it answers a rebuild from the stored message,
+marked `X-Pidgeon-Reconstructed: true`, and received mail is the archived
+original until then. Wording only; no shape moves.
+
 ## 1.19.1 — the default wait is under a minute
 
 `GET /messages/await` waits 50 seconds when no `timeout` is given, down

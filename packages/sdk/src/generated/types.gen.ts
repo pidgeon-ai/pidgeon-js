@@ -4195,7 +4195,7 @@ export type MessagesRawError = MessagesRawErrors[keyof MessagesRawErrors];
 
 export type MessagesRawResponses = {
   /**
-   * The original message.
+   * The message, original or rebuilt (`X-Pidgeon-Reconstructed`).
    */
   200: string;
 };
