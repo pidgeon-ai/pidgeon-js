@@ -1,0 +1,156 @@
+{
+  "id": "pidgeon",
+  "name": "Pidgeon Email",
+  "description": "Email channel for OpenClaw: mail to your agent's own address starts a conversation and gets a reply in its thread. Resumes after restarts and dropped connections; holds prompt-injection mail before the agent sees it.",
+  "version": "0.1.0",
+  "categories": ["channels"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "channels": ["pidgeon"],
+  "channelConfigs": {
+    "pidgeon": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "apiKeyEnv": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3
+            }
+          },
+          "dmPolicy": {
+            "type": "string",
+            "enum": ["open", "allowlist", "disabled"]
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "suspicious": {
+            "type": "string",
+            "enum": ["hold", "deliver"]
+          },
+          "pollSeconds": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 300
+          },
+          "accounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "baseUrl": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "apiKeyEnv": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]{0,127}$"
+                },
+                "addresses": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 3
+                  }
+                },
+                "dmPolicy": {
+                  "type": "string",
+                  "enum": ["open", "allowlist", "disabled"]
+                },
+                "allowFrom": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "suspicious": {
+                  "type": "string",
+                  "enum": ["hold", "deliver"]
+                },
+                "pollSeconds": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 300
+                }
+              }
+            }
+          },
+          "defaultAccount": {
+            "type": "string"
+          }
+        }
+      },
+      "label": "Pidgeon",
+      "description": "Email to your agent's Pidgeon address, as OpenClaw conversations.",
+      "uiHints": {
+        "": {
+          "label": "Pidgeon",
+          "help": "Sign in with `openclaw channels login --channel pidgeon`, or set PIDGEON_API_KEY in the Gateway's environment."
+        },
+        "baseUrl": {
+          "label": "Pidgeon URL",
+          "help": "Defaults to https://pidgeon.ai."
+        },
+        "apiKeyEnv": {
+          "label": "API key variable",
+          "help": "The environment variable holding a Pidgeon API key. Defaults to PIDGEON_API_KEY. The key itself never goes in this file."
+        },
+        "addresses": {
+          "label": "Addresses",
+          "help": "Which of your Pidgeon addresses start conversations. Empty means every address the credential reaches."
+        },
+        "dmPolicy": {
+          "label": "Who can start a conversation",
+          "help": "\"open\" (default): anyone who can reach the address. \"allowlist\": only the senders in allowFrom. \"disabled\": nobody."
+        },
+        "allowFrom": {
+          "label": "Allowed senders",
+          "help": "Addresses, or @domain.com for a whole domain. Used when dmPolicy is \"allowlist\"."
+        },
+        "suspicious": {
+          "label": "Mail the Firewall flags",
+          "help": "\"hold\" (default): kept in the inbox and not given to the agent. \"deliver\": given to the agent with the Firewall's warning."
+        },
+        "pollSeconds": {
+          "label": "Check every (seconds)",
+          "help": "Defaults to 5."
+        }
+      }
+    }
+  }
+}

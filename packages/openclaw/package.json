@@ -1,0 +1,91 @@
+{
+  "name": "@pidgeon-ai/openclaw",
+  "version": "0.1.0",
+  "description": "Email channel for OpenClaw: mail to your agent's own address starts a conversation and gets a reply in its thread. Resumes after restarts and dropped connections; holds prompt-injection mail before the agent sees it.",
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "openclaw-channel",
+    "channel",
+    "email",
+    "email-channel",
+    "inbox",
+    "prompt-injection",
+    "ai-agents",
+    "pidgeon"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/openclaw"
+  },
+  "homepage": "https://pidgeon.ai/integrations/openclaw",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "assets",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "sdk:check": "tsc --noEmit -p tsconfig.sdk.json",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "channel": {
+      "id": "pidgeon",
+      "label": "Pidgeon",
+      "selectionLabel": "Pidgeon (Email)",
+      "detailLabel": "Pidgeon Email",
+      "docsPath": "https://pidgeon.ai/docs/openclaw",
+      "docsLabel": "pidgeon",
+      "blurb": "Email to your agent's own address starts or continues a conversation; replies go back in the thread.",
+      "configuredState": {
+        "env": {
+          "anyOf": [
+            "PIDGEON_API_KEY"
+          ]
+        }
+      }
+    },
+    "compat": {
+      "pluginApi": ">=2026.10.0",
+      "minGatewayVersion": "2026.10.0"
+    },
+    "build": {
+      "openclawVersion": "2026.10.5",
+      "pluginSdkVersion": "2026.10.5"
+    },
+    "install": {
+      "npmSpec": "@pidgeon-ai/openclaw",
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.10.0"
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  }
+}

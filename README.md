@@ -68,6 +68,7 @@ your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 | [`@pidgeon-ai/cli`](packages/cli) | `npm install -g @pidgeon-ai/cli` | Every endpoint as a command |
 | [`@pidgeon-ai/mcp`](packages/mcp) | `npx -y @pidgeon-ai/mcp init` | The MCP server, run on your machine |
 | [`@pidgeon-ai/ai-sdk`](packages/ai-sdk) | `npm install @pidgeon-ai/ai-sdk ai zod` | The same tools, for the Vercel AI SDK |
+| [`@pidgeon-ai/openclaw`](packages/openclaw) | `openclaw plugins install @pidgeon-ai/openclaw` | Email as an OpenClaw channel: mail starts a conversation, the reply goes in the thread |
 
 [`examples/openai-agents`](examples/openai-agents) is an OpenAI Agents SDK
 agent on the hosted server, which needs no package of ours.
