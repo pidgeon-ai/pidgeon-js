@@ -2,20 +2,46 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.pidgeon/mcp",
   "title": "Pidgeon",
-  "description": "MCP server that gives your AI agent its own email inbox (Pidgeon).",
+  "description": "Email inbox for your AI agent: its own addresses, threads, sending, replies and arriving mail.",
   "websiteUrl": "https://pidgeon.ai/docs/mcp",
+  "icons": [
+    {
+      "src": "https://pidgeon.ai/brand/icon-light.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"],
+      "theme": "light"
+    },
+    {
+      "src": "https://pidgeon.ai/brand/icon-dark.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"],
+      "theme": "dark"
+    },
+    {
+      "src": "https://pidgeon.ai/brand/icon-light.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"],
+      "theme": "light"
+    },
+    {
+      "src": "https://pidgeon.ai/brand/icon-dark.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"],
+      "theme": "dark"
+    }
+  ],
   "repository": {
     "url": "https://github.com/pidgeon-ai/pidgeon-js",
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "0.12.2",
+  "version": "0.12.3",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "0.12.2",
+      "version": "0.12.3",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
