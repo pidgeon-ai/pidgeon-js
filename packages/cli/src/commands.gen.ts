@@ -2192,7 +2192,8 @@ export const COMMANDS: Command[] = [
         "name": "after",
         "kind": "string",
         "required": false,
-        "where": "query"
+        "where": "query",
+        "describe": "Only messages that arrived after this: the `cursor` a previous call returned, or `now`. Without it, the wait first looks back 2 minutes and returns the newest matching message from then, so a code that beat you to the call is not missed."
       },
       {
         "name": "timeout",

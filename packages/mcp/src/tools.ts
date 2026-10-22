@@ -424,8 +424,11 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'Waits until a message arrives at an address — after you submit a sign-up form, say ' +
       '— and returns it with `extracted.codes` and `extracted.links`: verification codes and ' +
-      'confirm links, most likely first. Narrow it with `from` (address or domain), ' +
-      '`subject_contains`, or `has_code: "true"` to skip a welcome email. Answers ' +
+      'confirm links, most likely first. Without `after` it first looks back 2 minutes and ' +
+      'returns the newest match from then, so a code that arrived before you called is not ' +
+      'missed; narrow it with `from` (address or domain), `subject_contains`, or ' +
+      '`has_code: "true"` so an earlier email is not mistaken for the one you want, and pass ' +
+      '`after: "now"` to wait only for new mail. Answers ' +
       '`timed_out: true` after `timeout` seconds (default 50, at most 280); pass the returned ' +
       '`cursor` as `after` to keep waiting without missing anything. Most MCP clients give up ' +
       'on a call at 60 seconds, so keep each wait under that and chain them with `after`, ' +

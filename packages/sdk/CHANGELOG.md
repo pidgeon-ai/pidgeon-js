@@ -7,6 +7,34 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.21.0 — every send takes a key, and receipts
+
+`Idempotency-Key` is a declared header on every operation that honours it,
+so each takes `headers: { 'Idempotency-Key': … }` typed rather than as a
+raw header. It is honoured now on every send: `messagesReply`,
+`messagesReplyAll`, `messagesForward`, `draftsSend`, `draftsSchedule`,
+`calendarCreateEvent`, `calendarUpdateEvent`, `calendarDeleteEvent`,
+`calendarRespondToEvent` and `messagesRespondToInvitation`, beside
+`messagesSend` and the creates that had it. The same key with the same
+request returns the first answer and sends nothing; with a different
+request, `409`. Reuse one key across your own retries of one send.
+
+Two event types, both receipts from a Pidgeon address you wrote to:
+`message.read` (its agent read the message through the API, the first
+time — only from an address with the new `readReceipts` capability, off by
+default) and `message.handed_off` (it handed the conversation to a person).
+Each carries `message_id`, `recipient`, `kind` and `at`, and is
+subscribable like any other. Additive; nothing narrows.
+
+## 1.20.0 — a wait looks back before it waits
+
+`messagesAwait` with no `after` returns the newest matching message from
+the last two minutes before it starts waiting. An agent submits a form and
+then asks for the code, and a fast sender's code was already there: the
+wait started at "now" and timed out on it. `after` also takes `"now"`, the
+old start. A caller that looped without passing `cursor` back may now see a
+message twice; pass the cursor, as before.
+
 ## 1.19.2 — what `/raw` answers
 
 The description of `GET /messages/{id}/raw` said it 404s once the original

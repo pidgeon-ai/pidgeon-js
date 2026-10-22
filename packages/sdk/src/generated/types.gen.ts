@@ -1793,6 +1793,12 @@ export type IdentitiesCreateData = {
      */
     pod_id?: string | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/identities';
@@ -1820,7 +1826,7 @@ export type IdentitiesCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -2730,6 +2736,12 @@ export type PodsCreateData = {
      */
     client_id?: string | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/pods';
@@ -2757,7 +2769,7 @@ export type PodsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -2978,6 +2990,12 @@ export type LabelsCreateData = {
     name: string;
     colour?: 'slate' | 'red' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink';
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/labels';
@@ -3001,7 +3019,7 @@ export type LabelsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -3448,6 +3466,12 @@ export type MessagesSendData = {
      */
     in_reply_to_message_id?: string | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/messages';
@@ -3724,7 +3748,10 @@ export type MessagesAwaitData = {
      * Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id.
      */
     include_spam?: 'true' | 'false';
-    after?: string;
+    /**
+     * Only messages that arrived after this: the `cursor` a previous call returned, or `now`. Without it, the wait first looks back 2 minutes and returns the newest matching message from then, so a code that beat you to the call is not missed.
+     */
+    after?: 'now' | string;
     timeout?: number;
   };
   url: '/messages/await';
@@ -3928,6 +3955,12 @@ export type MessagesReplyData = {
      */
     attachment_ids?: Array<string>;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3953,7 +3986,7 @@ export type MessagesReplyErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -4010,6 +4043,12 @@ export type MessagesReplyAllData = {
      */
     attachment_ids?: Array<string>;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -4035,7 +4074,7 @@ export type MessagesReplyAllErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -4092,6 +4131,12 @@ export type MessagesForwardData = {
      */
     attachment_ids?: Array<string>;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -4117,7 +4162,7 @@ export type MessagesForwardErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -4523,6 +4568,12 @@ export type DomainsCreateData = {
     domain: string;
     inbound_enabled?: boolean;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/domains';
@@ -4550,7 +4601,7 @@ export type DomainsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -5012,6 +5063,12 @@ export type RoutingCreateData = {
         destination_identity_id?: string;
         destination_webhook_id?: string;
       };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/routing-rules';
@@ -5039,7 +5096,7 @@ export type RoutingCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -6450,6 +6507,8 @@ export type WebhooksCreateData = {
       | 'message.bounced'
       | 'message.rejected'
       | 'message.complained'
+      | 'message.read'
+      | 'message.handed_off'
       | 'message.spam'
       | 'message.invitation'
       | 'message.archived'
@@ -6470,6 +6529,12 @@ export type WebhooksCreateData = {
       | 'identity.transferred'
       | 'domain.verified'
     >;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path?: never;
   query?: never;
@@ -6498,7 +6563,7 @@ export type WebhooksCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -6948,6 +7013,12 @@ export type MessagesRespondToInvitationData = {
     status: 'accepted' | 'declined' | 'tentative';
     comment?: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -6973,7 +7044,7 @@ export type MessagesRespondToInvitationErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -7232,6 +7303,12 @@ export type CalendarCreateEventData = {
       rdates?: Array<string>;
     } | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -7257,7 +7334,7 @@ export type CalendarCreateEventErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -7299,6 +7376,10 @@ export type CalendarRespondToEventData = {
      * The `etag` you last read. A stale one is a `409` naming the current version — two agents on one mailbox is the case this product is for, and last-write-wins loses a meeting.
      */
     'If-Match'?: string;
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -7326,7 +7407,7 @@ export type CalendarRespondToEventErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -7510,6 +7591,10 @@ export type CalendarDeleteEventData = {
      * The `etag` you last read. A stale one is a `409` naming the current version — two agents on one mailbox is the case this product is for, and last-write-wins loses a meeting.
      */
     'If-Match'?: string;
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -7542,7 +7627,7 @@ export type CalendarDeleteEventErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -7671,6 +7756,10 @@ export type CalendarUpdateEventData = {
      * The `etag` you last read. A stale one is a `409` naming the current version — two agents on one mailbox is the case this product is for, and last-write-wins loses a meeting.
      */
     'If-Match'?: string;
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -7703,7 +7792,7 @@ export type CalendarUpdateEventErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -7844,6 +7933,12 @@ export type DraftsCreateData = {
      */
     attachment_ids?: Array<string>;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/drafts';
@@ -7867,7 +7962,7 @@ export type DraftsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -8099,6 +8194,12 @@ export type DraftsUpdateResponse = DraftsUpdateResponses[keyof DraftsUpdateRespo
 
 export type DraftsSendData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -8124,7 +8225,7 @@ export type DraftsSendErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**
@@ -8217,6 +8318,12 @@ export type DraftsScheduleData = {
   body: {
     send_at: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -8242,7 +8349,7 @@ export type DraftsScheduleErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
    */
   409: Error;
   /**

@@ -972,7 +972,7 @@ export const messagesUndo = <ThrowOnError extends boolean = false>(
 /**
  * Wait for the next message
  *
- * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.
+ * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Without `after`, it first looks back 2 minutes and returns the newest matching message from then, because a code often lands before the call is made; narrow it with `from`, `subject_contains` or `has_code` so an earlier email is not taken for the one you want, or pass `after=now` to wait only for new mail. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.
  */
 export const messagesAwait = <ThrowOnError extends boolean = false>(
   options: Options<MessagesAwaitData, ThrowOnError>,
