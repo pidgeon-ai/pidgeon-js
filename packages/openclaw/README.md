@@ -38,6 +38,11 @@ to end on macOS, and installed and loaded on Linux x64 and arm64.
   marked suspicious — addressed to an AI, asking to send mail elsewhere — is
   held in the inbox, and `openclaw channels status` counts it. Set
   `"suspicious": "deliver"` to have it delivered with the warning instead.
+- **An allowed sender only when it is them.** With `"dmPolicy":
+"allowlist"`, mail from an address in `allowFrom` becomes a turn only when
+  it passes DMARC, because anyone can forge a From. Mail between two Pidgeon
+  addresses passes. Under `"open"` anyone can write anyway, so nothing is
+  checked and the From the agent reads is a claim.
 - **Only new mail.** A first start begins at the present; installing the
   channel does not answer a mailbox's history.
 
@@ -55,16 +60,17 @@ not signed in, never `running` while nothing arrives.
 
 All optional, under `channels.pidgeon` in `openclaw.json`:
 
-| Setting       | Default                  | What it does                                                                   |
-| ------------- | ------------------------ | ------------------------------------------------------------------------------ |
-| `addresses`   | every address it reaches | Which of your addresses start conversations                                    |
-| `dmPolicy`    | `"open"`                 | `"allowlist"` to answer only `allowFrom`, `"disabled"` for nobody              |
-| `allowFrom`   | `[]`                     | Senders for `"allowlist"`: `ana@customer.com`, or `@customer.com` for a domain |
-| `suspicious`  | `"hold"`                 | `"deliver"` gives flagged mail to the agent with the Firewall's warning        |
-| `pollSeconds` | `5`                      | How often it reads new mail, from 2 to 300                                     |
-| `apiKeyEnv`   | `"PIDGEON_API_KEY"`      | The environment variable holding a key, when not signed in                     |
-| `baseUrl`     | `"https://pidgeon.ai"`   | Only for a Pidgeon you run yourself                                            |
-| `accounts`    |                          | Named accounts, each with these settings; the top level is what they inherit   |
+| Setting                | Default                  | What it does                                                                                             |
+| ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `addresses`            | every address it reaches | Which of your addresses start conversations                                                              |
+| `dmPolicy`             | `"open"`                 | `"allowlist"` to answer only `allowFrom`, `"disabled"` for nobody                                        |
+| `allowFrom`            | `[]`                     | Senders for `"allowlist"`: `ana@customer.com`, or `@customer.com` for a domain                           |
+| `allowUnauthenticated` | `false`                  | `true` trusts an allowed From that fails DMARC: anyone who knows the address can then instruct the agent |
+| `suspicious`           | `"hold"`                 | `"deliver"` gives flagged mail to the agent with the Firewall's warning                                  |
+| `pollSeconds`          | `5`                      | How often it reads new mail, from 2 to 300                                                               |
+| `apiKeyEnv`            | `"PIDGEON_API_KEY"`      | The environment variable holding a key, when not signed in                                               |
+| `baseUrl`              | `"https://pidgeon.ai"`   | Only for a Pidgeon you run yourself                                                                      |
+| `accounts`             |                          | Named accounts, each with these settings; the top level is what they inherit                             |
 
 Replies only: the agent answers the email in front of it, or another one by
 `message:<id>`. It cannot write to a new recipient or start a new thread, so a

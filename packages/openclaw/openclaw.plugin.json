@@ -2,7 +2,7 @@
   "id": "pidgeon",
   "name": "Pidgeon Email",
   "description": "Email channel for OpenClaw: mail to your agent's own address starts a conversation and gets a reply in its thread. Resumes after restarts and dropped connections; holds prompt-injection mail before the agent sees it.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "categories": ["channels"],
   "configSchema": {
     "type": "object",
@@ -51,6 +51,9 @@
               "minLength": 1
             }
           },
+          "allowUnauthenticated": {
+            "type": "boolean"
+          },
           "suspicious": {
             "type": "string",
             "enum": ["hold", "deliver"]
@@ -98,6 +101,9 @@
                     "minLength": 1
                   }
                 },
+                "allowUnauthenticated": {
+                  "type": "boolean"
+                },
                 "suspicious": {
                   "type": "string",
                   "enum": ["hold", "deliver"]
@@ -141,6 +147,10 @@
         "allowFrom": {
           "label": "Allowed senders",
           "help": "Addresses, or @domain.com for a whole domain. Used when dmPolicy is \"allowlist\"."
+        },
+        "allowUnauthenticated": {
+          "label": "Trust unauthenticated senders",
+          "help": "Off (default): an allowed sender's mail reaches the agent only when it passes DMARC, because anyone can forge a From address. On: the From alone decides, as before 0.1.1. Leave it off unless a sender you allow cannot pass DMARC."
         },
         "suspicious": {
           "label": "Mail the Firewall flags",

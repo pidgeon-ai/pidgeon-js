@@ -23,6 +23,7 @@ export interface AccountConfig {
   addresses?: string[];
   dmPolicy?: DmPolicy;
   allowFrom?: string[];
+  allowUnauthenticated?: boolean;
   suspicious?: 'hold' | 'deliver';
   pollSeconds?: number;
 }
@@ -45,6 +46,8 @@ export interface ResolvedAccount {
   dmPolicy: DmPolicy;
   /** Lowercased addresses and `@domain` entries. */
   allowFrom: string[];
+  /** Trust an allowlisted From that did not pass DMARC. Off: a From is forgeable. */
+  allowUnauthenticated: boolean;
   suspicious: 'hold' | 'deliver';
   pollSeconds: number;
 }
@@ -89,6 +92,7 @@ export function resolveAccount(cfg: unknown, accountId?: string | null): Resolve
     addresses: lower(merged.addresses),
     dmPolicy: merged.dmPolicy ?? 'open',
     allowFrom: lower(merged.allowFrom),
+    allowUnauthenticated: merged.allowUnauthenticated === true,
     suspicious: merged.suspicious ?? 'hold',
     pollSeconds: Math.min(300, Math.max(2, Math.round(poll))),
   };

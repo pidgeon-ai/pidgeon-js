@@ -30,6 +30,16 @@ export interface Attachment {
   size: number;
 }
 
+/**
+ * What the receiving transport said about the sending domain: `"pass"`,
+ * `"fail"` and the rest, lowercased. Null is "not reported", not "failed".
+ */
+export interface Authentication {
+  spf: string | null;
+  dkim: string | null;
+  dmarc: string | null;
+}
+
 export interface Message {
   id: string;
   thread_id: string;
@@ -42,6 +52,11 @@ export interface Message {
   text: string | null;
   reply_text: string | null;
   is_spam: boolean;
+  authentication: Authentication | null;
+  /** `kind` is set only on mail a Pidgeon address wrote; SMTP mail declares nothing. */
+  sender: { address: string; kind: string | null } | null;
+  /** `"smtp"` for mail that arrived from outside Pidgeon. */
+  origin: string | null;
   firewall: Firewall | null;
   attachments: Attachment[];
   created_at: string;

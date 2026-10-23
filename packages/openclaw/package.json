@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/openclaw",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Email channel for OpenClaw: mail to your agent's own address starts a conversation and gets a reply in its thread. Resumes after restarts and dropped connections; holds prompt-injection mail before the agent sees it.",
   "keywords": [
     "openclaw",

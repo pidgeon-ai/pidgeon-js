@@ -5,7 +5,8 @@
  * A stranger's email becoming a prompt is the abuse surface of this whole
  * plugin, so the defaults are the product, not settings: mail Pidgeon filed
  * as spam is never a turn, and mail Pidgeon Firewall marked `suspicious` is
- * held in the inbox unless the account says `suspicious: "deliver"`. The
+ * held in the inbox unless the account says `suspicious: "deliver"`. An
+ * allowlist trusts a From only when DMARC says the domain sent it. The
  * agent reads the Firewall's clean text — what a person reading the email
  * would see, with hidden text removed — never the raw HTML.
  */
@@ -27,6 +28,40 @@ function senderAllowed(account: ResolvedAccount, sender: string): boolean {
   return account.allowFrom.some((entry) => entry === sender || entry === domain || entry === '*');
 }
 
+/**
+ * Whether the allowlist is trusting who the mail says it is from. Under
+ * `open`, or an allowlist with `*`, anyone may write anyway, so a forged
+ * From gains nothing; under a named allowlist the From is the whole check.
+ */
+function trustsTheFrom(account: ResolvedAccount): boolean {
+  return (
+    account.dmPolicy === 'allowlist' &&
+    !account.allowFrom.includes('*') &&
+    !account.allowUnauthenticated
+  );
+}
+
+/**
+ * Whether the From address is the sending domain's own word.
+ *
+ * DMARC `pass` is the one verdict that says so: SPF and DKIM pass for
+ * whatever domain sent, and only DMARC checks that it is the From's. The API
+ * does not say whether an SPF or DKIM pass was aligned, so without DMARC an
+ * unknown counts as not passing.
+ *
+ * Mail Pidgeon delivered between two of its own addresses, without going out
+ * through SES, has no transport verdict at all: a declared `sender.kind` with
+ * no `authentication` is that, because Pidgeon sets `kind` only on a row it
+ * wrote and every SMTP arrival carries the transport's verdicts. Through SES,
+ * as in production, Pidgeon-to-Pidgeon mail passes DMARC like any other.
+ */
+export function authenticated(message: Message): boolean {
+  const verdicts = message.authentication;
+  if (verdicts?.dmarc === 'pass') return true;
+  const unreported = !verdicts?.spf && !verdicts?.dkim && !verdicts?.dmarc;
+  return unreported && Boolean(message.sender?.kind) && message.origin !== 'smtp';
+}
+
 export function decide(account: ResolvedAccount, message: Message): Decision {
   if (message.direction !== 'inbound') return { deliver: false, reason: 'not inbound' };
   const sender = message.from?.email?.trim().toLowerCase();
@@ -43,6 +78,12 @@ export function decide(account: ResolvedAccount, message: Message): Decision {
   if (message.is_spam) return { deliver: false, reason: 'filed as spam' };
   if (!senderAllowed(account, sender)) {
     return { deliver: false, reason: `${sender} is not allowed to start a conversation` };
+  }
+  if (trustsTheFrom(account) && !authenticated(message)) {
+    return {
+      deliver: false,
+      reason: `from ${sender}, but it did not pass DMARC, so the From may be forged`,
+    };
   }
   if (message.firewall?.verdict === 'suspicious' && account.suspicious === 'hold') {
     return {
