@@ -48,6 +48,14 @@ describes one command, with its endpoint and its flags. Documentation:
 - A nested object takes JSON: `--some_field '{"a":1}'`.
 - `PIDGEON_BASE_URL` points it somewhere other than production.
 
+## Retrying a send
+
+Every command that sends takes `--idempotency-key`. Run it again with the
+same key and the message goes out once; the second run prints the first
+answer. Without one, each run makes up its own key. `--verbose` prints it
+on stderr before the call, and a failure that may already have sent (no
+answer, or a 5xx) prints it in the error, so a script can retry with it.
+
 ## When it fails
 
 A refusal from the API exits 1 and prints the status, the API's code and

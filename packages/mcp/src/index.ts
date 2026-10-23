@@ -1,7 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { callEndpoint, PidgeonHttpError } from './call.js';
+import { type CallContext, dispatch, PidgeonHttpError } from './call.js';
+import { REPLAY_NOTE } from './idempotency.js';
 import { init } from './init.js';
 import { TOOLS } from './tools.js';
 
@@ -52,9 +53,9 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.12.4';
+export const VERSION = '0.13.0';
 
-export function createServer(context: { baseUrl: string; apiKey: string }): McpServer {
+export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
 
   for (const tool of TOOLS) {
@@ -69,10 +70,17 @@ export function createServer(context: { baseUrl: string; apiKey: string }): McpS
       },
       async (input: Record<string, unknown>) => {
         try {
-          const result = await callEndpoint(tool, input, context);
+          const { data, replayed } = await dispatch(tool, input, context);
 
           return {
-            content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+            content: [
+              /*
+               * First, because a model that meant to send twice reads the
+               * answer as "sent" unless something says otherwise.
+               */
+              ...(replayed ? [{ type: 'text' as const, text: REPLAY_NOTE }] : []),
+              { type: 'text' as const, text: JSON.stringify(data, null, 2) },
+            ],
           };
         } catch (error) {
           /*

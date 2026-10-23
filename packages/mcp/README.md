@@ -125,6 +125,15 @@ It appears in the web inbox and `thread.updated` tells whatever was driving
 the conversation that it no longer is. `owner_type=agent` takes it back,
 `status` is the queue it sits in, and `assignee_id` names which person has it.
 
+## A retried send goes out once
+
+`send_message` and `reply_to_message` take an `idempotency_key`. Reuse it
+when retrying the same send and it goes out once; the retry answers with
+the first send's result, after a line saying nothing was sent again. With
+no key, an identical call (same arguments, same credential) within the same
+clock hour counts as a retry. To send the same words twice on purpose
+inside that hour, pass a new key.
+
 ## Two settings worth knowing about
 
 An agent's address should usually be created **`reply_only`**: it can answer

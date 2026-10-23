@@ -1,3 +1,4 @@
+import { takeIdempotencyKey } from './idempotency.js';
 import type { ToolDefinition } from './tools.js';
 
 /**
@@ -43,9 +44,30 @@ export async function callEndpoint(
   input: Record<string, unknown>,
   context: CallContext,
 ): Promise<unknown> {
+  return (await dispatch(tool, input, context)).data;
+}
+
+export interface Dispatched {
+  data: unknown;
+  /** The API answered from a stored send (`Idempotent-Replay: true`) and sent nothing. */
+  replayed: boolean;
+}
+
+/**
+ * `callEndpoint`, with whether the answer was a replay.
+ *
+ * A tool that sends carries an `Idempotency-Key` — the model's, or one
+ * derived from the call (`idempotency.ts`) — as a header, never in the body.
+ */
+export async function dispatch(
+  tool: ToolDefinition,
+  input: Record<string, unknown>,
+  context: CallContext,
+): Promise<Dispatched> {
   const [method, template] = splitEndpoint(tool.endpoint);
 
   const remaining = { ...input };
+  const idempotencyKey = await takeIdempotencyKey(tool, remaining, context.apiKey);
 
   /*
    * `{id}` is filled from the input and removed from it, so it cannot also
@@ -79,6 +101,7 @@ export async function callEndpoint(
     headers: {
       Authorization: `Bearer ${context.apiKey}`,
       ...(sendsBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },
     body: sendsBody ? JSON.stringify(remaining) : undefined,
   });
@@ -102,7 +125,10 @@ export async function callEndpoint(
     );
   }
 
-  return payload?.data ?? payload;
+  return {
+    data: payload?.data ?? payload,
+    replayed: response.headers?.get('Idempotent-Replay') === 'true',
+  };
 }
 
 export function splitEndpoint(endpoint: string): [string, string] {

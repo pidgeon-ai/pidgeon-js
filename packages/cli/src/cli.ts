@@ -9,7 +9,11 @@ import { run, UsageError } from './index.js';
  */
 async function main() {
   try {
-    process.stdout.write(`${await run(process.argv.slice(2), process.env)}\n`);
+    process.stdout.write(
+      `${await run(process.argv.slice(2), process.env, {
+        stderr: (line) => process.stderr.write(`${line}\n`),
+      })}\n`,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Something went wrong.';
     process.stderr.write(`${message}\n`);

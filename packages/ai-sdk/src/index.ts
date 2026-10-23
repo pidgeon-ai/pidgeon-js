@@ -43,6 +43,7 @@ import { z } from 'zod';
  * and `tsup` bundles it, so the published package carries the text and does
  * not depend on `@pidgeon-ai/mcp` or the protocol SDK it pulls in.
  */
+import { REPLAY_NOTE, takeIdempotencyKey } from '../../mcp/src/idempotency';
 import { TOOLS, type ToolDefinition } from '../../mcp/src/tools';
 
 export const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
@@ -175,6 +176,8 @@ const PATH_PARAM = /\{([^}]+)\}/g;
 export function pidgeonTools(options: PidgeonToolsOptions = {}): PidgeonTools {
   const client = options.client ?? buildClient(options);
   const tools = {} as PidgeonTools;
+  /* Only scopes a derived idempotency key to this credential; never sent. */
+  const credential = options.apiKey ?? readEnv('PIDGEON_API_KEY') ?? '';
 
   for (const definition of TOOLS) {
     const name = definition.name as PidgeonToolName;
@@ -183,7 +186,7 @@ export function pidgeonTools(options: PidgeonToolsOptions = {}): PidgeonTools {
     /* The test keeps the two lists equal; this keeps a gap from shipping a broken tool. */
     if (!operation) continue;
 
-    tools[name] = build(definition, operation, client, options.identityId);
+    tools[name] = build(definition, operation, client, options.identityId, credential);
   }
 
   return tools;
@@ -217,6 +220,7 @@ function build(
   operation: Operation,
   client: Client,
   identityId: string | undefined,
+  credential: string,
 ): Tool<Record<string, unknown>, unknown> {
   const shape: Record<string, z.core.$ZodType> = { ...definition.inputSchema };
 
@@ -242,6 +246,9 @@ function build(
         remaining.identity_id = identityId;
       }
 
+      /* A header, never a body field; derived when the model passes none (`idempotency.ts`). */
+      const idempotencyKey = await takeIdempotencyKey(definition, remaining, credential);
+
       /* `{id}` goes in the path and nowhere else; every request schema is strict. */
       const path: Record<string, unknown> = {};
       for (const [, param] of template.matchAll(PATH_PARAM)) {
@@ -257,10 +264,18 @@ function build(
           : Object.keys(remaining).length > 0
             ? { query: remaining }
             : {}),
+        ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
         ...(abortSignal ? { signal: abortSignal } : {}),
       });
 
-      return unwrap(answer);
+      const result = unwrap(answer);
+
+      /* The same sentence the MCP server leads with: the model must not read a replay as a send. */
+      if (answer.response?.headers?.get('Idempotent-Replay') === 'true') {
+        return { note: REPLAY_NOTE, result };
+      }
+
+      return result;
     },
   });
 }

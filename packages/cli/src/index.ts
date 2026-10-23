@@ -22,6 +22,13 @@ export interface Parsed {
   path: Record<string, string>;
   query: Record<string, unknown>;
   body: Record<string, unknown>;
+  /** By the flag's name; `run` sends each under the header's own spelling. */
+  header: Record<string, unknown>;
+}
+
+/** Where `--verbose` lines go. Never stdout, which carries the answer a script parses. */
+export interface RunOptions {
+  stderr?: (line: string) => void;
 }
 
 export class UsageError extends Error {}
@@ -70,7 +77,7 @@ function coerce(flag: Flag, raw: string): unknown {
  */
 export function parse(command: Command, argv: string[]): Parsed {
   const byName = new Map(command.flags.map((flag) => [flag.name, flag]));
-  const out: Parsed = { path: {}, query: {}, body: {} };
+  const out: Parsed = { path: {}, query: {}, body: {}, header: {} };
 
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i]!;
@@ -134,7 +141,7 @@ export function help(command?: Command): string {
       }),
       '',
       'An API key goes in PIDGEON_API_KEY. `pidgeon <group> <command> --help`',
-      'describes one command.',
+      'describes one command; --verbose prints what was sent, on stderr.',
     ].join('\n');
   }
 
@@ -169,12 +176,40 @@ export function help(command?: Command): string {
   ].join('\n');
 }
 
+/**
+ * The headers a command sends, by their own spelling.
+ *
+ * **An `Idempotency-Key` is made up when none is given**, one per
+ * invocation. Unlike the SDK, which makes up none (a key the caller never
+ * sees protects nothing), the CLI can show it: `--verbose` prints it before
+ * the call and a failure that may have sent says it, so a script retries
+ * with it and the message goes out once. `docs/email.md`.
+ */
+function headersFor(command: Command, parsed: Parsed): Record<string, string> {
+  const headers: Record<string, string> = {};
+
+  for (const flag of command.flags) {
+    if (flag.where !== 'header' || !flag.header) continue;
+
+    const given = parsed.header[flag.name];
+    if (typeof given === 'string') headers[flag.header] = given;
+    else if (flag.header === 'Idempotency-Key') headers[flag.header] = crypto.randomUUID();
+  }
+
+  return headers;
+}
+
 export function find(group?: string, name?: string): Command | undefined {
   return COMMANDS.find((c) => c.group === group && c.name === name);
 }
 
-export async function run(argv: string[], env: NodeJS.ProcessEnv): Promise<string> {
-  const [group, name, ...rest] = argv;
+export async function run(
+  argv: string[],
+  env: NodeJS.ProcessEnv,
+  options: RunOptions = {},
+): Promise<string> {
+  const verbose = argv.includes('--verbose');
+  const [group, name, ...rest] = argv.filter((token) => token !== '--verbose');
 
   if (!group || group === '--help' || group === 'help') return help();
 
@@ -199,6 +234,14 @@ export async function run(argv: string[], env: NodeJS.ProcessEnv): Promise<strin
   }
 
   const parsed = parse(command, rest);
+  const headers = headersFor(command, parsed);
+  const idempotencyKey = headers['Idempotency-Key'];
+
+  /*
+   * Before the call, so a script still has the key when the call never
+   * answers — which is the case the key is for.
+   */
+  if (verbose && idempotencyKey) options.stderr?.(`Idempotency-Key: ${idempotencyKey}`);
 
   client.setConfig(
     createConfig({ baseUrl: env.PIDGEON_BASE_URL ?? DEFAULT_BASE_URL, auth: () => apiKey }),
@@ -214,13 +257,32 @@ export async function run(argv: string[], env: NodeJS.ProcessEnv): Promise<strin
     throw new Error(`The SDK does not export \`${command.operationId}\`. Run \`pnpm sdk\`.`);
   }
 
-  const { data, error, response } = await (
-    call as (options: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>
-  )({
-    ...(Object.keys(parsed.path).length > 0 ? { path: parsed.path } : {}),
-    ...(Object.keys(parsed.query).length > 0 ? { query: parsed.query } : {}),
-    ...(Object.keys(parsed.body).length > 0 ? { body: parsed.body } : {}),
-  });
+  const retry = idempotencyKey
+    ? ` It may have been sent: retry with --idempotency-key ${idempotencyKey} and it goes out at most once.`
+    : '';
+
+  let answer: { data?: unknown; error?: unknown; response: Response };
+
+  try {
+    answer = await (
+      call as (options: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>
+    )({
+      ...(Object.keys(parsed.path).length > 0 ? { path: parsed.path } : {}),
+      ...(Object.keys(parsed.query).length > 0 ? { query: parsed.query } : {}),
+      ...(Object.keys(parsed.body).length > 0 ? { body: parsed.body } : {}),
+      ...(Object.keys(headers).length > 0 ? { headers } : {}),
+    });
+  } catch (thrown) {
+    /* No answer at all: the request may or may not have arrived. */
+    const reason = thrown instanceof Error ? thrown.message : 'The request failed.';
+    throw new Error(`${reason}${retry ? `\n${retry.trim()}` : ''}`);
+  }
+
+  const { data, error, response } = answer;
+
+  if (verbose && response.headers.get('Idempotent-Replay') === 'true') {
+    options.stderr?.('Idempotent-Replay: true — answered from the first send; nothing sent again.');
+  }
 
   /*
    * Any status that is not a success, declared in the contract or not: the
@@ -229,11 +291,19 @@ export async function run(argv: string[], env: NodeJS.ProcessEnv): Promise<strin
    */
   if (error !== undefined) {
     const detail = (error as { error?: { message?: string; code?: string } } | undefined)?.error;
+    const message =
+      detail?.message ??
+      (typeof error === 'string' && error ? error.slice(0, 500) : 'The request failed.');
+
+    /*
+     * A 5xx may have come after the send (a gateway timing out on a send
+     * that finished), so it says how to retry safely. A 4xx is the API's
+     * refusal and nothing went out; a retry would only be refused again.
+     */
     throw new ApiError(
       response.status,
       detail?.code,
-      detail?.message ??
-        (typeof error === 'string' && error ? error.slice(0, 500) : 'The request failed.'),
+      response.status >= 500 ? message + retry : message,
     );
   }
 

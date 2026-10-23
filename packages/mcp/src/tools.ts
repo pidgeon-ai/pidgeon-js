@@ -137,6 +137,22 @@ const BODY = z
     '`clean` (default): hidden text removed and fake chat turns marked. `original`: as it arrived, with HTML.',
   );
 
+/*
+ * On every tool that sends; `idempotency.ts` takes it out of the input and
+ * derives one when it is absent. Declared here rather than imported, because
+ * the web app's Turbopack build reads this file directly and cannot resolve a
+ * sibling's `.js` specifier to its `.ts` source.
+ */
+export const IDEMPOTENCY_KEY_INPUT = z
+  .string()
+  .min(1)
+  .max(255)
+  .optional()
+  .describe(
+    'Any string unique to this send. Reuse the same key when retrying the same send, and it ' +
+      'goes out once. Without one, an identical call within the hour counts as a retry.',
+  );
+
 export const TOOLS: ToolDefinition[] = [
   {
     name: 'list_addresses',
@@ -327,7 +343,8 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'Send from an address this credential may send as. Refused if the address’s send ' +
       'policy does not permit the recipient, or if the recipient previously bounced or ' +
-      'reported mail as spam.',
+      'reported mail as spam. When retrying a send, reuse its `idempotency_key` so it goes ' +
+      'out once.',
     endpoint: 'POST /messages',
     annotations: SEND,
     /*
@@ -356,6 +373,7 @@ export const TOOLS: ToolDefinition[] = [
       html: z.string().optional(),
       attachment_ids: z.array(z.string()).optional(),
       in_reply_to: z.string().optional(),
+      idempotency_key: IDEMPOTENCY_KEY_INPUT,
     },
   },
   /*
@@ -455,7 +473,8 @@ export const TOOLS: ToolDefinition[] = [
     title: 'Reply to a message',
     description:
       'The recipients, the subject and the thread are read off the message being answered, ' +
-      'so you bring the words and nothing else. Use `to` only to change who it goes to.',
+      'so you bring the words and nothing else. Use `to` only to change who it goes to. ' +
+      'When retrying a reply, reuse its `idempotency_key` so it goes out once.',
     endpoint: 'POST /messages/{id}/reply',
     annotations: SEND,
     inputSchema: {
@@ -466,6 +485,7 @@ export const TOOLS: ToolDefinition[] = [
       cc: z.union([z.string(), z.array(z.string())]).optional(),
       bcc: z.union([z.string(), z.array(z.string())]).optional(),
       attachment_ids: z.array(z.string()).optional(),
+      idempotency_key: IDEMPOTENCY_KEY_INPUT,
     },
   },
   {
