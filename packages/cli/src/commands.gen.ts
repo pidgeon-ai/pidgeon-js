@@ -1970,6 +1970,28 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "keys",
+    "name": "rotate",
+    "operationId": "keysRotate",
+    "method": "POST",
+    "path": "/api-keys/{id}/rotate",
+    "summary": "Give a key a new secret",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "grace_period_seconds",
+        "kind": "number",
+        "required": false,
+        "where": "body"
+      }
+    ]
+  },
+  {
+    "group": "keys",
     "name": "update",
     "operationId": "keysUpdate",
     "method": "PATCH",

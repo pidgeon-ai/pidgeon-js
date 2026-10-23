@@ -191,6 +191,9 @@ import type {
   KeysRevokeData,
   KeysRevokeErrors,
   KeysRevokeResponses,
+  KeysRotateData,
+  KeysRotateErrors,
+  KeysRotateResponses,
   KeysUpdateData,
   KeysUpdateErrors,
   KeysUpdateResponses,
@@ -1456,7 +1459,7 @@ export const keysGet = <ThrowOnError extends boolean = false>(
 /**
  * Rename a key
  *
- * The only thing about a key that can change. Not its scope — a key's reach is what somebody granted when they made it, and widening that in place would let a credential already in circulation reach further than whoever issued it agreed to.
+ * Its name and its secret (`POST /api-keys/{id}/rotate`) are the only things about a key that can change. Not its scope — a key's reach is what somebody granted when they made it, and widening that in place would let a credential already in circulation reach further than whoever issued it agreed to.
  */
 export const keysUpdate = <ThrowOnError extends boolean = false>(
   options: Options<KeysUpdateData, ThrowOnError>,
@@ -1464,6 +1467,28 @@ export const keysUpdate = <ThrowOnError extends boolean = false>(
   (options.client ?? client).patch<KeysUpdateResponses, KeysUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api-keys/{id}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Give a key a new secret
+ *
+ * A new secret for the same key id. Everything that hangs off the id is unchanged — its scope, its ceiling, its expiry, and **every key it minted**, which keep working — so rotating an admin key does not take its children down. Revoking is still how a key and its children end together.
+ *
+ * The old secret stops now, or after `grace_period_seconds` (at most 86400, a day), so the servers that hold it can move over. One previous secret at a time: rotating again inside the window ends the older one immediately.
+ *
+ * A key may rotate itself and keys it minted; a person must own the workspace. The `token` is in this response and nowhere else, ever.
+ */
+export const keysRotate = <ThrowOnError extends boolean = false>(
+  options: Options<KeysRotateData, ThrowOnError>,
+): RequestResult<KeysRotateResponses, KeysRotateErrors, ThrowOnError> =>
+  (options.client ?? client).post<KeysRotateResponses, KeysRotateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api-keys/{id}/rotate',
     ...options,
     headers: {
       'Content-Type': 'application/json',

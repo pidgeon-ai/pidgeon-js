@@ -1078,6 +1078,14 @@ export type ApiKey = {
    * ISO-8601, UTC.
    */
   created_at: string;
+  /**
+   * When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null.
+   */
+  rotated_at: string | null;
+  /**
+   * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
+   */
+  previous_token_expires_at: string | null;
 };
 
 export type ApiKeyCreated = {
@@ -1100,6 +1108,14 @@ export type ApiKeyCreated = {
    * ISO-8601, UTC.
    */
   created_at: string;
+  /**
+   * When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null.
+   */
+  rotated_at: string | null;
+  /**
+   * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
+   */
+  previous_token_expires_at: string | null;
   /**
    * The secret. Shown once, here, and never again.
    */
@@ -5953,6 +5969,65 @@ export type KeysUpdateResponses = {
 };
 
 export type KeysUpdateResponse = KeysUpdateResponses[keyof KeysUpdateResponses];
+
+export type KeysRotateData = {
+  body?: {
+    grace_period_seconds?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/api-keys/{id}/rotate';
+};
+
+export type KeysRotateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type KeysRotateError = KeysRotateErrors[keyof KeysRotateErrors];
+
+export type KeysRotateResponses = {
+  /**
+   * The key, with its new token.
+   */
+  200: {
+    data: ApiKeyCreated;
+  };
+};
+
+export type KeysRotateResponse = KeysRotateResponses[keyof KeysRotateResponses];
 
 export type AppPasswordsListData = {
   body?: never;

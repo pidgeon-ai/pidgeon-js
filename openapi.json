@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3579,6 +3579,30 @@
           "created_at": {
             "type": "string",
             "description": "ISO-8601, UTC."
+          },
+          "rotated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null."
+          },
+          "previous_token_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period."
           }
         },
         "required": [
@@ -3591,7 +3615,9 @@
           "created_by_key_id",
           "last_used_at",
           "revoked_at",
-          "created_at"
+          "created_at",
+          "rotated_at",
+          "previous_token_expires_at"
         ],
         "additionalProperties": false
       },
@@ -3661,6 +3687,30 @@
             "type": "string",
             "description": "ISO-8601, UTC."
           },
+          "rotated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null."
+          },
+          "previous_token_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period."
+          },
           "token": {
             "type": "string",
             "description": "The secret. Shown once, here, and never again."
@@ -3677,6 +3727,8 @@
           "last_used_at",
           "revoked_at",
           "created_at",
+          "rotated_at",
+          "previous_token_expires_at",
           "token"
         ],
         "additionalProperties": false
@@ -14602,7 +14654,7 @@
       "patch": {
         "operationId": "keysUpdate",
         "summary": "Rename a key",
-        "description": "The only thing about a key that can change. Not its scope — a key's reach is what somebody granted when they made it, and widening that in place would let a credential already in circulation reach further than whoever issued it agreed to.",
+        "description": "Its name and its secret (`POST /api-keys/{id}/rotate`) are the only things about a key that can change. Not its scope — a key's reach is what somebody granted when they made it, and widening that in place would let a credential already in circulation reach further than whoever issued it agreed to.",
         "parameters": [
           {
             "name": "id",
@@ -14761,6 +14813,144 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Deleted"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "keys"
+        ]
+      }
+    },
+    "/api-keys/{id}/rotate": {
+      "post": {
+        "operationId": "keysRotate",
+        "summary": "Give a key a new secret",
+        "description": "A new secret for the same key id. Everything that hangs off the id is unchanged — its scope, its ceiling, its expiry, and **every key it minted**, which keep working — so rotating an admin key does not take its children down. Revoking is still how a key and its children end together.\n\nThe old secret stops now, or after `grace_period_seconds` (at most 86400, a day), so the servers that hold it can move over. One previous secret at a time: rotating again inside the window ends the older one immediately.\n\nA key may rotate itself and keys it minted; a person must own the workspace. The `token` is in this response and nowhere else, ever.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grace_period_seconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 86400
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The key, with its new token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ApiKeyCreated"
                     }
                   },
                   "required": [

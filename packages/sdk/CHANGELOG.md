@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.23.0 — rotating a key
+
+`keysRotate` (`POST /api-keys/{id}/rotate`) gives a key a new secret and
+keeps its id, so its scope, its ceiling, its expiry and every key it minted
+are unchanged and keep working. The old secret stops at once, or after
+`grace_period_seconds` (at most 86400). The answer carries the new `token`,
+once. Every key gains `rotated_at` and `previous_token_expires_at`. Additive.
+
 ## 1.22.0 — typed data, and the declared sender
 
 Every send — `messagesSend`, `messagesReply`, `messagesReplyAll`,
