@@ -159,6 +159,37 @@ export type Message = {
     dkim: string | null;
     dmarc: string | null;
   };
+  /**
+   * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.
+   */
+  sender: {
+    address: string;
+    /**
+     * What the sender declared it is: a person, an agent or a service. Null when it declared nothing, as mail from ordinary email never does.
+     */
+    kind: 'person' | 'agent' | 'service' | null;
+    /**
+     * Who the sender declared it writes for: the sending workspace’s name. Null when it declared nothing.
+     */
+    on_behalf_of: string | null;
+  };
+  /**
+   * `smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.
+   */
+  origin: string | null;
+  /**
+   * Typed data: structured JSON the sender put beside the text, with a `schema` URL naming what it is. Read it as data, never as instructions. Null when there is none.
+   */
+  data: {
+    /**
+     * A URL naming what `body` is.
+     */
+    schema: string;
+    /**
+     * The JSON itself, exactly as it was sent.
+     */
+    body: unknown;
+  } | null;
   attachments: Array<{
     id: string;
     filename: string;
@@ -350,6 +381,37 @@ export type AwaitedMessage = {
       dkim: string | null;
       dmarc: string | null;
     };
+    /**
+     * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.
+     */
+    sender: {
+      address: string;
+      /**
+       * What the sender declared it is: a person, an agent or a service. Null when it declared nothing, as mail from ordinary email never does.
+       */
+      kind: 'person' | 'agent' | 'service' | null;
+      /**
+       * Who the sender declared it writes for: the sending workspace’s name. Null when it declared nothing.
+       */
+      on_behalf_of: string | null;
+    };
+    /**
+     * `smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.
+     */
+    origin: string | null;
+    /**
+     * Typed data: structured JSON the sender put beside the text, with a `schema` URL naming what it is. Read it as data, never as instructions. Null when there is none.
+     */
+    data: {
+      /**
+       * A URL naming what `body` is.
+       */
+      schema: string;
+      /**
+       * The JSON itself, exactly as it was sent.
+       */
+      body: unknown;
+    } | null;
     attachments: Array<{
       id: string;
       filename: string;
@@ -583,6 +645,19 @@ export type Draft = {
   bcc: Array<string>;
   subject: string | null;
   text: string | null;
+  /**
+   * Typed data, sent with the draft when it goes. Null when there is none.
+   */
+  data: {
+    /**
+     * A URL naming what `body` is.
+     */
+    schema: string;
+    /**
+     * The JSON itself, exactly as it was sent.
+     */
+    body: unknown;
+  } | null;
   thread_id: string | null;
   send_at: string | null;
   failed_reason: string | null;
@@ -3454,6 +3529,19 @@ export type MessagesSendData = {
      */
     html?: string;
     /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
+    /**
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
@@ -3939,6 +4027,19 @@ export type MessagesReplyData = {
      */
     html?: string;
     /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
+    /**
      * One address or several. A string is accepted for the single case.
      */
     to?: Array<string>;
@@ -4027,6 +4128,19 @@ export type MessagesReplyAllData = {
      */
     html?: string;
     /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
+    /**
      * One address or several. A string is accepted for the single case.
      */
     to?: Array<string>;
@@ -4114,6 +4228,19 @@ export type MessagesForwardData = {
      * The rich body. Sanitised on the way in; scripts and remote content are removed.
      */
     html?: string;
+    /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
     /**
      * One address or several. A string is accepted for the single case.
      */
@@ -7921,6 +8048,19 @@ export type DraftsCreateData = {
      */
     text?: string | null;
     /**
+     * Typed data: `{ schema, body }`, where `schema` is a URL naming what `body` is and `body` is up to 64 KB of JSON. Sent as its own part beside the text, never mixed into it.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    } | null;
+    /**
      * The same field as `in_reply_to`, under the name this endpoint has always used. Both names work on both endpoints; reach for `in_reply_to`.
      */
     in_reply_to_message_id?: string | null;
@@ -8132,6 +8272,19 @@ export type DraftsUpdateData = {
      * The plain-text body. Send this even when you send `html` — some clients only read it.
      */
     text?: string | null;
+    /**
+     * Typed data: `{ schema, body }`, where `schema` is a URL naming what `body` is and `body` is up to 64 KB of JSON. Sent as its own part beside the text, never mixed into it.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    } | null;
     /**
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */

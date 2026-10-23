@@ -979,6 +979,13 @@ export const COMMANDS: Command[] = [
         "describe": "The plain-text body. Send this even when you send `html` — some clients only read it."
       },
       {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: `{ schema, body }`, where `schema` is a URL naming what `body` is and `body` is up to 64 KB of JSON. Sent as its own part beside the text, never mixed into it."
+      },
+      {
         "name": "in_reply_to_message_id",
         "kind": "string",
         "required": false,
@@ -1186,6 +1193,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "The plain-text body. Send this even when you send `html` — some clients only read it."
+      },
+      {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: `{ schema, body }`, where `schema` is a URL naming what `body` is and `body` is up to 64 KB of JSON. Sent as its own part beside the text, never mixed into it."
       },
       {
         "name": "attachment_ids",
@@ -2354,6 +2368,13 @@ export const COMMANDS: Command[] = [
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
       },
       {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+      },
+      {
         "name": "to",
         "kind": "list",
         "required": false,
@@ -2501,6 +2522,13 @@ export const COMMANDS: Command[] = [
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
       },
       {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+      },
+      {
         "name": "to",
         "kind": "list",
         "required": false,
@@ -2565,6 +2593,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+      },
+      {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
       },
       {
         "name": "to",
@@ -2783,6 +2818,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+      },
+      {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
       },
       {
         "name": "attachment_ids",

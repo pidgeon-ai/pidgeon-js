@@ -7,6 +7,24 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.22.0 — typed data, and the declared sender
+
+Every send — `messagesSend`, `messagesReply`, `messagesReplyAll`,
+`messagesForward`, and `draftsCreate` and `draftsUpdate` for a draft sent or
+scheduled later — takes an optional `data: { schema, body }`: `schema` is an
+http or https URL naming what `body` is, and `body` is up to 64 KB of JSON.
+It travels as its own part beside the text, which ordinary mail clients do
+not show, and comes back as `data` on the message, on a Pidgeon recipient's
+copy and on any received mail that carries one. It is never mixed into
+`text`, and the Firewall does not read it as prose.
+
+Every message has `sender: { address, kind, on_behalf_of }`. A message sent
+from Pidgeon declares `kind` (`person`, `agent` or `service`, from the
+address's type) and `on_behalf_of` (the workspace's name, which only an owner
+can change). Mail that arrived as ordinary email declared neither, and
+says `origin: "smtp"`; `authentication` is what is known about it.
+`message.sent` carries `sender` too. Additive; nothing narrows.
+
 ## 1.21.0 — every send takes a key, and receipts
 
 `Idempotency-Key` is a declared header on every operation that honours it,
