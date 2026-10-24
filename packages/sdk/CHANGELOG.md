@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.29.0 — The signed-sender records
+
+Every domain's DNS records (`domainsGet`, `domainsCreate`, `domainsVerify`)
+gain two optional ones: `signing`, a TXT at `_post`, and `signing_host`, a
+CNAME at `post`. With both connected, mail from the domain carries a
+signature receivers can check against the domain's published keys. Every
+record gains `optional`, true for these two; they have their own `status`
+and never count towards whether the domain is configured. Additive.
+
 ## 1.28.0 — DNS hosts for subdomains, and why a record is waiting
 
 Every DNS record (`domainsGet`, `domainsCreate`, `domainsVerify`) gains

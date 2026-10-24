@@ -1028,7 +1028,7 @@ export type DomainDetail = {
     priority: number | null;
     status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
     /**
-     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
      */
     state:
       'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
@@ -1037,6 +1037,10 @@ export type DomainDetail = {
      * Where `found` was read, when that was not `fqdn`.
      */
     found_at: string | null;
+    /**
+     * Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured.
+     */
+    optional: boolean;
     description: string;
     checked_at: string | null;
   }>;
@@ -1066,7 +1070,7 @@ export type DnsRecord = {
   priority: number | null;
   status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
   /**
-   * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+   * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
    */
   state:
     'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
@@ -1075,6 +1079,10 @@ export type DnsRecord = {
    * Where `found` was read, when that was not `fqdn`.
    */
   found_at: string | null;
+  /**
+   * Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured.
+   */
+  optional: boolean;
   description: string;
   checked_at: string | null;
 };
@@ -1106,7 +1114,7 @@ export type Verification = {
     priority: number | null;
     status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
     /**
-     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
      */
     state:
       'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
@@ -1115,6 +1123,10 @@ export type Verification = {
      * Where `found` was read, when that was not `fqdn`.
      */
     found_at: string | null;
+    /**
+     * Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured.
+     */
+    optional: boolean;
     description: string;
     checked_at: string | null;
   }>;

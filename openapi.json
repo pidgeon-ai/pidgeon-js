@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.28.0",
+    "version": "1.29.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3229,7 +3229,7 @@
                       "type": "null"
                     }
                   ],
-                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
                 },
                 "found": {
                   "type": [
@@ -3243,6 +3243,10 @@
                     "string",
                     "null"
                   ]
+                },
+                "optional": {
+                  "type": "boolean",
+                  "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
                 },
                 "description": {
                   "type": "string"
@@ -3272,6 +3276,7 @@
                 "state",
                 "found",
                 "found_at",
+                "optional",
                 "description",
                 "checked_at"
               ],
@@ -3362,7 +3367,7 @@
                 "type": "null"
               }
             ],
-            "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+            "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
           },
           "found": {
             "type": [
@@ -3376,6 +3381,10 @@
               "string",
               "null"
             ]
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
           },
           "description": {
             "type": "string"
@@ -3405,6 +3414,7 @@
           "state",
           "found",
           "found_at",
+          "optional",
           "description",
           "checked_at"
         ],
@@ -3490,7 +3500,7 @@
                       "type": "null"
                     }
                   ],
-                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
                 },
                 "found": {
                   "type": [
@@ -3504,6 +3514,10 @@
                     "string",
                     "null"
                   ]
+                },
+                "optional": {
+                  "type": "boolean",
+                  "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
                 },
                 "description": {
                   "type": "string"
@@ -3533,6 +3547,7 @@
                 "state",
                 "found",
                 "found_at",
+                "optional",
                 "description",
                 "checked_at"
               ],
