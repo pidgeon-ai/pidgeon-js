@@ -1008,11 +1008,35 @@ export type DomainDetail = {
   dns_records: Array<{
     type: string;
     record_type: string;
+    /**
+     * Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`.
+     */
     name: string;
+    /**
+     * The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`.
+     */
+    zone: string;
+    /**
+     * The full name, no trailing dot: `_dmarc.agents.example.com`.
+     */
+    fqdn: string;
+    /**
+     * The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself.
+     */
+    host_relative: string;
     value: string;
     priority: number | null;
     status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
+    /**
+     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+     */
+    state:
+      'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
     found: string | null;
+    /**
+     * Where `found` was read, when that was not `fqdn`.
+     */
+    found_at: string | null;
     description: string;
     checked_at: string | null;
   }>;
@@ -1022,11 +1046,35 @@ export type DomainDetail = {
 export type DnsRecord = {
   type: string;
   record_type: string;
+  /**
+   * Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`.
+   */
   name: string;
+  /**
+   * The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`.
+   */
+  zone: string;
+  /**
+   * The full name, no trailing dot: `_dmarc.agents.example.com`.
+   */
+  fqdn: string;
+  /**
+   * The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself.
+   */
+  host_relative: string;
   value: string;
   priority: number | null;
   status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
+  /**
+   * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+   */
+  state:
+    'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
   found: string | null;
+  /**
+   * Where `found` was read, when that was not `fqdn`.
+   */
+  found_at: string | null;
   description: string;
   checked_at: string | null;
 };
@@ -1038,11 +1086,35 @@ export type Verification = {
   dns_records: Array<{
     type: string;
     record_type: string;
+    /**
+     * Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`.
+     */
     name: string;
+    /**
+     * The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`.
+     */
+    zone: string;
+    /**
+     * The full name, no trailing dot: `_dmarc.agents.example.com`.
+     */
+    fqdn: string;
+    /**
+     * The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself.
+     */
+    host_relative: string;
     value: string;
     priority: number | null;
     status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
+    /**
+     * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+     */
+    state:
+      'connected' | 'published' | 'missing' | 'wrong_value' | 'wrong_name' | 'not_required' | null;
     found: string | null;
+    /**
+     * Where `found` was read, when that was not `fqdn`.
+     */
+    found_at: string | null;
     description: string;
     checked_at: string | null;
   }>;

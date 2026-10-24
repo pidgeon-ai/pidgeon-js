@@ -7,6 +7,17 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.28.0 — DNS hosts for subdomains, and why a record is waiting
+
+Every DNS record (`domainsGet`, `domainsCreate`, `domainsVerify`) gains
+`zone`, `fqdn` and `host_relative`: for `agents.example.com` the DMARC record
+is `_dmarc.agents` in `example.com`, which is what Squarespace, GoDaddy and
+Namecheap ask for. `name` is unchanged. `state` says why `status` is what it
+is — `published` (correct in DNS, waiting on Amazon), `missing`,
+`wrong_value` or `wrong_name` — and `found_at` is where a misplaced record was
+found. For DKIM, `found` is now the CNAME read from DNS rather than Amazon's
+status word. Additive.
+
 ## 1.27.0 — a key that drafts and never sends
 
 `keysCreate` takes `access: 'draft'`, between `read` and `send`: the key

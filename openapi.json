@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.27.0",
+    "version": "1.28.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3173,7 +3173,20 @@
                   "type": "string"
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+                },
+                "zone": {
+                  "type": "string",
+                  "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+                },
+                "fqdn": {
+                  "type": "string",
+                  "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+                },
+                "host_relative": {
+                  "type": "string",
+                  "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
                 },
                 "value": {
                   "type": "string"
@@ -3199,7 +3212,33 @@
                     "not_required"
                   ]
                 },
+                "state": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "connected",
+                        "published",
+                        "missing",
+                        "wrong_value",
+                        "wrong_name",
+                        "not_required"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                },
                 "found": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "found_at": {
+                  "description": "Where `found` was read, when that was not `fqdn`.",
                   "type": [
                     "string",
                     "null"
@@ -3224,10 +3263,15 @@
                 "type",
                 "record_type",
                 "name",
+                "zone",
+                "fqdn",
+                "host_relative",
                 "value",
                 "priority",
                 "status",
+                "state",
                 "found",
+                "found_at",
                 "description",
                 "checked_at"
               ],
@@ -3262,7 +3306,20 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+          },
+          "zone": {
+            "type": "string",
+            "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+          },
+          "fqdn": {
+            "type": "string",
+            "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+          },
+          "host_relative": {
+            "type": "string",
+            "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
           },
           "value": {
             "type": "string"
@@ -3288,7 +3345,33 @@
               "not_required"
             ]
           },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "connected",
+                  "published",
+                  "missing",
+                  "wrong_value",
+                  "wrong_name",
+                  "not_required"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+          },
           "found": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "found_at": {
+            "description": "Where `found` was read, when that was not `fqdn`.",
             "type": [
               "string",
               "null"
@@ -3313,10 +3396,15 @@
           "type",
           "record_type",
           "name",
+          "zone",
+          "fqdn",
+          "host_relative",
           "value",
           "priority",
           "status",
+          "state",
           "found",
+          "found_at",
           "description",
           "checked_at"
         ],
@@ -3346,7 +3434,20 @@
                   "type": "string"
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+                },
+                "zone": {
+                  "type": "string",
+                  "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+                },
+                "fqdn": {
+                  "type": "string",
+                  "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+                },
+                "host_relative": {
+                  "type": "string",
+                  "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
                 },
                 "value": {
                   "type": "string"
@@ -3372,7 +3473,33 @@
                     "not_required"
                   ]
                 },
+                "state": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "connected",
+                        "published",
+                        "missing",
+                        "wrong_value",
+                        "wrong_name",
+                        "not_required"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                },
                 "found": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "found_at": {
+                  "description": "Where `found` was read, when that was not `fqdn`.",
                   "type": [
                     "string",
                     "null"
@@ -3397,10 +3524,15 @@
                 "type",
                 "record_type",
                 "name",
+                "zone",
+                "fqdn",
+                "host_relative",
                 "value",
                 "priority",
                 "status",
+                "state",
                 "found",
+                "found_at",
                 "description",
                 "checked_at"
               ],
