@@ -269,6 +269,9 @@ import type {
   PodsCreateData,
   PodsCreateErrors,
   PodsCreateResponses,
+  PodsDeleteData,
+  PodsDeleteErrors,
+  PodsDeleteResponses,
   PodsGetData,
   PodsGetErrors,
   PodsGetResponses,
@@ -716,7 +719,7 @@ export const identitiesSuspendTenant = <ThrowOnError extends boolean = false>(
  *
  * The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.
  *
- * **Each pod has its own sending reputation**, so bounces from one customer cannot degrade delivery for another — mail sends under the pod its address is in, whichever domain it is on. A key is still a list of address ids rather than something scoped to a pod.
+ * **Each pod has its own sending reputation**, so bounces from one customer cannot degrade delivery for another — mail sends under the pod its address is in, whichever domain it is on. A pod key (`pod_id` on `POST /api-keys`) reaches one pod and nothing else.
  *
  * Not paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.
  */
@@ -733,6 +736,10 @@ export const podsList = <ThrowOnError extends boolean = false>(
  * Create a pod
  *
  * Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.
+ *
+ * **Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead.
+ *
+ * **The token is shown once.** Send an `Idempotency-Key`: a retry with it returns the same pod, address and key, with `token: null`, because the secret is never stored. If the first answer was lost, rotate the key (`POST /api-keys/{id}/rotate`) for a new secret.
  */
 export const podsCreate = <ThrowOnError extends boolean = false>(
   options: Options<PodsCreateData, ThrowOnError>,
@@ -745,6 +752,24 @@ export const podsCreate = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Delete a pod, its addresses and their mail
+ *
+ * **This deletes customer data and cannot be undone.** It revokes every key of the pod, and every key those minted, then deletes each address in the pod with all of its mail, then the pod.
+ *
+ * A pod that still holds an address is refused with 409 unless you pass `delete_addresses=true`. The default pod and a pod holding a domain are always refused: delete the domain first. Needs a live key over the whole account.
+ *
+ * If it fails part way, call it again: it carries on from where it stopped. To keep the mail, suspend the addresses (`PATCH /identities/{id}`) or move them to another pod instead.
+ */
+export const podsDelete = <ThrowOnError extends boolean = false>(
+  options: Options<PodsDeleteData, ThrowOnError>,
+): RequestResult<PodsDeleteResponses, PodsDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<PodsDeleteResponses, PodsDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/pods/{id}',
+    ...options,
   });
 
 /**
@@ -761,8 +786,6 @@ export const podsGet = <ThrowOnError extends boolean = false>(
 
 /**
  * Rename a pod, or change its client id
- *
- * There is no delete. A container holding mailboxes is not a thing to remove with one call, and nothing yet moves addresses between pods — so the verb would either refuse every non-empty pod or destroy mail. Suspend the addresses instead.
  */
 export const podsUpdate = <ThrowOnError extends boolean = false>(
   options: Options<PodsUpdateData, ThrowOnError>,
@@ -1402,7 +1425,7 @@ export const mailboxesListFolder = <ThrowOnError extends boolean = false>(
 /**
  * List the keys in this workspace
  *
- * Names, prefixes, what each reaches and when it was last used — never a secret. The list is what you read before revoking something.
+ * Names, prefixes, what each reaches and when it was last used — never a secret. The list is what you read before revoking something. `pod_id` narrows it to one pod’s keys, revoked ones included.
  */
 export const keysList = <ThrowOnError extends boolean = false>(
   options?: Options<KeysListData, ThrowOnError>,

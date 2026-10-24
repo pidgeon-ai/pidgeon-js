@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.25.0",
+    "version": "1.26.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -4783,6 +4783,323 @@
         ],
         "additionalProperties": false
       },
+      "PodCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "client_id": {
+            "description": "Your own id for this pod — a customer id, whatever your side calls it.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Where an address lands when a create call names no pod. Exactly one per account."
+          },
+          "identity_count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Addresses in it."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO-8601, UTC."
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "local_part": {
+                    "type": "string"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "domain_id": {
+                    "type": "string",
+                    "description": "Pass this to POST /identities to add another address here."
+                  },
+                  "display_name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "human, team, application, workflow or agent."
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "Who answers: human, automated or hybrid."
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "capabilities": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "boolean"
+                    }
+                  },
+                  "has_inbox": {
+                    "type": "boolean",
+                    "description": "False for an address that turns mail into events and stores nothing."
+                  },
+                  "routed_address_count": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "description": "ISO-8601, UTC."
+                  },
+                  "expires_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "When it stops accepting mail. Expiry suspends the address; it never deletes it."
+                  },
+                  "send_policy": {
+                    "type": "string",
+                    "description": "Who it may write to: open, reply_only (somebody who wrote to it first), or list."
+                  },
+                  "tenant_id": {
+                    "description": "Your own opaque grouping for this address. Never parsed here.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pod_id": {
+                    "type": "string",
+                    "description": "The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null."
+                  }
+                },
+                "required": [
+                  "id",
+                  "email",
+                  "local_part",
+                  "domain",
+                  "domain_id",
+                  "display_name",
+                  "type",
+                  "mode",
+                  "status",
+                  "capabilities",
+                  "has_inbox",
+                  "routed_address_count",
+                  "created_at",
+                  "expires_at",
+                  "send_policy",
+                  "tenant_id",
+                  "pod_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The address created in the pod, or null when the call asked for none."
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "prefix": {
+                    "type": "string"
+                  },
+                  "identity_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "pod_id": {
+                    "description": "The pod this key belongs to, or null. A pod key reaches every address in the pod — `identity_ids` lists them today — and the addresses the pod gains later.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "access": {
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "send",
+                      "admin"
+                    ],
+                    "description": "The highest rung on any address. Composed with the grant; lower wins."
+                  },
+                  "created_by_key_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "last_used_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "revoked_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "description": "ISO-8601, UTC."
+                  },
+                  "rotated_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null."
+                  },
+                  "test": {
+                    "type": "boolean",
+                    "description": "A test-mode key: its mail never leaves Pidgeon and counts against nothing."
+                  },
+                  "previous_token_expires_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period."
+                  },
+                  "token": {
+                    "description": "The secret, shown once. Null on an `Idempotency-Key` replay: the secret is never stored, so rotate the key (`POST /api-keys/{id}/rotate`) for a new one.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "prefix",
+                  "identity_ids",
+                  "pod_id",
+                  "access",
+                  "created_by_key_id",
+                  "last_used_at",
+                  "revoked_at",
+                  "created_at",
+                  "rotated_at",
+                  "test",
+                  "previous_token_expires_at",
+                  "token"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A pod key for it, or null when the call asked for none."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "client_id",
+          "is_default",
+          "identity_count",
+          "created_at",
+          "address",
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "PodDeleted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          },
+          "addresses_deleted": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Addresses deleted with the pod, each with all of its mail."
+          },
+          "keys_revoked": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Keys revoked: the pod’s own, and every key those had minted."
+          }
+        },
+        "required": [
+          "id",
+          "deleted",
+          "addresses_deleted",
+          "keys_revoked"
+        ],
+        "additionalProperties": false
+      },
       "Label": {
         "type": "object",
         "properties": {
@@ -7655,7 +7972,7 @@
       "get": {
         "operationId": "podsList",
         "summary": "List pods",
-        "description": "The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.\n\n**Each pod has its own sending reputation**, so bounces from one customer cannot degrade delivery for another — mail sends under the pod its address is in, whichever domain it is on. A key is still a list of address ids rather than something scoped to a pod.\n\nNot paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.",
+        "description": "The containers in this account, the default first. A pod holds addresses and domains — a customer of yours, a client, or just test apart from production.\n\n**Each pod has its own sending reputation**, so bounces from one customer cannot degrade delivery for another — mail sends under the pod its address is in, whichever domain it is on. A pod key (`pod_id` on `POST /api-keys`) reaches one pod and nothing else.\n\nNot paged: this is a menu somebody switches with, and a product where that menu needs a cursor is one where the menu was the wrong shape.",
         "responses": {
           "200": {
             "description": "Every pod.",
@@ -7778,7 +8095,7 @@
       "post": {
         "operationId": "podsCreate",
         "summary": "Create a pod",
-        "description": "Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.",
+        "description": "Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.\n\n**Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead.\n\n**The token is shown once.** Send an `Idempotency-Key`: a retry with it returns the same pod, address and key, with `token: null`, because the secret is never stored. If the first answer was lost, rotate the key (`POST /api-keys/{id}/rotate`) for a new secret.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7803,6 +8120,134 @@
                       }
                     ],
                     "description": "Your own id for this pod. Carried and returned, never parsed."
+                  },
+                  "address": {
+                    "description": "An address to create in the new pod. The same fields as `POST /identities`.",
+                    "type": "object",
+                    "properties": {
+                      "domain_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "domain": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 253
+                      },
+                      "address": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 320
+                      },
+                      "local_part": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      "display_name": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "inbox": {
+                        "type": "boolean"
+                      },
+                      "type": {
+                        "default": "application",
+                        "type": "string",
+                        "enum": [
+                          "human",
+                          "team",
+                          "application",
+                          "workflow",
+                          "agent"
+                        ]
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "human",
+                          "automated",
+                          "hybrid"
+                        ]
+                      },
+                      "expires_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "send_policy": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "reply_only",
+                          "list"
+                        ]
+                      },
+                      "tenant_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "key": {
+                    "description": "A key for the new pod, reaching its addresses and nothing else. Its token is in this response once; a replay returns the key with `token: null`.",
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      },
+                      "access": {
+                        "type": "string",
+                        "enum": [
+                          "read",
+                          "send",
+                          "admin"
+                        ]
+                      },
+                      "expires_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "test": {
+                        "description": "Mint a test-mode key (`pgn_test_`) for the pod instead of a live one.",
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -7815,14 +8260,14 @@
         },
         "responses": {
           "201": {
-            "description": "The pod.",
+            "description": "The pod, with its address and key.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/Pod"
+                      "$ref": "#/components/schemas/PodCreated"
                     }
                   },
                   "required": [
@@ -8062,7 +8507,6 @@
       "patch": {
         "operationId": "podsUpdate",
         "summary": "Rename a pod, or change its client id",
-        "description": "There is no delete. A container holding mailboxes is not a thing to remove with one call, and nothing yet moves addresses between pods — so the verb would either refuse every non-empty pod or destroy mail. Suspend the addresses instead.",
         "parameters": [
           {
             "name": "id",
@@ -8114,6 +8558,137 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Pod"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "pods"
+        ]
+      },
+      "delete": {
+        "operationId": "podsDelete",
+        "summary": "Delete a pod, its addresses and their mail",
+        "description": "**This deletes customer data and cannot be undone.** It revokes every key of the pod, and every key those minted, then deletes each address in the pod with all of its mail, then the pod.\n\nA pod that still holds an address is refused with 409 unless you pass `delete_addresses=true`. The default pod and a pod holding a domain are always refused: delete the domain first. Needs a live key over the whole account.\n\nIf it fails part way, call it again: it carries on from where it stopped. To keep the mail, suspend the addresses (`PATCH /identities/{id}`) or move them to another pod instead.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "delete_addresses",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "`true` to delete the pod’s addresses and all their mail with it. Without it a pod that holds an address is refused with 409.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What was deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PodDeleted"
                     }
                   },
                   "required": [
@@ -14323,7 +14898,20 @@
       "get": {
         "operationId": "keysList",
         "summary": "List the keys in this workspace",
-        "description": "Names, prefixes, what each reaches and when it was last used — never a secret. The list is what you read before revoking something.",
+        "description": "Names, prefixes, what each reaches and when it was last used — never a secret. The list is what you read before revoking something. `pod_id` narrows it to one pod’s keys, revoked ones included.",
+        "parameters": [
+          {
+            "name": "pod_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only the keys of this pod.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "A page of keys.",

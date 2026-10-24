@@ -830,8 +830,8 @@ export const TOOLS: ToolDefinition[] = [
       'A container for one of your customers, with its own sending reputation. Give it a ' +
       '`name` a person would recognise and, if your own system has an id for this customer, ' +
       '`client_id` — carried and returned, never parsed. Then pass the new pod’s id as ' +
-      '`pod_id` to `create_address`. There is no delete: a pod holds mailboxes, and the ' +
-      'verb that destroys hundreds of them at once is not one to hand an agent.',
+      '`pod_id` to `create_address`. Deleting a pod is not a tool: it deletes every ' +
+      'mailbox in it with their mail, which is a call for your server to make, not an agent.',
     endpoint: 'POST /pods',
     annotations: ADD,
     inputSchema: {

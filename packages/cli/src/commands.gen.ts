@@ -1957,7 +1957,15 @@ export const COMMANDS: Command[] = [
     "method": "GET",
     "path": "/api-keys",
     "summary": "List the keys in this workspace",
-    "flags": []
+    "flags": [
+      {
+        "name": "pod_id",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Only the keys of this pod."
+      }
+    ]
   },
   {
     "group": "keys",
@@ -3002,6 +3010,47 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Your own id for this pod. Carried and returned, never parsed."
+      },
+      {
+        "name": "address",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "An address to create in the new pod. The same fields as `POST /identities`."
+      },
+      {
+        "name": "key",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "A key for the new pod, reaching its addresses and nothing else. Its token is in this response once; a replay returns the key with `token: null`."
+      }
+    ]
+  },
+  {
+    "group": "pods",
+    "name": "delete",
+    "operationId": "podsDelete",
+    "method": "DELETE",
+    "path": "/pods/{id}",
+    "summary": "Delete a pod, its addresses and their mail",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "delete_addresses",
+        "kind": "string",
+        "choices": [
+          "true",
+          "false"
+        ],
+        "required": false,
+        "where": "query",
+        "describe": "`true` to delete the pod’s addresses and all their mail with it. Without it a pod that holds an address is refused with 409."
       }
     ]
   },

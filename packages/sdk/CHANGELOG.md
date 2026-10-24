@@ -7,6 +7,18 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.26.0 — provisioning and teardown by pod
+
+`podsCreate` takes `address` (the same fields as `identitiesCreate`) and `key`
+(`name`, `access`, `expires_at`, `test`), and makes the pod, that address in
+it and a pod key in one call, or none of them. It answers `PodCreated`: the
+pod with `address` and `key`, each null when not asked for. The key's `token`
+is there once; a replay with the same `Idempotency-Key` returns the same pod,
+address and key with `token: null`. `podsDelete` (`DELETE /pods/{id}`) revokes
+the pod's keys and deletes its addresses and all their mail, and needs
+`delete_addresses: 'true'` for a pod that holds any. `keysList` takes
+`pod_id`. Additive.
+
 ## 1.25.0 — a forged `from` is held back
 
 `messagesAwait` with `from` matches only mail that passed DMARC (or that

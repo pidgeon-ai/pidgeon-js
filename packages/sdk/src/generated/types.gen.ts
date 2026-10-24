@@ -1515,6 +1515,131 @@ export type Pod = {
   created_at: string;
 };
 
+export type PodCreated = {
+  id: string;
+  name: string;
+  /**
+   * Your own id for this pod — a customer id, whatever your side calls it.
+   */
+  client_id: string | null;
+  /**
+   * Where an address lands when a create call names no pod. Exactly one per account.
+   */
+  is_default: boolean;
+  /**
+   * Addresses in it.
+   */
+  identity_count: number;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+  /**
+   * The address created in the pod, or null when the call asked for none.
+   */
+  address: {
+    id: string;
+    email: string;
+    local_part: string;
+    domain: string;
+    /**
+     * Pass this to POST /identities to add another address here.
+     */
+    domain_id: string;
+    display_name: string | null;
+    /**
+     * human, team, application, workflow or agent.
+     */
+    type: string;
+    /**
+     * Who answers: human, automated or hybrid.
+     */
+    mode: string;
+    status: string;
+    capabilities: {
+      [key: string]: boolean;
+    };
+    /**
+     * False for an address that turns mail into events and stores nothing.
+     */
+    has_inbox: boolean;
+    routed_address_count: number;
+    /**
+     * ISO-8601, UTC.
+     */
+    created_at: string;
+    /**
+     * When it stops accepting mail. Expiry suspends the address; it never deletes it.
+     */
+    expires_at: string | null;
+    /**
+     * Who it may write to: open, reply_only (somebody who wrote to it first), or list.
+     */
+    send_policy: string;
+    /**
+     * Your own opaque grouping for this address. Never parsed here.
+     */
+    tenant_id: string | null;
+    /**
+     * The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null.
+     */
+    pod_id: string;
+  } | null;
+  /**
+   * A pod key for it, or null when the call asked for none.
+   */
+  key: {
+    id: string;
+    name: string;
+    prefix: string;
+    identity_ids: Array<string>;
+    /**
+     * The pod this key belongs to, or null. A pod key reaches every address in the pod — `identity_ids` lists them today — and the addresses the pod gains later.
+     */
+    pod_id: string | null;
+    /**
+     * The highest rung on any address. Composed with the grant; lower wins.
+     */
+    access: 'read' | 'send' | 'admin';
+    created_by_key_id: string | null;
+    last_used_at: string | null;
+    revoked_at: string | null;
+    /**
+     * ISO-8601, UTC.
+     */
+    created_at: string;
+    /**
+     * When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null.
+     */
+    rotated_at: string | null;
+    /**
+     * A test-mode key: its mail never leaves Pidgeon and counts against nothing.
+     */
+    test: boolean;
+    /**
+     * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
+     */
+    previous_token_expires_at: string | null;
+    /**
+     * The secret, shown once. Null on an `Idempotency-Key` replay: the secret is never stored, so rotate the key (`POST /api-keys/{id}/rotate`) for a new one.
+     */
+    token: string | null;
+  } | null;
+};
+
+export type PodDeleted = {
+  id: string;
+  deleted: true;
+  /**
+   * Addresses deleted with the pod, each with all of its mail.
+   */
+  addresses_deleted: number;
+  /**
+   * Keys revoked: the pod’s own, and every key those had minted.
+   */
+  keys_revoked: number;
+};
+
 export type Label = {
   id: string;
   identity_id: string;
@@ -2864,6 +2989,34 @@ export type PodsCreateData = {
      * Your own id for this pod. Carried and returned, never parsed.
      */
     client_id?: string | null;
+    /**
+     * An address to create in the new pod. The same fields as `POST /identities`.
+     */
+    address?: {
+      domain_id?: string;
+      domain?: string;
+      address?: string;
+      local_part?: string;
+      display_name?: string | null;
+      inbox?: boolean;
+      type?: 'human' | 'team' | 'application' | 'workflow' | 'agent';
+      mode?: 'human' | 'automated' | 'hybrid';
+      expires_at?: string | null;
+      send_policy?: 'open' | 'reply_only' | 'list';
+      tenant_id?: string | null;
+    };
+    /**
+     * A key for the new pod, reaching its addresses and nothing else. Its token is in this response once; a replay returns the key with `token: null`.
+     */
+    key?: {
+      name?: string;
+      access?: 'read' | 'send' | 'admin';
+      expires_at?: string | null;
+      /**
+       * Mint a test-mode key (`pgn_test_`) for the pod instead of a live one.
+       */
+      test?: boolean;
+    };
   };
   headers?: {
     /**
@@ -2919,14 +3072,76 @@ export type PodsCreateError = PodsCreateErrors[keyof PodsCreateErrors];
 
 export type PodsCreateResponses = {
   /**
-   * The pod.
+   * The pod, with its address and key.
    */
   201: {
-    data: Pod;
+    data: PodCreated;
   };
 };
 
 export type PodsCreateResponse = PodsCreateResponses[keyof PodsCreateResponses];
+
+export type PodsDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: {
+    /**
+     * `true` to delete the pod’s addresses and all their mail with it. Without it a pod that holds an address is refused with 409.
+     */
+    delete_addresses?: 'true' | 'false';
+  };
+  url: '/pods/{id}';
+};
+
+export type PodsDeleteErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type PodsDeleteError = PodsDeleteErrors[keyof PodsDeleteErrors];
+
+export type PodsDeleteResponses = {
+  /**
+   * What was deleted.
+   */
+  200: {
+    data: PodDeleted;
+  };
+};
+
+export type PodsDeleteResponse = PodsDeleteResponses[keyof PodsDeleteResponses];
 
 export type PodsGetData = {
   body?: never;
@@ -5708,7 +5923,12 @@ export type MailboxesListFolderResponse =
 export type KeysListData = {
   body?: never;
   path?: never;
-  query?: never;
+  query?: {
+    /**
+     * Only the keys of this pod.
+     */
+    pod_id?: string;
+  };
   url: '/api-keys';
 };
 
