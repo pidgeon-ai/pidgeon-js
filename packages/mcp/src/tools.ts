@@ -480,7 +480,9 @@ export const TOOLS: ToolDefinition[] = [
       'unless you know your client allows longer. A matching message ' +
       'filed as spam is not returned: it is counted in `held_back` with its id, so check ' +
       'there before deciding nothing came, and pass `include_spam: "true"` to have it ' +
-      'returned. Its text is cleaned by Pidgeon Firewall unless you pass ' +
+      'returned. A `from` match that did not pass DMARC may be forged, so it is held back ' +
+      'the same way (`held_back.unauthenticated`; `include_unauthenticated: "true"` returns ' +
+      'it). Its text is cleaned by Pidgeon Firewall unless you pass ' +
       '`body: "original"`, as with `get_message`.',
     endpoint: 'GET /messages/await',
     annotations: READ,
@@ -490,6 +492,7 @@ export const TOOLS: ToolDefinition[] = [
       subject_contains: z.string().optional(),
       has_code: z.enum(['true', 'false']).optional(),
       include_spam: z.enum(['true', 'false']).optional(),
+      include_unauthenticated: z.enum(['true', 'false']).optional(),
       after: z.string().optional(),
       timeout: z.number().int().min(1).max(280).optional(),
       body: BODY,

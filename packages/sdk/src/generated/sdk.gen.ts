@@ -668,7 +668,7 @@ export const identitiesReceiveRulesGet = <ThrowOnError extends boolean = false>(
  *
  * `value` is an address or a domain and the string says which: `billing@acme.com` matches one person, `acme.com` matches everybody there. **The more specific rule wins**, and an address’s own rule wins over a workspace-wide one. Adding **replaces** any rule already there for that value.
  *
- * `action` is `reject`, `spam`, `trash`, `archive` or `inbox`. **`reject` refuses before the message is stored** — no row, no thread, no storage charged and no webhook — which is what an address nobody will ever open wants. The other four file it, and `inbox` means *never classify this sender as spam*.
+ * `action` is `reject`, `spam`, `trash`, `archive` or `inbox`. **`reject` refuses before the message is stored** — no row, no thread, no storage charged and no webhook — which is what an address nobody will ever open wants. The other four file it, and `inbox` means *never file this sender as spam*. A rule takes a message out of spam only when it passed DMARC, because the rule matches a `From:` anybody can write.
  *
  * **It is not a security control.** The `From:` header is written by the sender, and anybody blocked can change it for the price of a new address. What this buys is not paying for mail from senders who have not bothered.
  */
@@ -978,7 +978,7 @@ export const messagesUndo = <ThrowOnError extends boolean = false>(
 /**
  * Wait for the next message
  *
- * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Without `after`, it first looks back 2 minutes and returns the newest matching message from then, because a code often lands before the call is made; narrow it with `from`, `subject_contains` or `has_code` so an earlier email is not taken for the one you want, or pass `after=now` to wait only for new mail. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.
+ * Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Without `after`, it first looks back 2 minutes and returns the newest matching message from then, because a code often lands before the call is made; narrow it with `from`, `subject_contains` or `has_code` so an earlier email is not taken for the one you want, or pass `after=now` to wait only for new mail. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived. A message matches `from` only when it passed DMARC, because anybody can write a `From:`; one that did not is counted in `held_back.unauthenticated`, and `include_unauthenticated=true` returns it.
  */
 export const messagesAwait = <ThrowOnError extends boolean = false>(
   options: Options<MessagesAwaitData, ThrowOnError>,

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.24.0",
+    "version": "1.25.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -1634,12 +1634,18 @@
                 "maximum": 9007199254740991,
                 "description": "Matching messages that arrived and were filed as spam."
               },
+              "unauthenticated": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Messages that matched `from` but did not pass DMARC, so their From may be forged."
+              },
               "message_ids": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Their ids, for `GET /messages/{id}`."
+                "description": "Their ids, spam first, for `GET /messages/{id}`."
               },
               "how_to_include": {
                 "description": "What to do about them, in a sentence. Null when nothing was held back.",
@@ -1651,11 +1657,12 @@
             },
             "required": [
               "spam",
+              "unauthenticated",
               "message_ids",
               "how_to_include"
             ],
             "additionalProperties": false,
-            "description": "What matched and was not returned. A wait that times out with `spam` above zero did not miss the message: it was filed as spam."
+            "description": "What matched and was not returned. A wait that times out with `spam` or `unauthenticated` above zero did not miss the message: it was held back."
           }
         },
         "required": [
@@ -4446,7 +4453,7 @@
                 },
                 "action": {
                   "type": "string",
-                  "description": "reject refuses before the message is stored. spam, trash and archive file it. inbox means never classify this sender as spam."
+                  "description": "reject refuses before the message is stored. spam, trash and archive file it. inbox means never file this sender as spam, for mail that passes DMARC."
                 },
                 "match_type": {
                   "type": "string",
@@ -7247,7 +7254,7 @@
       "post": {
         "operationId": "identitiesReceiveRulesCreate",
         "summary": "Decide what happens to a sender",
-        "description": "`value` is an address or a domain and the string says which: `billing@acme.com` matches one person, `acme.com` matches everybody there. **The more specific rule wins**, and an address’s own rule wins over a workspace-wide one. Adding **replaces** any rule already there for that value.\n\n`action` is `reject`, `spam`, `trash`, `archive` or `inbox`. **`reject` refuses before the message is stored** — no row, no thread, no storage charged and no webhook — which is what an address nobody will ever open wants. The other four file it, and `inbox` means *never classify this sender as spam*.\n\n**It is not a security control.** The `From:` header is written by the sender, and anybody blocked can change it for the price of a new address. What this buys is not paying for mail from senders who have not bothered.",
+        "description": "`value` is an address or a domain and the string says which: `billing@acme.com` matches one person, `acme.com` matches everybody there. **The more specific rule wins**, and an address’s own rule wins over a workspace-wide one. Adding **replaces** any rule already there for that value.\n\n`action` is `reject`, `spam`, `trash`, `archive` or `inbox`. **`reject` refuses before the message is stored** — no row, no thread, no storage charged and no webhook — which is what an address nobody will ever open wants. The other four file it, and `inbox` means *never file this sender as spam*. A rule takes a message out of spam only when it passed DMARC, because the rule matches a `From:` anybody can write.\n\n**It is not a security control.** The `From:` header is written by the sender, and anybody blocked can change it for the price of a new address. What this buys is not paying for mail from senders who have not bothered.",
         "parameters": [
           {
             "name": "id",
@@ -10149,7 +10156,7 @@
       "get": {
         "operationId": "messagesAwait",
         "summary": "Wait for the next message",
-        "description": "Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Without `after`, it first looks back 2 minutes and returns the newest matching message from then, because a code often lands before the call is made; narrow it with `from`, `subject_contains` or `has_code` so an earlier email is not taken for the one you want, or pass `after=now` to wait only for new mail. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived.",
+        "description": "Holds the request open until a message matching the filters arrives at the address, or `timeout` seconds pass — one call where you would otherwise poll. The message carries `extracted`: verification codes and links, most likely first. Without `after`, it first looks back 2 minutes and returns the newest matching message from then, because a code often lands before the call is made; narrow it with `from`, `subject_contains` or `has_code` so an earlier email is not taken for the one you want, or pass `after=now` to wait only for new mail. Pass the returned `cursor` as `after` on the next call so nothing arriving between calls is missed. Answers 200 with `message: null` and `timed_out: true` when nothing came. A matching message filed as spam is not returned unless you pass `include_spam=true`; it is counted in `held_back`, with its id, so a timeout never hides mail that arrived. A message matches `from` only when it passed DMARC, because anybody can write a `From:`; one that did not is counted in `held_back.unauthenticated`, and `include_unauthenticated=true` returns it.",
         "parameters": [
           {
             "name": "identity_id",
@@ -10212,6 +10219,19 @@
             "required": false,
             "schema": {
               "description": "Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "include_unauthenticated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "With `from`, also return a match that did not pass DMARC, whose From may be forged. Without it, one is counted in `held_back.unauthenticated` instead, with its id.",
               "type": "string",
               "enum": [
                 "true",

@@ -568,7 +568,7 @@ export type AwaitedMessage = {
    */
   cursor: string;
   /**
-   * What matched and was not returned. A wait that times out with `spam` above zero did not miss the message: it was filed as spam.
+   * What matched and was not returned. A wait that times out with `spam` or `unauthenticated` above zero did not miss the message: it was held back.
    */
   held_back: {
     /**
@@ -576,7 +576,11 @@ export type AwaitedMessage = {
      */
     spam: number;
     /**
-     * Their ids, for `GET /messages/{id}`.
+     * Messages that matched `from` but did not pass DMARC, so their From may be forged.
+     */
+    unauthenticated: number;
+    /**
+     * Their ids, spam first, for `GET /messages/{id}`.
      */
     message_ids: Array<string>;
     /**
@@ -1383,7 +1387,7 @@ export type ReceiveRules = {
   rules: Array<{
     id: string;
     /**
-     * reject refuses before the message is stored. spam, trash and archive file it. inbox means never classify this sender as spam.
+     * reject refuses before the message is stored. spam, trash and archive file it. inbox means never file this sender as spam, for mail that passes DMARC.
      */
     action: string;
     match_type: 'address' | 'domain';
@@ -3886,6 +3890,10 @@ export type MessagesAwaitData = {
      * Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id.
      */
     include_spam?: 'true' | 'false';
+    /**
+     * With `from`, also return a match that did not pass DMARC, whose From may be forged. Without it, one is counted in `held_back.unauthenticated` instead, with its id.
+     */
+    include_unauthenticated?: 'true' | 'false';
     /**
      * Only messages that arrived after this: the `cursor` a previous call returned, or `now`. Without it, the wait first looks back 2 minutes and returns the newest matching message from then, so a code that beat you to the call is not missed.
      */

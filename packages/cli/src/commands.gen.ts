@@ -2346,6 +2346,17 @@ export const COMMANDS: Command[] = [
         "describe": "Also return a matching message filed as spam. Without it, one is counted in `held_back` instead, with its id."
       },
       {
+        "name": "include_unauthenticated",
+        "kind": "string",
+        "choices": [
+          "true",
+          "false"
+        ],
+        "required": false,
+        "where": "query",
+        "describe": "With `from`, also return a match that did not pass DMARC, whose From may be forged. Without it, one is counted in `held_back.unauthenticated` instead, with its id."
+      },
+      {
         "name": "after",
         "kind": "string",
         "required": false,

@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.25.0 — a forged `from` is held back
+
+`messagesAwait` with `from` matches only mail that passed DMARC (or that
+Pidgeon delivered between its own addresses), because anybody can write a
+`From:`. A match that did not is counted in `held_back.unauthenticated`, and
+its id is in `held_back.message_ids`; `include_unauthenticated: 'true'`
+returns it. A behaviour change for a sender that publishes no DMARC record.
+
 ## 1.24.0 — test mode
 
 `keysCreate` takes `test: true` for a `pgn_test_` key: everything works, and
