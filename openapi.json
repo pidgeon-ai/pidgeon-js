@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.26.0",
+    "version": "1.27.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3608,6 +3608,7 @@
             "type": "string",
             "enum": [
               "read",
+              "draft",
               "send",
               "admin"
             ],
@@ -3720,6 +3721,7 @@
             "type": "string",
             "enum": [
               "read",
+              "draft",
               "send",
               "admin"
             ],
@@ -3909,6 +3911,7 @@
                     "type": "string",
                     "enum": [
                       "read",
+                      "draft",
                       "send",
                       "admin"
                     ],
@@ -4390,9 +4393,11 @@
                   "type": "string",
                   "enum": [
                     "read",
+                    "draft",
                     "send",
                     "admin"
-                  ]
+                  ],
+                  "description": "What this principal can do here. A key shows the lower of its ceiling and the grant."
                 }
               },
               "required": [
@@ -4959,6 +4964,7 @@
                     "type": "string",
                     "enum": [
                       "read",
+                      "draft",
                       "send",
                       "admin"
                     ],
@@ -8226,6 +8232,7 @@
                         "type": "string",
                         "enum": [
                           "read",
+                          "draft",
                           "send",
                           "admin"
                         ]
@@ -15066,6 +15073,7 @@
                     "type": "string",
                     "enum": [
                       "read",
+                      "draft",
                       "send",
                       "admin"
                     ],

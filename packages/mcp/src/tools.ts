@@ -361,7 +361,7 @@ export const TOOLS: ToolDefinition[] = [
       'Send from an address this credential may send as. Refused if the address’s send ' +
       'policy does not permit the recipient, or if the recipient previously bounced or ' +
       'reported mail as spam. When retrying a send, reuse its `idempotency_key` so it goes ' +
-      'out once.',
+      'out once. A key with read-and-draft access is refused: use `create_draft` instead.',
     endpoint: 'POST /messages',
     annotations: SEND,
     /*
@@ -504,7 +504,8 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'The recipients, the subject and the thread are read off the message being answered, ' +
       'so you bring the words and nothing else. Use `to` only to change who it goes to. ' +
-      'When retrying a reply, reuse its `idempotency_key` so it goes out once.',
+      'When retrying a reply, reuse its `idempotency_key` so it goes out once. A key with ' +
+      'read-and-draft access is refused: use `create_draft` with `in_reply_to` instead.',
     endpoint: 'POST /messages/{id}/reply',
     annotations: SEND,
     inputSchema: {

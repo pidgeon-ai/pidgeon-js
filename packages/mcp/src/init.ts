@@ -63,7 +63,7 @@ export interface InitResult {
 }
 
 /** The rungs, lowest first. `admin` is what a key has unless narrowed. */
-export type Access = 'read' | 'send' | 'admin';
+export type Access = 'read' | 'draft' | 'send' | 'admin';
 
 /**
  * What a model can actually do with this key, said plainly.
@@ -81,6 +81,9 @@ export type Access = 'read' | 'send' | 'admin';
  */
 const WHAT_IT_CAN_DO: Record<Access, string> = {
   read: 'It can read mail and nothing else — a model holding it cannot reply, send or change anything.',
+  draft:
+    'It can read and manage mail and write drafts, and can never send — a person reviews each ' +
+    'draft and sends it.',
   send: 'It can read and send. It cannot create addresses, mint keys or grant access.',
   admin: 'It can do everything the API offers, including creating addresses and granting access.',
 };
@@ -252,7 +255,14 @@ async function describeCredential(context: {
     if (!key?.access) return null;
 
     // A rung this client does not know is a rung it must not print.
-    if (key.access !== 'read' && key.access !== 'send' && key.access !== 'admin') return null;
+    if (
+      key.access !== 'read' &&
+      key.access !== 'draft' &&
+      key.access !== 'send' &&
+      key.access !== 'admin'
+    ) {
+      return null;
+    }
 
     return {
       key: {

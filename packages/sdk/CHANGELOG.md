@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.27.0 — a key that drafts and never sends
+
+`keysCreate` takes `access: 'draft'`, between `read` and `send`: the key
+reads, searches, labels, archives, trashes, updates and hands off threads,
+and creates, updates and deletes drafts. Every send, reply, forward, draft
+send, schedule, calendar write and app password answers `403`. `access` on a
+key, `me` and mailbox access can now be `'draft'`. Additive.
+
 ## 1.26.0 — provisioning and teardown by pod
 
 `podsCreate` takes `address` (the same fields as `identitiesCreate`) and `key`

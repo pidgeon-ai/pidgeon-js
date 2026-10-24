@@ -1100,7 +1100,7 @@ export type ApiKey = {
   /**
    * The highest rung on any address. Composed with the grant; lower wins.
    */
-  access: 'read' | 'send' | 'admin';
+  access: 'read' | 'draft' | 'send' | 'admin';
   created_by_key_id: string | null;
   last_used_at: string | null;
   revoked_at: string | null;
@@ -1134,7 +1134,7 @@ export type ApiKeyCreated = {
   /**
    * The highest rung on any address. Composed with the grant; lower wins.
    */
-  access: 'read' | 'send' | 'admin';
+  access: 'read' | 'draft' | 'send' | 'admin';
   created_by_key_id: string | null;
   last_used_at: string | null;
   revoked_at: string | null;
@@ -1200,7 +1200,7 @@ export type Me = {
     /**
      * The highest rung this key reaches on any address. Composed with the grant on the address itself — the lower of the two wins — so this is a ceiling, not a promise.
      */
-    access: 'read' | 'send' | 'admin';
+    access: 'read' | 'draft' | 'send' | 'admin';
     /**
      * True when it reaches every address the workspace owns, including ones created after it. False when it reaches a fixed list.
      */
@@ -1366,7 +1366,10 @@ export type MailboxAccess = {
      * For showing a person. A renamed key changes it; never match on it.
      */
     label: string;
-    access: 'read' | 'send' | 'admin';
+    /**
+     * What this principal can do here. A key shows the lower of its ceiling and the grant.
+     */
+    access: 'read' | 'draft' | 'send' | 'admin';
   }>;
   /**
    * Whether this credential may change any of the above.
@@ -1600,7 +1603,7 @@ export type PodCreated = {
     /**
      * The highest rung on any address. Composed with the grant; lower wins.
      */
-    access: 'read' | 'send' | 'admin';
+    access: 'read' | 'draft' | 'send' | 'admin';
     created_by_key_id: string | null;
     last_used_at: string | null;
     revoked_at: string | null;
@@ -3010,7 +3013,7 @@ export type PodsCreateData = {
      */
     key?: {
       name?: string;
-      access?: 'read' | 'send' | 'admin';
+      access?: 'read' | 'draft' | 'send' | 'admin';
       expires_at?: string | null;
       /**
        * Mint a test-mode key (`pgn_test_`) for the pod instead of a live one.
@@ -5996,7 +5999,7 @@ export type KeysCreateData = {
     /**
      * What a key may do. Give an agent the narrowest one that works.
      */
-    access?: 'read' | 'send' | 'admin';
+    access?: 'read' | 'draft' | 'send' | 'admin';
     /**
      * When it stops accepting mail. Expiry suspends; it never deletes, so the correspondence survives.
      */

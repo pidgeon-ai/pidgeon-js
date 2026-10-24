@@ -1911,6 +1911,7 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "choices": [
           "read",
+          "draft",
           "send",
           "admin"
         ],
