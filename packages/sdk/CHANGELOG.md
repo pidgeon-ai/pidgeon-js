@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.30.0 — `authentication.signature`
+
+A message carries `authentication.signature`: `pass` when it came from
+another Pidgeon address directly and its signed sender verified against the
+sending domain's key, null otherwise. Additive.
+
 ## 1.29.0 — The signed-sender records
 
 Every domain's DNS records (`domainsGet`, `domainsCreate`, `domainsVerify`)

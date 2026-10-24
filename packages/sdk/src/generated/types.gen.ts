@@ -170,12 +170,16 @@ export type Message = {
     [key: string]: string;
   };
   /**
-   * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged.
+   * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`.
    */
   authentication: {
     spf: string | null;
     dkim: string | null;
     dmarc: string | null;
+    /**
+     * `pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.
+     */
+    signature: string | null;
   };
   /**
    * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.
@@ -396,12 +400,16 @@ export type AwaitedMessage = {
       [key: string]: string;
     };
     /**
-     * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged.
+     * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`.
      */
     authentication: {
       spf: string | null;
       dkim: string | null;
       dmarc: string | null;
+      /**
+       * `pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.
+       */
+      signature: string | null;
     };
     /**
      * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.

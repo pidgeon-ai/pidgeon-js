@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.29.0",
+    "version": "1.30.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -485,15 +485,23 @@
                   "string",
                   "null"
                 ]
+              },
+              "signature": {
+                "description": "`pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.",
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
               "spf",
               "dkim",
-              "dmarc"
+              "dmarc",
+              "signature"
             ],
             "additionalProperties": false,
-            "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged."
+            "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`."
           },
           "sender": {
             "type": "object",
@@ -1132,15 +1140,23 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "signature": {
+                        "description": "`pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "required": [
                       "spf",
                       "dkim",
-                      "dmarc"
+                      "dmarc",
+                      "signature"
                     ],
                     "additionalProperties": false,
-                    "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged."
+                    "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`."
                   },
                   "sender": {
                     "type": "object",
