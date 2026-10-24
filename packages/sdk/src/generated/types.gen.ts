@@ -38,6 +38,24 @@ export type Sent = {
     address: string;
     reason: string;
   }>;
+  /**
+   * True when this was a test-mode send: nothing was handed to the mail provider, and only this account’s own addresses received it.
+   */
+  test: boolean;
+};
+
+export type TestInboundDelivered = {
+  /**
+   * `delivered` in the normal case; `rejected` when a sender rule on the address refuses it, as it would refuse the real thing.
+   */
+  status: 'delivered' | 'forwarded' | 'no_such_address' | 'duplicate' | 'rejected';
+  message_id: string | null;
+  thread_id: string | null;
+  identity_id: string;
+  /**
+   * Whether the spam filter filed it as spam.
+   */
+  spam: boolean;
 };
 
 export type AgentVerified = {
@@ -173,6 +191,10 @@ export type Message = {
      */
     on_behalf_of: string | null;
   };
+  /**
+   * Written in test mode: by a test key, as a reply to or forward of a test message, or by `POST /test/inbound`. It never left Pidgeon and counted against nothing.
+   */
+  test: boolean;
   /**
    * `smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.
    */
@@ -395,6 +417,10 @@ export type AwaitedMessage = {
        */
       on_behalf_of: string | null;
     };
+    /**
+     * Written in test mode: by a test key, as a reply to or forward of a test message, or by `POST /test/inbound`. It never left Pidgeon and counted against nothing.
+     */
+    test: boolean;
     /**
      * `smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.
      */
@@ -1083,6 +1109,10 @@ export type ApiKey = {
    */
   rotated_at: string | null;
   /**
+   * A test-mode key: its mail never leaves Pidgeon and counts against nothing.
+   */
+  test: boolean;
+  /**
    * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
    */
   previous_token_expires_at: string | null;
@@ -1112,6 +1142,10 @@ export type ApiKeyCreated = {
    * When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null.
    */
   rotated_at: string | null;
+  /**
+   * A test-mode key: its mail never leaves Pidgeon and counts against nothing.
+   */
+  test: boolean;
   /**
    * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
    */
@@ -5739,6 +5773,10 @@ export type KeysCreateData = {
      * When it stops accepting mail. Expiry suspends; it never deletes, so the correspondence survives.
      */
     expires_at?: string | null;
+    /**
+     * A test-mode key (`pgn_test_`): everything works, nothing is sent outside Pidgeon, and nothing counts against the plan. A test key mints only test keys.
+     */
+    test?: boolean;
   };
   path?: never;
   query?: never;
@@ -6028,6 +6066,106 @@ export type KeysRotateResponses = {
 };
 
 export type KeysRotateResponse = KeysRotateResponses[keyof KeysRotateResponses];
+
+export type TestInboundData = {
+  body: {
+    /**
+     * One of the addresses this test key reaches, at `send`.
+     */
+    to: string;
+    /**
+     * Who it is from. Any address: nothing is sent to it.
+     */
+    from: string;
+    from_name?: string;
+    /**
+     * Left off a reply, where the thread already has one.
+     */
+    subject?: string;
+    /**
+     * The plain-text body. Send this even when you send `html` — some clients only read it.
+     */
+    text?: string;
+    /**
+     * The rich body. Sanitised on the way in; scripts and remote content are removed.
+     */
+    html?: string;
+    /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
+    /**
+     * A message id: this arrives as a reply to it, in its thread.
+     */
+    in_reply_to?: string | null;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/test/inbound';
+};
+
+export type TestInboundErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type TestInboundError = TestInboundErrors[keyof TestInboundErrors];
+
+export type TestInboundResponses = {
+  /**
+   * Where it landed.
+   */
+  201: {
+    data: TestInboundDelivered;
+  };
+};
+
+export type TestInboundResponse = TestInboundResponses[keyof TestInboundResponses];
 
 export type AppPasswordsListData = {
   body?: never;

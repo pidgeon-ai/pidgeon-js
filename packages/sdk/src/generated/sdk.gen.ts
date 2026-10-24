@@ -290,6 +290,9 @@ import type {
   RoutingUpdateData,
   RoutingUpdateErrors,
   RoutingUpdateResponses,
+  TestInboundData,
+  TestInboundErrors,
+  TestInboundResponses,
   ThreadsGetData,
   ThreadsGetErrors,
   ThreadsGetResponses,
@@ -1489,6 +1492,26 @@ export const keysRotate = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<KeysRotateResponses, KeysRotateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api-keys/{id}/rotate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Simulate an inbound message (test keys only)
+ *
+ * Delivers a message to one of this **test key**’s addresses as though it had arrived from outside, through the real inbound pipeline — routing, sender rules, spam, the Firewall, threading, `message.received` and its webhooks — marked `test`. Pass `in_reply_to` with a message id to have it arrive as a reply in that thread, which is how a test plays the customer answering your agent.
+ *
+ * A live key gets `403`. The address must be one the key reaches at `send`. Nothing is sent to `from`, and the message counts against nothing on your plan.
+ */
+export const testInbound = <ThrowOnError extends boolean = false>(
+  options: Options<TestInboundData, ThrowOnError>,
+): RequestResult<TestInboundResponses, TestInboundErrors, ThrowOnError> =>
+  (options.client ?? client).post<TestInboundResponses, TestInboundErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/test/inbound',
     ...options,
     headers: {
       'Content-Type': 'application/json',

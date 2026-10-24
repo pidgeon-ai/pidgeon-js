@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.24.0 — test mode
+
+`keysCreate` takes `test: true` for a `pgn_test_` key: everything works, and
+nothing it sends leaves Pidgeon or counts against the plan. A test key's
+children are test keys. Every key, message and send answer (`messagesSend`,
+`messagesReply`, `messagesReplyAll`, `messagesForward`, `draftsSend`) has
+`test`. `testInbound` (`POST /test/inbound`) delivers a simulated message to
+one of a test key's addresses, optionally as a reply (`in_reply_to`). A test
+key gets `403` creating addresses, domains, pods or app passwords. Additive.
+
 ## 1.23.0 — rotating a key
 
 `keysRotate` (`POST /api-keys/{id}/rotate`) gives a key a new secret and

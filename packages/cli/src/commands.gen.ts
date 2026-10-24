@@ -1924,6 +1924,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "When it stops accepting mail. Expiry suspends; it never deletes, so the correspondence survives."
+      },
+      {
+        "name": "test",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "A test-mode key (`pgn_test_`): everything works, nothing is sent outside Pidgeon, and nothing counts against the plan. A test key mints only test keys."
       }
     ]
   },
@@ -3114,6 +3121,79 @@ export const COMMANDS: Command[] = [
         ],
         "required": true,
         "where": "body"
+      }
+    ]
+  },
+  {
+    "group": "test",
+    "name": "inbound",
+    "operationId": "testInbound",
+    "method": "POST",
+    "path": "/test/inbound",
+    "summary": "Simulate an inbound message (test keys only)",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "to",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "One of the addresses this test key reaches, at `send`."
+      },
+      {
+        "name": "from",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "Who it is from. Any address: nothing is sent to it."
+      },
+      {
+        "name": "from_name",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
+        "name": "subject",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Left off a reply, where the thread already has one."
+      },
+      {
+        "name": "text",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The plain-text body. Send this even when you send `html` — some clients only read it."
+      },
+      {
+        "name": "html",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+      },
+      {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+      },
+      {
+        "name": "in_reply_to",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "A message id: this arrives as a reply to it, in its thread."
       }
     ]
   },

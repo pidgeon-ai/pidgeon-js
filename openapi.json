@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.23.0",
+    "version": "1.24.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -131,12 +131,60 @@
               ],
               "additionalProperties": false
             }
+          },
+          "test": {
+            "type": "boolean",
+            "description": "True when this was a test-mode send: nothing was handed to the mail provider, and only this account’s own addresses received it."
           }
         },
         "required": [
           "id",
           "thread_id",
-          "rejected"
+          "rejected",
+          "test"
+        ],
+        "additionalProperties": false
+      },
+      "TestInboundDelivered": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "delivered",
+              "forwarded",
+              "no_such_address",
+              "duplicate",
+              "rejected"
+            ],
+            "description": "`delivered` in the normal case; `rejected` when a sender rule on the address refuses it, as it would refuse the real thing."
+          },
+          "message_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "identity_id": {
+            "type": "string"
+          },
+          "spam": {
+            "type": "boolean",
+            "description": "Whether the spam filter filed it as spam."
+          }
+        },
+        "required": [
+          "status",
+          "message_id",
+          "thread_id",
+          "identity_id",
+          "spam"
         ],
         "additionalProperties": false
       },
@@ -484,6 +532,10 @@
             ],
             "additionalProperties": false,
             "description": "Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address."
+          },
+          "test": {
+            "type": "boolean",
+            "description": "Written in test mode: by a test key, as a reply to or forward of a test message, or by `POST /test/inbound`. It never left Pidgeon and counted against nothing."
           },
           "origin": {
             "description": "`smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.",
@@ -901,6 +953,7 @@
           "headers",
           "authentication",
           "sender",
+          "test",
           "origin",
           "data",
           "attachments",
@@ -1126,6 +1179,10 @@
                     ],
                     "additionalProperties": false,
                     "description": "Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address."
+                  },
+                  "test": {
+                    "type": "boolean",
+                    "description": "Written in test mode: by a test key, as a reply to or forward of a test message, or by `POST /test/inbound`. It never left Pidgeon and counted against nothing."
                   },
                   "origin": {
                     "description": "`smtp` when the message arrived as ordinary email, so its sender declared nothing and `authentication` is what is known about it. Null on mail sent from Pidgeon.",
@@ -1543,6 +1600,7 @@
                   "headers",
                   "authentication",
                   "sender",
+                  "test",
                   "origin",
                   "data",
                   "attachments",
@@ -3592,6 +3650,10 @@
             ],
             "description": "When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null."
           },
+          "test": {
+            "type": "boolean",
+            "description": "A test-mode key: its mail never leaves Pidgeon and counts against nothing."
+          },
           "previous_token_expires_at": {
             "anyOf": [
               {
@@ -3617,6 +3679,7 @@
           "revoked_at",
           "created_at",
           "rotated_at",
+          "test",
           "previous_token_expires_at"
         ],
         "additionalProperties": false
@@ -3699,6 +3762,10 @@
             ],
             "description": "When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null."
           },
+          "test": {
+            "type": "boolean",
+            "description": "A test-mode key: its mail never leaves Pidgeon and counts against nothing."
+          },
           "previous_token_expires_at": {
             "anyOf": [
               {
@@ -3728,6 +3795,7 @@
           "revoked_at",
           "created_at",
           "rotated_at",
+          "test",
           "previous_token_expires_at",
           "token"
         ],
@@ -14407,6 +14475,10 @@
                       }
                     ],
                     "description": "When it stops accepting mail. Expiry suspends; it never deletes, so the correspondence survives."
+                  },
+                  "test": {
+                    "description": "A test-mode key (`pgn_test_`): everything works, nothing is sent outside Pidgeon, and nothing counts against the plan. A test key mints only test keys.",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -15043,6 +15115,211 @@
         },
         "tags": [
           "keys"
+        ]
+      }
+    },
+    "/test/inbound": {
+      "post": {
+        "operationId": "testInbound",
+        "summary": "Simulate an inbound message (test keys only)",
+        "description": "Delivers a message to one of this **test key**’s addresses as though it had arrived from outside, through the real inbound pipeline — routing, sender rules, spam, the Firewall, threading, `message.received` and its webhooks — marked `test`. Pass `in_reply_to` with a message id to have it arrive as a reply in that thread, which is how a test plays the customer answering your agent.\n\nA live key gets `403`. The address must be one the key reaches at `send`. Nothing is sent to `from`, and the message counts against nothing on your plan.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "One of the addresses this test key reaches, at `send`."
+                  },
+                  "from": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Who it is from. Any address: nothing is sent to it."
+                  },
+                  "from_name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "subject": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Left off a reply, where the thread already has one."
+                  },
+                  "text": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 500000,
+                    "description": "The plain-text body. Send this even when you send `html` — some clients only read it."
+                  },
+                  "html": {
+                    "type": "string",
+                    "maxLength": 1000000,
+                    "description": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "schema": {
+                        "type": "string",
+                        "maxLength": 900,
+                        "description": "A URL naming what `body` is, such as `https://schema.org/Invoice`."
+                      },
+                      "body": {
+                        "description": "The JSON itself. Up to 64 KB once serialised."
+                      }
+                    },
+                    "required": [
+                      "schema",
+                      "body"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+                  },
+                  "in_reply_to": {
+                    "description": "A message id: this arrives as a reply to it, in its thread.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "to",
+                  "from"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Where it landed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TestInboundDelivered"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "test"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "description": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs."
+          }
         ]
       }
     },
@@ -21656,6 +21933,9 @@
     },
     {
       "name": "keys"
+    },
+    {
+      "name": "test"
     },
     {
       "name": "appPasswords"
