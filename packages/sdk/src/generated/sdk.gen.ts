@@ -1187,7 +1187,7 @@ export const domainsList = <ThrowOnError extends boolean = false>(
 /**
  * Connect a domain
  *
- * Returns the domain **and the records to publish**, because showing them to your own customer is the one thing every caller does next. DNS is the step this API cannot perform — we cannot write in somebody else’s zone — so the job is to make the human step delegable. Watch `dns_complete`: it is false while the DKIM records do not exist yet, and a list published in that state verifies and cannot sign mail.
+ * Returns the domain **and the records to publish**, because showing them to your own customer is the one thing every caller does next. DNS is the step this API cannot perform — we cannot write in somebody else’s zone — so the job is to make the human step delegable. Watch `dns_complete`: it is false while the DKIM records do not exist yet, and a list published in that state verifies and cannot sign mail. Watch `existing_mail` too: when the domain already receives mail elsewhere it names the provider, and with `inbound_enabled` true, publishing the MX record stops that mail arriving there. Send `inbound_enabled: false` to send as the domain and leave its mail alone, or use a subdomain such as `agents.` for inboxes.
  */
 export const domainsCreate = <ThrowOnError extends boolean = false>(
   options: Options<DomainsCreateData, ThrowOnError>,

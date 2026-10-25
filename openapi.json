@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.35.0",
+    "version": "1.36.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -3324,6 +3324,225 @@
           "created_at",
           "dns_records",
           "dns_complete"
+        ],
+        "additionalProperties": false
+      },
+      "CreatedDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "catch_all_enabled": {
+            "type": "boolean"
+          },
+          "inbound_enabled": {
+            "type": "boolean"
+          },
+          "identity_count": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO-8601, UTC."
+          },
+          "dns_records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "record_type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+                },
+                "zone": {
+                  "type": "string",
+                  "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+                },
+                "fqdn": {
+                  "type": "string",
+                  "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+                },
+                "host_relative": {
+                  "type": "string",
+                  "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
+                },
+                "value": {
+                  "type": "string"
+                },
+                "priority": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "connected",
+                    "waiting",
+                    "incorrect",
+                    "not_required"
+                  ]
+                },
+                "state": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "connected",
+                        "published",
+                        "missing",
+                        "wrong_value",
+                        "wrong_name",
+                        "not_required"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                },
+                "found": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "found_at": {
+                  "description": "Where `found` was read, when that was not `fqdn`.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "optional": {
+                  "type": "boolean",
+                  "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
+                },
+                "description": {
+                  "type": "string"
+                },
+                "checked_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "ISO-8601, UTC."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "record_type",
+                "name",
+                "zone",
+                "fqdn",
+                "host_relative",
+                "value",
+                "priority",
+                "status",
+                "state",
+                "found",
+                "found_at",
+                "optional",
+                "description",
+                "checked_at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "dns_complete": {
+            "type": "boolean"
+          },
+          "existing_mail": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "google",
+                      "microsoft",
+                      "zoho",
+                      "fastmail",
+                      "proton",
+                      "icloud",
+                      "godaddy",
+                      "other"
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hosts": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "provider",
+                  "name",
+                  "hosts"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "domain",
+          "status",
+          "catch_all_enabled",
+          "inbound_enabled",
+          "identity_count",
+          "verified_at",
+          "created_at",
+          "dns_records",
+          "dns_complete",
+          "existing_mail"
         ],
         "additionalProperties": false
       },
@@ -13038,7 +13257,7 @@
       "post": {
         "operationId": "domainsCreate",
         "summary": "Connect a domain",
-        "description": "Returns the domain **and the records to publish**, because showing them to your own customer is the one thing every caller does next. DNS is the step this API cannot perform — we cannot write in somebody else’s zone — so the job is to make the human step delegable. Watch `dns_complete`: it is false while the DKIM records do not exist yet, and a list published in that state verifies and cannot sign mail.",
+        "description": "Returns the domain **and the records to publish**, because showing them to your own customer is the one thing every caller does next. DNS is the step this API cannot perform — we cannot write in somebody else’s zone — so the job is to make the human step delegable. Watch `dns_complete`: it is false while the DKIM records do not exist yet, and a list published in that state verifies and cannot sign mail. Watch `existing_mail` too: when the domain already receives mail elsewhere it names the provider, and with `inbound_enabled` true, publishing the MX record stops that mail arriving there. Send `inbound_enabled: false` to send as the domain and leave its mail alone, or use a subdomain such as `agents.` for inboxes.",
         "requestBody": {
           "required": true,
           "content": {
@@ -13073,7 +13292,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/DomainDetail"
+                      "$ref": "#/components/schemas/CreatedDomain"
                     }
                   },
                   "required": [

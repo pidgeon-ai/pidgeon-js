@@ -224,6 +224,7 @@ export type {
   CalendarUpdateResponse,
   CalendarUpdateResponses,
   ClientOptions,
+  CreatedDomain,
   Deleted,
   Delivery,
   DnsRecord,

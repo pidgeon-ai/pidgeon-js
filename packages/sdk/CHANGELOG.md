@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.36.0 — the mail a domain already receives
+
+`domainsCreate` answers `existing_mail`: who already receives mail for the
+domain, read from its MX — `{ provider, name, hosts }`, with `provider` one of
+`google`, `microsoft`, `zoho`, `fastmail`, `proton`, `icloud`, `godaddy` or
+`other` — or null when nothing does. When it is set and `inbound_enabled` is
+true, publishing the MX record stops that mail arriving at the provider. Send
+`inbound_enabled: false`, or add a subdomain such as `agents.` instead.
+Additive.
+
 ## 1.35.0 — a key says what it is, and minting is idempotent
 
 - `meGet` returns `key.test`, `key.rotated_at` and
