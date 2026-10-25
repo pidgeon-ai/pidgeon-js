@@ -933,7 +933,7 @@ export const messagesListInThread = <ThrowOnError extends boolean = false>(
 /**
  * Send a message
  *
- * Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — addresses the provider would not accept at hand-off, so read it before assuming every recipient got it. A recipient this address is not allowed to write to is a different thing and refuses the whole send: `403` with `blocked` when a rule says no, `not_permitted` when the send policy does. Nothing is sent to anybody in that case.
+ * Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — addresses the provider would not accept at hand-off, so read it before assuming every recipient got it. A recipient this address is not allowed to write to is a different thing and refuses the whole send: `403` with `blocked` when a rule says no, `not_permitted` when the send policy does. Nothing is sent to anybody in that case. With a test key, `rejected@` at any domain is always rejected and `bounce@` bounces, and `Pidgeon-Test-Fail` causes a 429, a 503, a slow answer or a lost one: https://pidgeon.ai/docs/test-mode#causing-failures.
  */
 export const messagesSend = <ThrowOnError extends boolean = false>(
   options: Options<MessagesSendData, ThrowOnError>,

@@ -2202,6 +2202,10 @@ export type IdentitiesCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesCreateError = IdentitiesCreateErrors[keyof IdentitiesCreateErrors];
@@ -3177,6 +3181,10 @@ export type PodsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type PodsCreateError = PodsCreateErrors[keyof PodsCreateErrors];
@@ -3489,6 +3497,10 @@ export type LabelsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type LabelsCreateError = LabelsCreateErrors[keyof LabelsCreateErrors];
@@ -3978,6 +3990,10 @@ export type MessagesSendErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesSendError = MessagesSendErrors[keyof MessagesSendErrors];
@@ -4486,6 +4502,10 @@ export type MessagesReplyErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesReplyError = MessagesReplyErrors[keyof MessagesReplyErrors];
@@ -4587,6 +4607,10 @@ export type MessagesReplyAllErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesReplyAllError = MessagesReplyAllErrors[keyof MessagesReplyAllErrors];
@@ -4688,6 +4712,10 @@ export type MessagesForwardErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesForwardError = MessagesForwardErrors[keyof MessagesForwardErrors];
@@ -5127,6 +5155,10 @@ export type DomainsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DomainsCreateError = DomainsCreateErrors[keyof DomainsCreateErrors];
@@ -5622,6 +5654,10 @@ export type RoutingCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type RoutingCreateError = RoutingCreateErrors[keyof RoutingCreateErrors];
@@ -6159,6 +6195,10 @@ export type KeysCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type KeysCreateError = KeysCreateErrors[keyof KeysCreateErrors];
@@ -6391,6 +6431,10 @@ export type KeysRotateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type KeysRotateError = KeysRotateErrors[keyof KeysRotateErrors];
@@ -6491,6 +6535,10 @@ export type TestInboundErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type TestInboundError = TestInboundErrors[keyof TestInboundErrors];
@@ -7257,6 +7305,10 @@ export type WebhooksCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type WebhooksCreateError = WebhooksCreateErrors[keyof WebhooksCreateErrors];
@@ -7738,6 +7790,10 @@ export type MessagesRespondToInvitationErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesRespondToInvitationError =
@@ -8028,6 +8084,10 @@ export type CalendarCreateEventErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type CalendarCreateEventError = CalendarCreateEventErrors[keyof CalendarCreateEventErrors];
@@ -8105,6 +8165,10 @@ export type CalendarRespondToEventErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type CalendarRespondToEventError =
@@ -8325,6 +8389,10 @@ export type CalendarDeleteEventErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type CalendarDeleteEventError = CalendarDeleteEventErrors[keyof CalendarDeleteEventErrors];
@@ -8490,6 +8558,10 @@ export type CalendarUpdateEventErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type CalendarUpdateEventError = CalendarUpdateEventErrors[keyof CalendarUpdateEventErrors];
@@ -8669,6 +8741,10 @@ export type DraftsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsCreateError = DraftsCreateErrors[keyof DraftsCreateErrors];
@@ -8945,6 +9021,10 @@ export type DraftsSendErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsSendError = DraftsSendErrors[keyof DraftsSendErrors];
@@ -9069,6 +9149,10 @@ export type DraftsScheduleErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsScheduleError = DraftsScheduleErrors[keyof DraftsScheduleErrors];

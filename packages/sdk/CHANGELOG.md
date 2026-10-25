@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.33.0 — failures on purpose, in test mode
+
+`messagesSend` now says that with a test key a send to `rejected@` (any
+domain) comes back in `rejected`, a send to `bounce@` bounces a few seconds
+later, and the `Pidgeon-Test-Fail` header causes a 429, a 503, a slow answer
+or a lost one. Every write that takes an `Idempotency-Key`, and
+`keysCreate` and `keysRotate`, declare the `504` (`test_dropped`) that
+`drop` answers, so the client returns it as an error. Additive.
+
 ## 1.32.0 — a thread pages to the end
 
 `messagesListInThread` takes `cursor` and answers `next_cursor`. It used to

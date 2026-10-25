@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.32.0",
+    "version": "1.33.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -6360,6 +6360,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -8559,6 +8569,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -9248,6 +9268,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10132,7 +10162,7 @@
       "post": {
         "operationId": "messagesSend",
         "summary": "Send a message",
-        "description": "Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — addresses the provider would not accept at hand-off, so read it before assuming every recipient got it. A recipient this address is not allowed to write to is a different thing and refuses the whole send: `403` with `blocked` when a rule says no, `not_permitted` when the send policy does. Nothing is sent to anybody in that case.",
+        "description": "Idempotent with an `Idempotency-Key` header. Answers `202` with the id, the thread and anything **rejected** — addresses the provider would not accept at hand-off, so read it before assuming every recipient got it. A recipient this address is not allowed to write to is a different thing and refuses the whole send: `403` with `blocked` when a rule says no, `not_permitted` when the send policy does. Nothing is sent to anybody in that case. With a test key, `rejected@` at any domain is always rejected and `bounce@` bounces, and `Pidgeon-Test-Fail` causes a 429, a 503, a slow answer or a lost one: https://pidgeon.ai/docs/test-mode#causing-failures.",
         "requestBody": {
           "required": true,
           "content": {
@@ -10377,6 +10407,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11629,6 +11669,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -11842,6 +11892,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -12048,6 +12108,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13051,6 +13121,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14168,6 +14248,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15400,6 +15490,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -15914,6 +16014,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -16099,6 +16209,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -17792,6 +17912,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -18886,6 +19016,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -19598,6 +19738,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -19780,6 +19930,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -20597,6 +20757,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -20759,6 +20929,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -21159,6 +21339,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -21771,6 +21961,16 @@
                 }
               }
             }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -21915,6 +22115,16 @@
           },
           "503": {
             "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
             "content": {
               "application/json": {
                 "schema": {
