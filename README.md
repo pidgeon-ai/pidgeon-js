@@ -1,6 +1,6 @@
 # Pidgeon for JavaScript and TypeScript
 
-**Mailboxes for AI agents.** Pidgeon is the email inbox API for AI agents. It gives agents their own inboxes
+**Email inboxes for AI agents.** Pidgeon is the email inbox API for AI agents. It gives agents their own inboxes
 so they can work with emails just like a human.
 
 [pidgeon.ai](https://pidgeon.ai) · [Documentation](https://pidgeon.ai/docs)
