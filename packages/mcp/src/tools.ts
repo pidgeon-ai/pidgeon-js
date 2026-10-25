@@ -162,7 +162,13 @@ const DATA = z
     schema: z
       .string()
       .describe('A URL naming what `body` is, such as `https://schema.org/Invoice`.'),
-    body: z.unknown().describe('The JSON fields. Up to 64 KB.'),
+    /*
+     * An object rather than `z.unknown()`, though the API takes any JSON:
+     * `unknown` has no `type` in JSON Schema, and OpenAI refuses a function
+     * whose parameter has none — CrewAI's MCP tools failed on it before the
+     * model saw a word (25 October). Fields are what this is for.
+     */
+    body: z.record(z.string(), z.unknown()).describe('The JSON fields. Up to 64 KB.'),
   })
   .optional()
   .describe(
@@ -469,7 +475,11 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'Waits until a message arrives at an address — after you submit a sign-up form, say ' +
       '— and returns it with `extracted.codes` and `extracted.links`: verification codes and ' +
-      'confirm links, most likely first. Without `after` it first looks back 2 minutes and ' +
+      'confirm links, most likely first. When you are about to cause the mail, take a ' +
+      'cursor first: call with `after: "now"` and `timeout: 1`, keep the `cursor` it ' +
+      'returns, then submit the form or send, then wait with that cursor as `after` — the ' +
+      'mail cannot arrive before the wait starts, and nothing older is taken for it. ' +
+      'Without `after` it first looks back 2 minutes and ' +
       'returns the newest match from then, so a code that arrived before you called is not ' +
       'missed; narrow it with `from` (address or domain), `subject_contains`, or ' +
       '`has_code: "true"` so an earlier email is not mistaken for the one you want, and pass ' +

@@ -71,7 +71,8 @@ your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 | [`@pidgeon-ai/openclaw`](packages/openclaw) | `openclaw plugins install @pidgeon-ai/openclaw` | Email as an OpenClaw channel: mail starts a conversation, the reply goes in the thread |
 
 [`examples/openai-agents`](examples/openai-agents) is an OpenAI Agents SDK
-agent on the hosted server, which needs no package of ours.
+agent on the hosted server, and [`examples/claude-agent-sdk`](examples/claude-agent-sdk)
+a Claude Agent SDK one. Neither needs a package of ours.
 
 **An MCP client needs no package at all.** Point it at
 `https://pidgeon.ai/api/mcp` and it signs you in with OAuth:

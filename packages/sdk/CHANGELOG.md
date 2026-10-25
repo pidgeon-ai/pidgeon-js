@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.31.3 — take a cursor first
+
+Descriptions only. `messagesAwait` now says how to wait for mail you are
+about to cause: call with `after: 'now'` and `timeout: 1`, keep the
+`cursor`, submit the form or send, then wait with that cursor as `after`.
+No shape moves.
+
 ## 1.31.2 — the client names itself
 
 Outside a browser the default client now sends `User-Agent: @pidgeon-ai/sdk`
