@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.31.4 — one-click setup, described truly
+
+Descriptions only. `domainsGetSetupLink` said the `mail` template included MX
+— it never did; MX is `mx`, on its own — and that the URL was signed by the
+DNS provider, where it is signed with Pidgeon's key. `reason: provider` now
+also covers a provider that has not approved Pidgeon's template yet. No name,
+path or shape moves.
+
 ## 1.31.3 — take a cursor first
 
 Descriptions only. `messagesAwait` now says how to wait for mail you are

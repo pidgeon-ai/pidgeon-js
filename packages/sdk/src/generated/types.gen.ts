@@ -939,7 +939,7 @@ export type SetupLink = {
   width: number | null;
   height: number | null;
   /**
-   * `provider` — that zone’s DNS provider does not support Domain Connect, which is the common case. `unconfigured` — it does, and this deployment is not registered as a service provider, which is ours to fix. Null when `supported` is true.
+   * `provider` — that zone’s DNS provider does not support Domain Connect, which is the common case, or has not approved Pidgeon’s template yet. `unconfigured` — it does, and this deployment has no key to sign the request with, which is ours to fix. Null when `supported` is true.
    */
   reason: 'provider' | 'unconfigured' | null;
 };
