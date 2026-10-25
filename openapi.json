@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.30.0",
+    "version": "1.31.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -290,6 +290,10 @@
             "type": "string",
             "description": "Who it may write to: open, reply_only (somebody who wrote to it first), or list."
           },
+          "receive_policy": {
+            "type": "string",
+            "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
+          },
           "tenant_id": {
             "description": "Your own opaque grouping for this address. Never parsed here.",
             "type": [
@@ -318,6 +322,7 @@
           "created_at",
           "expires_at",
           "send_policy",
+          "receive_policy",
           "tenant_id",
           "pod_id"
         ],
@@ -4611,6 +4616,10 @@
           "identity_id": {
             "type": "string"
           },
+          "receive_policy": {
+            "type": "string",
+            "description": "open, or list: only senders with an inbox rule, on mail that passes DMARC."
+          },
           "rules": {
             "type": "array",
             "items": {
@@ -4651,6 +4660,7 @@
         },
         "required": [
           "identity_id",
+          "receive_policy",
           "rules"
         ],
         "additionalProperties": false
@@ -5057,6 +5067,10 @@
                     "type": "string",
                     "description": "Who it may write to: open, reply_only (somebody who wrote to it first), or list."
                   },
+                  "receive_policy": {
+                    "type": "string",
+                    "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
+                  },
                   "tenant_id": {
                     "description": "Your own opaque grouping for this address. Never parsed here.",
                     "type": [
@@ -5085,6 +5099,7 @@
                   "created_at",
                   "expires_at",
                   "send_policy",
+                  "receive_policy",
                   "tenant_id",
                   "pod_id"
                 ],
@@ -6562,6 +6577,14 @@
                       "list"
                     ],
                     "description": "Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger."
+                  },
+                  "receive_policy": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "list"
+                    ],
+                    "description": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
                   },
                   "tenant_id": {
                     "anyOf": [

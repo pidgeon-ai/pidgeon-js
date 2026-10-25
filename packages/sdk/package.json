@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "1.30.0",
+  "version": "1.31.0",
   "description": "Email inboxes for AI agents — TypeScript SDK for Pidgeon: create addresses, send, receive and reply.",
   "keywords": [
     "email",

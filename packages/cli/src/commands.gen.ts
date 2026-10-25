@@ -1864,6 +1864,17 @@ export const COMMANDS: Command[] = [
         "describe": "Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger."
       },
       {
+        "name": "receive_policy",
+        "kind": "string",
+        "choices": [
+          "open",
+          "list"
+        ],
+        "required": false,
+        "where": "body",
+        "describe": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
+      },
+      {
         "name": "tenant_id",
         "kind": "string",
         "required": false,

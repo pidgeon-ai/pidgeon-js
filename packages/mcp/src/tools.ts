@@ -637,7 +637,9 @@ export const TOOLS: ToolDefinition[] = [
     title: 'Who may write to an address',
     description:
       'The rules that decide what reaches one address — reject, spam, trash, archive or ' +
-      'inbox, per sender or per domain. Read this when mail you expected did not arrive.',
+      'inbox, per sender or per domain — and its `receive_policy`. Under `list` only senders ' +
+      'with an inbox rule get through, and only when their mail passes DMARC; everybody else ' +
+      'is refused before it is stored. Read this when mail you expected did not arrive.',
     endpoint: 'GET /identities/{id}/receive-rules',
     annotations: READ,
     inputSchema: { id: z.string() },

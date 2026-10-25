@@ -106,6 +106,10 @@ export type Identity = {
    */
   send_policy: string;
   /**
+   * Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC).
+   */
+  receive_policy: string;
+  /**
    * Your own opaque grouping for this address. Never parsed here.
    */
   tenant_id: string | null;
@@ -1479,6 +1483,10 @@ export type TenantSuspended = {
 
 export type ReceiveRules = {
   identity_id: string;
+  /**
+   * open, or list: only senders with an inbox rule, on mail that passes DMARC.
+   */
+  receive_policy: string;
   rules: Array<{
     id: string;
     /**
@@ -1671,6 +1679,10 @@ export type PodCreated = {
      * Who it may write to: open, reply_only (somebody who wrote to it first), or list.
      */
     send_policy: string;
+    /**
+     * Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC).
+     */
+    receive_policy: string;
     /**
      * Your own opaque grouping for this address. Never parsed here.
      */
@@ -2341,6 +2353,10 @@ export type IdentitiesUpdateData = {
      * Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger.
      */
     send_policy?: 'open' | 'reply_only' | 'list';
+    /**
+     * Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner.
+     */
+    receive_policy?: 'open' | 'list';
     /**
      * Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here.
      */

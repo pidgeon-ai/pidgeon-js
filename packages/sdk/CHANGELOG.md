@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.31.0 — `receive_policy`
+
+Every address carries `receive_policy`: `open` (anyone, the default) or
+`list`, which accepts only senders with an `inbox` receive rule on mail that
+passes DMARC and refuses everybody else before anything is stored.
+`identitiesUpdate` sets it; `identitiesReceiveRulesList` and
+`identitiesReceiveRulesCreate` return it beside the rules. Additive.
+
 ## 1.30.0 — `authentication.signature`
 
 A message carries `authentication.signature`: `pass` when it came from
