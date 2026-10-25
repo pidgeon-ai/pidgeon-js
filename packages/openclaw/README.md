@@ -44,7 +44,7 @@ to end on macOS, and installed and loaded on Linux x64 and arm64.
   addresses passes. Under `"open"` anyone can write anyway, so nothing is
   checked and the From the agent reads is a claim.
 - **Only new mail.** A first start begins at the present; installing the
-  channel does not answer a mailbox's history.
+  channel does not answer an inbox's history.
 
 ## How it stays up
 

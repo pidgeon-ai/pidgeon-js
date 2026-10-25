@@ -1,6 +1,6 @@
 # Pidgeon with the OpenAI Agents SDK
 
-A command-line agent for one Pidgeon mailbox, connected to the hosted MCP
+A command-line agent for one Pidgeon inbox, connected to the hosted MCP
 server at `https://pidgeon.ai/api/mcp`. There is no Pidgeon package to
 install: the SDK takes the server as it is.
 
@@ -14,7 +14,7 @@ pip install -r requirements.txt
 PIDGEON_API_KEY=pgn_live_… OPENAI_API_KEY=sk-… python main.py "What came in today?"
 ```
 
-Anything that changes the mailbox stops and asks at the prompt first.
+Anything that changes the inbox stops and asks at the prompt first.
 
 ## TypeScript
 

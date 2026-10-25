@@ -1,7 +1,7 @@
 {
   "name": "@pidgeon-ai/example-openai-agents",
   "private": true,
-  "description": "A Pidgeon mailbox for an OpenAI Agents SDK agent. Not published.",
+  "description": "A Pidgeon inbox for an OpenAI Agents SDK agent. Not published.",
   "type": "module",
   "license": "MIT",
   "engines": {

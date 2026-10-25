@@ -114,7 +114,7 @@ export async function init(options: InitOptions): Promise<InitResult> {
   const { addresses, access, reachesAll, expiresAt } = identity;
 
   if (addresses.length === 0) {
-    out('That key works, and reaches no mailbox yet.');
+    out('That key works, and reaches no address yet.');
     out('');
     out('Grant it one at https://pidgeon.ai/app/developers/keys — a key’s reach is');
     out('a snapshot, so an address created after the key is not in it.');

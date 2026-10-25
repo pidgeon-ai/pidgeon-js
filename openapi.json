@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.31.0",
+    "version": "1.31.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -34,7 +34,7 @@
           "email"
         ],
         "additionalProperties": false,
-        "description": "A mailbox, with the display name when one was given."
+        "description": "An address, with the display name when one was given."
       },
       "Attachment": {
         "type": "object",
@@ -338,7 +338,7 @@
             "type": "string"
           },
           "identity_id": {
-            "description": "The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.",
+            "description": "The address this message is in, as an id. What `POST /attachments` and the other endpoints that take an `identity_id` expect — `identity` below is the same address as text.",
             "type": [
               "string",
               "null"
@@ -370,7 +370,7 @@
               "email"
             ],
             "additionalProperties": false,
-            "description": "A mailbox, with the display name when one was given."
+            "description": "An address, with the display name when one was given."
           },
           "to": {
             "type": "array",
@@ -391,7 +391,7 @@
                 "email"
               ],
               "additionalProperties": false,
-              "description": "A mailbox, with the display name when one was given."
+              "description": "An address, with the display name when one was given."
             }
           },
           "cc": {
@@ -413,7 +413,7 @@
                 "email"
               ],
               "additionalProperties": false,
-              "description": "A mailbox, with the display name when one was given."
+              "description": "An address, with the display name when one was given."
             }
           },
           "subject": {
@@ -993,7 +993,7 @@
                     "type": "string"
                   },
                   "identity_id": {
-                    "description": "The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.",
+                    "description": "The address this message is in, as an id. What `POST /attachments` and the other endpoints that take an `identity_id` expect — `identity` below is the same address as text.",
                     "type": [
                       "string",
                       "null"
@@ -1025,7 +1025,7 @@
                       "email"
                     ],
                     "additionalProperties": false,
-                    "description": "A mailbox, with the display name when one was given."
+                    "description": "An address, with the display name when one was given."
                   },
                   "to": {
                     "type": "array",
@@ -1046,7 +1046,7 @@
                         "email"
                       ],
                       "additionalProperties": false,
-                      "description": "A mailbox, with the display name when one was given."
+                      "description": "An address, with the display name when one was given."
                     }
                   },
                   "cc": {
@@ -1068,7 +1068,7 @@
                         "email"
                       ],
                       "additionalProperties": false,
-                      "description": "A mailbox, with the display name when one was given."
+                      "description": "An address, with the display name when one was given."
                     }
                   },
                   "subject": {
@@ -2783,7 +2783,7 @@
           },
           "attendee": {
             "type": "string",
-            "description": "Which of the mailbox’s addresses answered."
+            "description": "Which of the inbox’s addresses answered."
           },
           "status": {
             "type": "string"
@@ -2809,7 +2809,7 @@
           },
           "attendee": {
             "type": "string",
-            "description": "Which of the mailbox’s addresses answered."
+            "description": "Which of the inbox’s addresses answered."
           },
           "already_sent": {
             "type": "boolean",
@@ -4887,7 +4887,7 @@
             "description": "The folder the hit was found in."
           },
           "identity": {
-            "description": "The mailbox it was found in, as the address. `identity_id` is the same row.",
+            "description": "The inbox it was found in, as the address. `identity_id` is the same row.",
             "type": [
               "string",
               "null"

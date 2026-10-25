@@ -667,7 +667,7 @@ export const TOOLS: ToolDefinition[] = [
    */
   {
     name: 'list_folders',
-    title: 'The folders of one mailbox',
+    title: 'The folders of one address',
     description:
       'Every folder of one address with its counts. `total` and `unread` are null where we ' +
       'do not count that folder — null is "we do not say", not zero.',
@@ -711,7 +711,7 @@ export const TOOLS: ToolDefinition[] = [
     name: 'list_changes',
     title: 'What has changed since you last looked',
     description:
-      'Everything that moved in one mailbox since a `sync_cursor`, arrivals included, so a ' +
+      'Everything that moved in one inbox since a `sync_cursor`, arrivals included, so a ' +
       'long-running agent does not re-read a folder to find one new message. `since` is the ' +
       '`sync_cursor` from `list_folder`, never a page cursor. A cursor older than thirty ' +
       'days is refused with `resync`: list the folders again and start over.',
@@ -727,7 +727,7 @@ export const TOOLS: ToolDefinition[] = [
     name: 'list_events',
     title: 'The log of what happened',
     description:
-      'Every event across every mailbox this credential reaches — mail received, sent, ' +
+      'Every event across every address this credential reaches — mail received, sent, ' +
       'delivered, bounced, filed. Workspace-wide unless you name an `identity_id`. Pass ' +
       '`after` with a timestamp to read forward from a moment; with neither `after` nor ' +
       '`cursor` it returns the newest first.',
@@ -834,7 +834,7 @@ export const TOOLS: ToolDefinition[] = [
       '`name` a person would recognise and, if your own system has an id for this customer, ' +
       '`client_id` — carried and returned, never parsed. Then pass the new pod’s id as ' +
       '`pod_id` to `create_address`. Deleting a pod is not a tool: it deletes every ' +
-      'mailbox in it with their mail, which is a call for your server to make, not an agent.',
+      'inbox in it with their mail, which is a call for your server to make, not an agent.',
     endpoint: 'POST /pods',
     annotations: ADD,
     inputSchema: {

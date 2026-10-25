@@ -5,7 +5,7 @@ export type ClientOptions = {
 };
 
 /**
- * A mailbox, with the display name when one was given.
+ * An address, with the display name when one was given.
  */
 export type Address = {
   email: string;
@@ -123,13 +123,13 @@ export type Message = {
   id: string;
   thread_id: string;
   /**
-   * The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.
+   * The address this message is in, as an id. What `POST /attachments` and the other endpoints that take an `identity_id` expect — `identity` below is the same address as text.
    */
   identity_id: string | null;
   identity: string | null;
   direction: string;
   /**
-   * A mailbox, with the display name when one was given.
+   * An address, with the display name when one was given.
    */
   from: {
     email: string;
@@ -353,13 +353,13 @@ export type AwaitedMessage = {
     id: string;
     thread_id: string;
     /**
-     * The mailbox this message is in, as an id. What `POST /attachments` and the other endpoints that take a mailbox expect — `identity` below is the same address as text.
+     * The address this message is in, as an id. What `POST /attachments` and the other endpoints that take an `identity_id` expect — `identity` below is the same address as text.
      */
     identity_id: string | null;
     identity: string | null;
     direction: string;
     /**
-     * A mailbox, with the display name when one was given.
+     * An address, with the display name when one was given.
      */
     from: {
       email: string;
@@ -899,7 +899,7 @@ export type EventResponse = {
     updated_at: string;
   };
   /**
-   * Which of the mailbox’s addresses answered.
+   * Which of the inbox’s addresses answered.
    */
   attendee: string;
   status: string;
@@ -912,7 +912,7 @@ export type EventResponse = {
 export type InvitationResponse = {
   status: string;
   /**
-   * Which of the mailbox’s addresses answered.
+   * Which of the inbox’s addresses answered.
    */
   attendee: string;
   /**
@@ -1592,7 +1592,7 @@ export type SearchHit = {
     | 'trash'
     | 'unauthenticated';
   /**
-   * The mailbox it was found in, as the address. `identity_id` is the same row.
+   * The inbox it was found in, as the address. `identity_id` is the same row.
    */
   identity: string | null;
 };

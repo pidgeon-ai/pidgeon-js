@@ -100,8 +100,8 @@ Documentation: [pidgeon.ai/docs/mcp](https://pidgeon.ai/docs/mcp).
 | `list_receive_rules` | The rules that decide what reaches one address — reject, spam, trash, archive or inbox, per sender or per domain — and its `receive_policy`.                                                               |
 | `list_folders`       | Every folder of one address with its counts.                                                                                                                                                               |
 | `list_folder`        | One folder of one address, newest first, a conversation per row — where `list_threads` says which conversations exist, this says where they are filed and what they look like in a list.                   |
-| `list_changes`       | Everything that moved in one mailbox since a `sync_cursor`, arrivals included, so a long-running agent does not re-read a folder to find one new message.                                                  |
-| `list_events`        | Every event across every mailbox this credential reaches — mail received, sent, delivered, bounced, filed.                                                                                                 |
+| `list_changes`       | Everything that moved in one inbox since a `sync_cursor`, arrivals included, so a long-running agent does not re-read a folder to find one new message.                                                    |
+| `list_events`        | Every event across every address this credential reaches — mail received, sent, delivered, bounced, filed.                                                                                                 |
 | `list_labels`        | Labels belong to an address, not to the workspace, so the same name on three addresses is three labels with three ids.                                                                                     |
 | `create_label`       | A label on one address.                                                                                                                                                                                    |
 | `apply_label`        | The label has to belong to the same address the conversation is in — `list_labels` for that address gives you the right id.                                                                                |
@@ -151,7 +151,7 @@ be reached — the key's own ceiling and the addresses it was granted do all of
 it, server-side, exactly as for any other caller.
 
 So **give it the narrowest key the agent needs**. A key created with `read`
-access can never send, however generously it is granted a mailbox, and an
+access can never send, however generously it is granted an inbox, and an
 agent that only has to triage should have one.
 
 ## What this is not

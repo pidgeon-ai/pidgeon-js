@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.31.1 — inbox, address, folder
+
+Descriptions only. Where the docs said "mailbox" they now say inbox (what an
+agent or a person has), address (`name@domain`, which the API calls an
+identity) or folder. Every name stays: `mailboxes.list`, `/v1/mailboxes`,
+`identity_id`. No shape moves.
+
 ## 1.31.0 — `receive_policy`
 
 Every address carries `receive_policy`: `open` (anyone, the default) or

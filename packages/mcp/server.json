@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.pidgeon/mcp",
   "title": "Pidgeon",
-  "description": "Email inbox for your AI agent: its own addresses, threads, sending, replies and arriving mail.",
+  "description": "Email inboxes for AI agents: their own addresses, threads, sending, replies and arriving mail.",
   "websiteUrl": "https://pidgeon.ai/docs/mcp",
   "icons": [
     {
@@ -35,13 +35,13 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "0.16.1",
+  "version": "0.16.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "0.16.1",
+      "version": "0.16.2",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
