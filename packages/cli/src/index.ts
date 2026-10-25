@@ -244,7 +244,13 @@ export async function run(
   if (verbose && idempotencyKey) options.stderr?.(`Idempotency-Key: ${idempotencyKey}`);
 
   client.setConfig(
-    createConfig({ baseUrl: env.PIDGEON_BASE_URL ?? DEFAULT_BASE_URL, auth: () => apiKey }),
+    createConfig({
+      baseUrl: env.PIDGEON_BASE_URL ?? DEFAULT_BASE_URL,
+      auth: () => apiKey,
+      // Ours by name, so an account made from a terminal reads as the CLI
+      // rather than as the SDK it bundles (`src/lib/analytics/client.ts`).
+      headers: { 'User-Agent': '@pidgeon-ai/cli' },
+    }),
   );
 
   /*

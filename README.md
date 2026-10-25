@@ -57,7 +57,7 @@ if (awaited.data.message) {
 ```
 
 `PIDGEON_API_KEY` is a `pgn_live_…` key. Make one at
-[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys), or let
+[pidgeon.ai/app/developers/keys](https://pidgeon.ai/signup?utm_source=github&utm_medium=readme&utm_campaign=pidgeon-js&next=/app/developers/keys), or let
 your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 
 ## The packages

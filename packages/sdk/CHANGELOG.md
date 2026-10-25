@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.31.2 — the client names itself
+
+Outside a browser the default client now sends `User-Agent: @pidgeon-ai/sdk`
+on every request, so Pidgeon can tell an account made through the SDK from
+one made with a hand-written `fetch`. A header you set yourself still wins.
+In a browser nothing changes: the browser sets its own. The Python client
+does the same as `pidgeon-python/<version>`.
+
 ## 1.31.1 — inbox, address, folder
 
 Descriptions only. Where the docs said "mailbox" they now say inbox (what an

@@ -23,6 +23,13 @@ export interface CallContext {
   baseUrl: string;
   apiKey: string;
   fetch?: typeof globalThis.fetch;
+  /**
+   * `@pidgeon-ai/mcp/<version> (<host>)`, where the host is the MCP client
+   * that launched this server, by the name it gave in `initialize`. The
+   * local server is the means; the host — Claude, Cursor, Codex — is what
+   * Pidgeon wants to know brought the account (`src/lib/analytics/client.ts`).
+   */
+  userAgent?: () => string;
 }
 
 export class PidgeonHttpError extends Error {
@@ -100,6 +107,7 @@ export async function dispatch(
     method,
     headers: {
       Authorization: `Bearer ${context.apiKey}`,
+      ...(context.userAgent ? { 'User-Agent': context.userAgent() } : {}),
       ...(sendsBody ? { 'Content-Type': 'application/json' } : {}),
       ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },

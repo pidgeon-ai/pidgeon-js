@@ -14,7 +14,7 @@ Or run it without installing: `npx -y @pidgeon-ai/cli --help`.
 ## Get a key
 
 Every command reads a `pgn_live_…` key from `PIDGEON_API_KEY`. Make one at
-[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys), or
+[pidgeon.ai/app/developers/keys](https://pidgeon.ai/signup?utm_source=npm&utm_medium=readme&utm_campaign=cli&next=/app/developers/keys), or
 let your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md)
 is two calls, and the only thing it needs from a person is a six-digit code.
 

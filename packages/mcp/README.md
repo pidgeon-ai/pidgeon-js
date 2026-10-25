@@ -65,7 +65,7 @@ so the config can be committed and the credential cannot:
 ```
 
 A `pgn_live_…` key comes from
-[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys). No
+[pidgeon.ai/app/developers/keys](https://pidgeon.ai/signup?utm_source=npm&utm_medium=readme&utm_campaign=mcp&next=/app/developers/keys). No
 account yet? An agent can sign itself up by reading
 [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md); the only thing it needs
 from a person is a six-digit code.

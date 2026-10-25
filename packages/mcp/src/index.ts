@@ -53,10 +53,27 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.16.2';
+export const VERSION = '0.16.3';
 
 export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
+
+  /*
+   * Read per call, because the host names itself in `initialize`, which
+   * arrives after this function returns. Reduced to a short run of plain
+   * characters: it is a name a client chose and it goes into a header.
+   */
+  const calling: CallContext = {
+    ...context,
+    userAgent: () => {
+      const host = server.server
+        .getClientVersion()
+        ?.name?.replace(/[^\w .-]/g, '')
+        .trim()
+        .slice(0, 40);
+      return `@pidgeon-ai/mcp/${VERSION}${host ? ` (${host})` : ''}`;
+    },
+  };
 
   for (const tool of TOOLS) {
     server.registerTool(
@@ -70,7 +87,7 @@ export function createServer(context: CallContext): McpServer {
       },
       async (input: Record<string, unknown>) => {
         try {
-          const { data, replayed } = await dispatch(tool, input, context);
+          const { data, replayed } = await dispatch(tool, input, calling);
 
           return {
             content: [

@@ -205,6 +205,9 @@ function buildClient(options: PidgeonToolsOptions): Client {
     createConfig({
       baseUrl: (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
       auth: () => apiKey,
+      // Ours by name; skipped in a browser, which sets its own (see the SDK's
+      // `runtime-config.ts`).
+      ...(typeof window === 'undefined' ? { headers: { 'User-Agent': '@pidgeon-ai/ai-sdk' } } : {}),
     }),
   );
 }

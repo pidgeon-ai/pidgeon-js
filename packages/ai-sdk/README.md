@@ -116,7 +116,7 @@ _"That address can only reply to people who have written to it first"_ — so it
 can tell a person why.
 
 A `pgn_live_…` key comes from
-[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys), or
+[pidgeon.ai/app/developers/keys](https://pidgeon.ai/signup?utm_source=npm&utm_medium=readme&utm_campaign=ai-sdk&next=/app/developers/keys), or
 an agent can sign itself up by reading
 [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 
