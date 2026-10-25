@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.33.0",
+    "version": "1.34.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -304,6 +304,10 @@
           "pod_id": {
             "type": "string",
             "description": "The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null."
+          },
+          "test": {
+            "type": "boolean",
+            "description": "A test address, made by a test key: it counts against no plan, takes only test mail (a test send or `POST /test/inbound`), and is deleted a day after it was made."
           }
         },
         "required": [
@@ -324,7 +328,8 @@
           "send_policy",
           "receive_policy",
           "tenant_id",
-          "pod_id"
+          "pod_id",
+          "test"
         ],
         "additionalProperties": false
       },
@@ -5081,6 +5086,10 @@
                   "pod_id": {
                     "type": "string",
                     "description": "The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null."
+                  },
+                  "test": {
+                    "type": "boolean",
+                    "description": "A test address, made by a test key: it counts against no plan, takes only test mail (a test send or `POST /test/inbound`), and is deleted a day after it was made."
                   }
                 },
                 "required": [
@@ -5101,7 +5110,8 @@
                   "send_policy",
                   "receive_policy",
                   "tenant_id",
-                  "pod_id"
+                  "pod_id",
+                  "test"
                 ],
                 "additionalProperties": false
               },
@@ -6129,7 +6139,7 @@
       "post": {
         "operationId": "identitiesCreate",
         "summary": "Create an address",
-        "description": "Idempotent with an `Idempotency-Key` header: the same key returns the first result rather than creating a second address.",
+        "description": "Idempotent with an `Idempotency-Key` header: the same key returns the first result rather than creating a second address.\n\nNeeds a key with admin over the account, or over its pod. A **test key** creates a test address (`test: true`): outside your plan’s counts, at most 100 at once, taking only test mail, and deleted a day after it was made.",
         "requestBody": {
           "required": true,
           "content": {

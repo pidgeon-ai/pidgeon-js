@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.34.0 — a test key creates test addresses
+
+Every address carries `test`. `identitiesCreate` with a test key (at admin
+over the account or its pod) now creates a test address rather than
+answering `403`: outside your plan's counts, at most 100 at once, taking only
+test mail (a test send or `testInbound`), and deleted a day after it was
+made. A test key may delete one. Additive.
+
 ## 1.33.0 — failures on purpose, in test mode
 
 `messagesSend` now says that with a test key a send to `rejected@` (any

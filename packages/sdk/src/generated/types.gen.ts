@@ -117,6 +117,10 @@ export type Identity = {
    * The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null.
    */
   pod_id: string;
+  /**
+   * A test address, made by a test key: it counts against no plan, takes only test mail (a test send or `POST /test/inbound`), and is deleted a day after it was made.
+   */
+  test: boolean;
 };
 
 export type Message = {
@@ -1691,6 +1695,10 @@ export type PodCreated = {
      * The pod this address is in. Every workspace has one to start with and every address is in one, so this is never null.
      */
     pod_id: string;
+    /**
+     * A test address, made by a test key: it counts against no plan, takes only test mail (a test send or `POST /test/inbound`), and is deleted a day after it was made.
+     */
+    test: boolean;
   } | null;
   /**
    * A pod key for it, or null when the call asked for none.
