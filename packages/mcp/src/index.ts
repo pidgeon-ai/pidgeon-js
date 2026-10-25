@@ -3,7 +3,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { type CallContext, dispatch, PidgeonHttpError } from './call.js';
 import { REPLAY_NOTE } from './idempotency.js';
-import { init } from './init.js';
 import { TOOLS } from './tools.js';
 
 /**
@@ -53,7 +52,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.16.4';
+export const VERSION = '0.17.0';
 
 export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
@@ -135,6 +134,31 @@ export async function main(): Promise<void> {
    * installer's explanation rather than the server's one-line refusal.
    */
   if (process.argv[2] === 'init') {
+    // Imported here, so the hosted server never loads the config editors.
+    const { init } = await import('./init.js');
+    const { CLIENTS } = await import('./clients.js');
+
+    const flag = (name: string) => {
+      const at = process.argv.findIndex((arg) => arg === name || arg.startsWith(`${name}=`));
+      if (at === -1) return undefined;
+      const arg = process.argv[at]!;
+      return arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : process.argv[at + 1];
+    };
+
+    const client = flag('--client');
+    const scope = flag('--scope');
+
+    if (client !== undefined && !(CLIENTS as readonly string[]).includes(client)) {
+      process.stdout.write(
+        `--client takes ${CLIENTS.join(', ')}. Any other client: run init without it and move .mcp.json.\n`,
+      );
+      process.exit(1);
+    }
+    if (scope !== undefined && scope !== 'user' && scope !== 'project') {
+      process.stdout.write('--scope takes user or project.\n');
+      process.exit(1);
+    }
+
     const result = await init({
       apiKey,
       baseUrl,
@@ -143,6 +167,9 @@ export async function main(): Promise<void> {
       force: process.argv.includes('--force'),
       fetch: globalThis.fetch,
       out: (line) => process.stdout.write(`${line}\n`),
+      client: client as (typeof CLIENTS)[number] | undefined,
+      scope,
+      signIn: process.argv.includes('--sign-in'),
     });
 
     process.exit(result.ok ? 0 : 1);

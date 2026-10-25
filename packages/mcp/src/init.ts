@@ -1,5 +1,19 @@
 import { readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+
+import {
+  CLIENT_NAMES,
+  type Client,
+  configPath,
+  defaultScope,
+  entry,
+  nextSteps,
+  render,
+  type Scope,
+  type Where,
+  writeClientConfig,
+} from './clients.js';
 
 /**
  * `npx -y @pidgeon-ai/mcp init` — the install, as one command.
@@ -24,6 +38,11 @@ import { resolve } from 'node:path';
  * and a tool that writes confidently to the wrong one is worse than a tool
  * that writes somewhere predictable and tells you. The block it wrote is
  * printed either way, so moving it is a copy rather than a re-derivation.
+ *
+ * `--client codex|vscode|gemini` is the exception, for the three clients
+ * whose one documented file and remote-server format were looked up and
+ * tested (`clients.ts`). Those get the hosted server, and with no key they
+ * get the URL alone and sign in.
  */
 
 /** The server's name in the config. One word, because a person types it. */
@@ -41,6 +60,13 @@ interface InitOptions {
   force: boolean;
   fetch: typeof globalThis.fetch;
   out: (line: string) => void;
+  /** Write the hosted server into this client's own file instead of `.mcp.json`. */
+  client?: Client;
+  scope?: Scope;
+  /** Write the sign-in entry even when a key is set. */
+  signIn?: boolean;
+  /** Where the user's files are; the tests point it at a sandbox. */
+  where?: Omit<Where, 'cwd'>;
 }
 
 /** What goes in the config. The key is referenced, never printed. */
@@ -90,6 +116,8 @@ const WHAT_IT_CAN_DO: Record<Access, string> = {
 
 export async function init(options: InitOptions): Promise<InitResult> {
   const { apiKey, baseUrl, cwd, write, force, fetch, out } = options;
+
+  if (options.client) return initClient({ ...options, client: options.client });
 
   if (!apiKey) {
     out('PIDGEON_API_KEY is not set.');
@@ -184,6 +212,86 @@ export async function init(options: InitOptions): Promise<InitResult> {
   out('so the config can be committed and the credential cannot.');
 
   return { ok: true, addresses, access, wrote };
+}
+
+/**
+ * `init --client …`: the hosted server in that client's file.
+ *
+ * A key is checked exactly as the bare `init` checks it, and then referenced
+ * the way that client can (an environment variable, or VS Code's prompt).
+ * No key is not a failure here: all three clients sign in with OAuth, so the
+ * entry is the URL alone and the person is told the one step left.
+ */
+async function initClient(options: InitOptions & { client: Client }): Promise<InitResult> {
+  const { apiKey, baseUrl, cwd, write, force, fetch, out, client } = options;
+  const name = CLIENT_NAMES[client];
+  const withKey = Boolean(apiKey) && !options.signIn;
+
+  let addresses: string[] = [];
+  let access: Access | null = null;
+
+  if (withKey) {
+    const identity = await describeKey({ apiKey: apiKey!, baseUrl, fetch, out });
+    if (identity === null) return { ok: false, addresses: [], access: null, wrote: null };
+
+    ({ addresses, access } = identity);
+    if (addresses.length === 0) {
+      out('That key works, and reaches no address yet. Grant it one at');
+      out('https://pidgeon.ai/app/developers/keys.');
+    } else {
+      out(
+        `That key reaches ${addresses.length} address${addresses.length === 1 ? '' : 'es'}: ${addresses.slice(0, 3).join(', ')}${addresses.length > 3 ? ', …' : ''}`,
+      );
+    }
+    if (access) out(`Access: ${access}. ${WHAT_IT_CAN_DO[access]}`);
+  } else {
+    out(
+      apiKey
+        ? `Signing in rather than using PIDGEON_API_KEY, as asked.`
+        : `No PIDGEON_API_KEY, so ${name} will sign you in to Pidgeon instead.`,
+    );
+  }
+
+  const mcpUrl = baseUrl.replace(/\/v1\/?$/, '/mcp');
+  const block = entry(client, mcpUrl, withKey);
+  const where: Where = {
+    cwd,
+    home: options.where?.home ?? homedir(),
+    platform: options.where?.platform ?? process.platform,
+    env: options.where?.env ?? process.env,
+  };
+  const path = configPath(client, options.scope ?? defaultScope(client), where);
+
+  out('');
+
+  if (!write) {
+    out(`Add this to ${path}:`);
+    out('');
+    out(render(client, block));
+  } else {
+    const result = writeClientConfig(client, path, block, force);
+    if (!result.ok) {
+      out(result.message);
+      return { ok: false, addresses, access, wrote: null };
+    }
+
+    if (!result.changed) {
+      out(`${path} already has this "pidgeon" server. Nothing changed.`);
+    } else {
+      out(`Wrote the "pidgeon" server to ${path}:`);
+      out('');
+      out(render(client, block));
+      if (result.backup) {
+        out('');
+        out(`The file as it was is in ${result.backup}.`);
+      }
+    }
+  }
+
+  out('');
+  for (const line of nextSteps(client, withKey)) out(line);
+
+  return { ok: true, addresses, access, wrote: write ? path : null };
 }
 
 /**

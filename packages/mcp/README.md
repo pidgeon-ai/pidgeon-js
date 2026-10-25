@@ -49,6 +49,23 @@ surfaces as a model quietly getting an error you never see. Then it writes
 client keeps its own somewhere else. `--force` to replace an entry that is
 already there.
 
+For Codex, VS Code and Gemini CLI, `--client` writes the hosted server into
+that client's own file instead:
+
+```sh
+npx -y @pidgeon-ai/mcp init --client codex    # ~/.codex/config.toml
+npx -y @pidgeon-ai/mcp init --client vscode   # .vscode/mcp.json
+npx -y @pidgeon-ai/mcp init --client gemini   # .gemini/settings.json
+```
+
+With no `PIDGEON_API_KEY` it writes the URL alone and the client signs you in
+(`codex mcp login pidgeon`, `/mcp auth pidgeon` in Gemini CLI, a browser
+prompt in VS Code). With a key it checks the key first and has the client read
+it from the variable, or ask for it once in VS Code, so it is never in the
+file. It keeps everything already in the file, comments included, backs a
+changed file up to `<file>.bak`, and is a no-op the second time. `--scope
+user|project` picks the other file; `--sign-in` ignores a key that is set.
+
 The key is referenced from the environment rather than written into the file,
 so the config can be committed and the credential cannot:
 

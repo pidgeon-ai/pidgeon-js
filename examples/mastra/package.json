@@ -1,0 +1,25 @@
+{
+  "name": "@pidgeon-ai/example-mastra",
+  "private": true,
+  "description": "A Pidgeon inbox for a Mastra agent. Not published.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "tsx main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mastra/core": "^1.79.0",
+    "@mastra/mcp": "^2.5.0",
+    "@pidgeon-ai/sdk": "^1.31.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

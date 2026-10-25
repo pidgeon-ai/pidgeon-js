@@ -17,7 +17,7 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['@modelcontextprotocol/sdk', '@pidgeon-ai/sdk', 'zod'],
+  external: ['@modelcontextprotocol/sdk', '@pidgeon-ai/sdk', 'jsonc-parser', 'smol-toml', 'zod'],
   target: 'es2022',
   /*
    * The shebang goes on both, which costs nothing on the library and is
