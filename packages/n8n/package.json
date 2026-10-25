@@ -1,0 +1,63 @@
+{
+  "name": "@pidgeon-ai/n8n-nodes-pidgeon",
+  "version": "0.1.0",
+  "description": "Email inboxes for AI agents, in n8n. A trigger for mail that arrives at an address and for a thread handed to a person, and actions to reply, save a draft, send, and wait for a verification code.",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "pidgeon",
+    "email",
+    "inbox",
+    "ai-agents",
+    "email-api",
+    "webhook"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Pidgeon",
+    "email": "support@pidgeon.ai"
+  },
+  "homepage": "https://pidgeon.ai/docs/n8n?utm_source=n8n",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/n8n"
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "lint": "n8n-node lint",
+    "typecheck": "tsc --noEmit",
+    "dev": "n8n-node dev"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/PidgeonApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Pidgeon/Pidgeon.node.js",
+      "dist/nodes/PidgeonTrigger/PidgeonTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "0.53.4",
+    "eslint": "9.39.4",
+    "n8n-workflow": "2.44.2",
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

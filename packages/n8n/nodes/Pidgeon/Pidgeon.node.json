@@ -1,0 +1,18 @@
+{
+  "node": "@pidgeon-ai/n8n-nodes-pidgeon.pidgeon",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["Communication"],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://pidgeon.ai/docs/n8n?utm_source=n8n#the-credential"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://pidgeon.ai/docs/n8n?utm_source=n8n"
+      }
+    ]
+  }
+}

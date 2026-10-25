@@ -17,14 +17,14 @@ name: Publish
 # these clients stays private; the clients do not need to be.
 on:
   push:
-    tags: ['sdk-v*', 'cli-v*', 'mcp-v*', 'ai-sdk-v*', 'openclaw-v*']
+    tags: ['sdk-v*', 'cli-v*', 'mcp-v*', 'ai-sdk-v*', 'openclaw-v*', 'n8n-v*']
   workflow_dispatch:
     inputs:
       package:
         description: Which package to publish
         required: true
         type: choice
-        options: [sdk, cli, mcp, ai-sdk, openclaw]
+        options: [sdk, cli, mcp, ai-sdk, openclaw, n8n]
 
 permissions:
   contents: read
@@ -52,12 +52,16 @@ jobs:
           fi
 
           case "$name" in
-            sdk|cli|mcp|ai-sdk|openclaw) ;;
+            sdk|cli|mcp|ai-sdk|openclaw|n8n) ;;
             *) echo "Unknown package: $name" >&2; exit 1 ;;
           esac
 
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "dir=packages/$name" >> "$GITHUB_OUTPUT"
+          # The npm name, which is not always `@pidgeon-ai/<dir>`:
+          # `packages/n8n` is `@pidgeon-ai/n8n-nodes-pidgeon`, because n8n
+          # finds community nodes by the `n8n-nodes-` prefix.
+          echo "npm=$(node -p "require('./packages/$name/package.json').name")" >> "$GITHUB_OUTPUT"
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
@@ -99,7 +103,7 @@ jobs:
       # builds all three and hid this. Found by cloning the mirror and
       # running it, which is the only way any of these are found.
       - name: Build
-        run: pnpm --filter "@pidgeon-ai/${{ steps.package.outputs.name }}..." build
+        run: pnpm --filter "${{ steps.package.outputs.npm }}..." build
 
       - name: Publish
         working-directory: ${{ steps.package.outputs.dir }}
