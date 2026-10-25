@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.32.0 — a thread pages to the end
+
+`messagesListInThread` takes `cursor` and answers `next_cursor`. It used to
+answer `has_more: true` with no cursor, so a thread longer than `limit` (at
+most 200) could not be read past its first page. Pass the `next_cursor` you
+were given until it is null. A bad `limit` or `cursor` is now refused naming
+that field rather than `thread_id`. Additive.
+
 ## 1.31.4 — one-click setup, described truly
 
 Descriptions only. `domainsGetSetupLink` said the `mail` template included MX
