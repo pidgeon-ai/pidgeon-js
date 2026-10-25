@@ -7,6 +7,20 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.35.0 — a key says what it is, and minting is idempotent
+
+- `meGet` returns `key.test`, `key.rotated_at` and
+  `key.previous_token_expires_at`. Read `key.test` rather than the token's
+  prefix to tell a test key.
+- `keysCreate` takes an `Idempotency-Key` header. A replay returns the same
+  key with `Idempotent-Replay: true` and `token: null`, so
+  `ApiKeyCreated.token` is now `string | null`: check it before storing.
+- An idempotency `409` now has its own `error.code`:
+  `idempotency_in_progress` (wait `Retry-After` seconds, then send the same
+  request) or `idempotency_mismatch` (the key went with a different
+  request). Both were `conflict`; code that matched `conflict` for these
+  must match the new codes.
+
 ## 1.34.0 — a test key creates test addresses
 
 Every address carries `test`. `identitiesCreate` with a test key (at admin

@@ -125,6 +125,8 @@ try {
     throwOnError: true,
   });
   const key = minted.data;
+  // Null only when an Idempotency-Key replays a mint, which this call never sends.
+  if (!key.token) throw new Error('The minted key came back without its token.');
 
   const code = String(randomInt(100_000, 1_000_000));
   let answer: Answer;

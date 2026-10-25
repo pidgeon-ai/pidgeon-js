@@ -1899,6 +1899,14 @@ export const COMMANDS: Command[] = [
     "summary": "Mint a key",
     "flags": [
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "name",
         "kind": "string",
         "required": true,

@@ -1255,9 +1255,9 @@ export type ApiKeyCreated = {
    */
   previous_token_expires_at: string | null;
   /**
-   * The secret. Shown once, here, and never again.
+   * The secret. Shown once, here, and never again. Null on an `Idempotency-Key` replay of a mint (`Idempotent-Replay: true`): the secret is never stored, so rotate the key (`POST /api-keys/{id}/rotate`), or revoke it and mint again.
    */
-  token: string;
+  token: string | null;
 };
 
 export type AppPassword = {
@@ -1313,6 +1313,18 @@ export type Me = {
      * ISO-8601, UTC.
      */
     created_at: string;
+    /**
+     * A test-mode key (`pgn_test_`): its mail never leaves Pidgeon and counts against nothing. Read this rather than the token’s prefix.
+     */
+    test: boolean;
+    /**
+     * When the key was last given a new secret by `POST /api-keys/{id}/rotate`, or null.
+     */
+    rotated_at: string | null;
+    /**
+     * While the secret it had before its last rotation still works, when that stops. Null when it has stopped or there was no grace period.
+     */
+    previous_token_expires_at: string | null;
   } | null;
   workspace: {
     id: string;
@@ -2195,7 +2207,7 @@ export type IdentitiesCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3174,7 +3186,7 @@ export type PodsCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3490,7 +3502,7 @@ export type LabelsCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3983,7 +3995,7 @@ export type MessagesSendErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4495,7 +4507,7 @@ export type MessagesReplyErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4600,7 +4612,7 @@ export type MessagesReplyAllErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4705,7 +4717,7 @@ export type MessagesForwardErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5148,7 +5160,7 @@ export type DomainsCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5647,7 +5659,7 @@ export type RoutingCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6161,6 +6173,12 @@ export type KeysCreateData = {
      */
     test?: boolean;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/api-keys';
@@ -6188,7 +6206,7 @@ export type KeysCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6528,7 +6546,7 @@ export type TestInboundErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7298,7 +7316,7 @@ export type WebhooksCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7783,7 +7801,7 @@ export type MessagesRespondToInvitationErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8077,7 +8095,7 @@ export type CalendarCreateEventErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8154,7 +8172,7 @@ export type CalendarRespondToEventErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8378,7 +8396,7 @@ export type CalendarDeleteEventErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8547,7 +8565,7 @@ export type CalendarUpdateEventErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8734,7 +8752,7 @@ export type DraftsCreateErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9014,7 +9032,7 @@ export type DraftsSendErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9142,7 +9160,7 @@ export type DraftsScheduleErrors = {
    */
   404: Error;
   /**
-   * This `Idempotency-Key` was used with a different request, or that request is still running. Nothing was sent by this call.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
