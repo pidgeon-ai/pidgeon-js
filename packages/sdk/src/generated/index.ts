@@ -137,6 +137,7 @@ export type {
   ApiKey,
   ApiKeyCreated,
   AppPassword,
+  AppPasswordCreated,
   AppPasswordsCreateData,
   AppPasswordsCreateError,
   AppPasswordsCreateErrors,

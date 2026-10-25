@@ -7,6 +7,31 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.37.0 — every endpoint keeps the API's promises
+
+- **Every write takes an `Idempotency-Key` header**, not only the sends and
+  the creates: every `PATCH`, `PUT` and `DELETE`, and the other `POST`s.
+  Each declares the `409` (`idempotency_in_progress`,
+  `idempotency_mismatch`) and the test-mode `504`. A retried delete replays
+  "deleted" instead of answering `404`. Unauthenticated agent signup and
+  `keysRotate` are the exceptions.
+- **Every list pages to the end.** `domainsList` and `webhooksList` honour
+  the `limit` and `cursor` they always declared; `webhooksDeliveries`,
+  `draftsList`, `calendarListEvents`, `calendarGetAgenda`,
+  `calendarListEventInstances` and `messagesSearch` take `cursor` and answer
+  `next_cursor`. Each used to stop at `limit` with `has_more: false`. A
+  calendar window holding more than 1,000 events is a `400` naming
+  `before`; search reads the 1,000 best matches.
+- `appPasswordsCreate` answers `AppPasswordCreated`, with the `username` and
+  `password` it always returned. `password` and `WebhookCreated.secret` are
+  `string | null`: null on an `Idempotency-Key` replay, because neither is
+  stored. Check them before storing.
+- `MailboxChange` carries the listing row's fields, as the endpoint always
+  sent them.
+- A `400` names the field you sent: an unknown key by its name, and in
+  `snake_case` (`send_at`, not `sendAt`). Every `429` carries
+  `X-RateLimit-Limit`, `-Remaining` and `-Reset` beside `Retry-After`.
+
 ## 1.36.0 — the mail a domain already receives
 
 `domainsCreate` answers `existing_mail`: who already receives mail for the

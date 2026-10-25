@@ -115,6 +115,14 @@ export const COMMANDS: Command[] = [
     "summary": "Issue IMAP and SMTP credentials for one address",
     "flags": [
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "identity_id",
         "kind": "string",
         "required": true,
@@ -158,6 +166,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -210,7 +226,16 @@ export const COMMANDS: Command[] = [
     "method": "POST",
     "path": "/attachments",
     "summary": "Upload a file to send",
-    "flags": []
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
   },
   {
     "group": "calendar",
@@ -419,6 +444,13 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
       }
     ]
   },
@@ -481,6 +513,13 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
       }
     ]
   },
@@ -595,6 +634,14 @@ export const COMMANDS: Command[] = [
         "where": "header",
         "describe": "The `etag` you last read. A stale one is a `409` naming the current version — two agents on one mailbox is the case this product is for, and last-write-wins loses a meeting.",
         "header": "If-Match"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "timezone",
@@ -775,6 +822,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -858,6 +913,14 @@ export const COMMANDS: Command[] = [
         "where": "path"
       },
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "catch_all_enabled",
         "kind": "boolean",
         "required": true,
@@ -878,6 +941,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -910,6 +981,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1021,6 +1100,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1059,6 +1146,13 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
       }
     ]
   },
@@ -1081,6 +1175,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1151,6 +1253,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "from",
@@ -1380,6 +1490,14 @@ export const COMMANDS: Command[] = [
         "where": "path"
       },
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "user_id",
         "kind": "string",
         "required": false,
@@ -1430,6 +1548,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1581,6 +1707,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1650,6 +1784,14 @@ export const COMMANDS: Command[] = [
         "where": "path"
       },
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "action",
         "kind": "string",
         "choices": [
@@ -1689,6 +1831,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1721,6 +1871,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "effect",
@@ -1759,6 +1917,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1791,6 +1957,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -1807,6 +1981,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "display_name",
@@ -2000,6 +2182,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -2038,6 +2228,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "name",
@@ -2107,6 +2305,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -2139,6 +2345,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "name",
@@ -2211,6 +2425,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -2288,6 +2510,14 @@ export const COMMANDS: Command[] = [
     "path": "/messages/actions",
     "summary": "Apply one action to many conversations",
     "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
       {
         "name": "message_ids",
         "kind": "list",
@@ -2819,6 +3049,13 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
       }
     ]
   },
@@ -2926,8 +3163,16 @@ export const COMMANDS: Command[] = [
     "summary": "Put an action back",
     "flags": [
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "undo",
-        "kind": "list",
+        "kind": "json",
         "required": true,
         "where": "body"
       }
@@ -2946,6 +3191,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "is_read",
@@ -3071,6 +3324,14 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "query",
         "describe": "`true` to delete the pod’s addresses and all their mail with it. Without it a pod that holds an address is refused with 409."
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -3112,6 +3373,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "name",
@@ -3159,6 +3428,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -3191,6 +3468,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "status",
@@ -3308,6 +3593,14 @@ export const COMMANDS: Command[] = [
         "where": "path"
       },
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "label_id",
         "kind": "string",
         "required": true,
@@ -3334,6 +3627,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "query"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -3427,6 +3728,14 @@ export const COMMANDS: Command[] = [
         "where": "path"
       },
       {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
         "name": "status",
         "kind": "string",
         "choices": [
@@ -3514,6 +3823,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -3536,6 +3853,13 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
       }
     ]
   },
@@ -3607,6 +3931,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       }
     ]
   },
@@ -3623,6 +3955,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "status",
@@ -3649,6 +3989,14 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
       },
       {
         "name": "headers",

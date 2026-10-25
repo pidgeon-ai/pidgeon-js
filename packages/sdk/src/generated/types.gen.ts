@@ -676,9 +676,9 @@ export type WebhookCreated = {
    */
   created_at: string;
   /**
-   * Shown once, here, and never again.
+   * Shown once, here, and never again. Null on an `Idempotency-Key` replay (`Idempotent-Replay: true`): the secret is never stored, so delete the webhook and make another.
    */
-  secret: string;
+  secret: string | null;
 };
 
 export type Draft = {
@@ -1332,6 +1332,26 @@ export type AppPassword = {
   created_at: string;
 };
 
+export type AppPasswordCreated = {
+  id: string;
+  name: string;
+  prefix: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+  /**
+   * The address, as a mail client wants it.
+   */
+  username: string;
+  /**
+   * Shown once, here, and never again. Null on an `Idempotency-Key` replay (`Idempotent-Replay: true`): the password is never stored, so revoke it and issue another.
+   */
+  password: string | null;
+};
+
 export type Workspace = {
   id: string;
   name: string;
@@ -1442,6 +1462,43 @@ export type UploadedAttachment = {
 
 export type MailboxChange = {
   id: string;
+  identity_id?: string | null;
+  thread_id?: string;
+  direction?: string;
+  /**
+   * The address that sent it.
+   */
+  from?: string;
+  /**
+   * The sender’s display name, when it had one.
+   */
+  from_name?: string | null;
+  /**
+   * Every address it was sent to.
+   */
+  to?: Array<string>;
+  /**
+   * Who the row is about: the sender on a received message, the recipient on a sent one. What a mail client prints in the list.
+   */
+  counterparty?: string;
+  /**
+   * The same party, as a name to show.
+   */
+  counterparty_name?: string;
+  subject?: string | null;
+  preview?: string | null;
+  is_read?: boolean;
+  is_starred?: boolean;
+  is_draft?: boolean;
+  is_spam?: boolean;
+  has_attachments?: boolean;
+  attachment_count?: number;
+  message_count?: number;
+  assignee_id?: string | null;
+  /**
+   * ISO-8601, UTC.
+   */
+  timestamp?: string;
   /**
    * ISO-8601, UTC.
    */
@@ -1457,7 +1514,17 @@ export type Restored = {
 export type Undo = {
   id?: string;
   applied?: number;
-  undo: Array<unknown>;
+  undo: Array<{
+    messageId: string;
+    rows: Array<{
+      id: string;
+      is_starred: boolean;
+      is_archived: boolean;
+      is_deleted: boolean;
+      is_spam: boolean;
+    }>;
+    read?: Array<string>;
+  }>;
 };
 
 export type MessageListItem = {
@@ -2303,6 +2370,12 @@ export type IdentitiesCreateResponse = IdentitiesCreateResponses[keyof Identitie
 
 export type IdentitiesDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2328,7 +2401,7 @@ export type IdentitiesDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2343,6 +2416,10 @@ export type IdentitiesDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesDeleteError = IdentitiesDeleteErrors[keyof IdentitiesDeleteErrors];
@@ -2450,6 +2527,12 @@ export type IdentitiesUpdateData = {
      */
     pod_id?: string | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2475,7 +2558,7 @@ export type IdentitiesUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2490,6 +2573,10 @@ export type IdentitiesUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesUpdateError = IdentitiesUpdateErrors[keyof IdentitiesUpdateErrors];
@@ -2507,6 +2594,12 @@ export type IdentitiesUpdateResponse = IdentitiesUpdateResponses[keyof Identitie
 
 export type IdentitiesAccessDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2534,7 +2627,7 @@ export type IdentitiesAccessDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2549,6 +2642,10 @@ export type IdentitiesAccessDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesAccessDeleteError =
@@ -2634,6 +2731,12 @@ export type IdentitiesAccessCreateData = {
      */
     access: 'read' | 'send' | 'admin';
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2659,7 +2762,7 @@ export type IdentitiesAccessCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2674,6 +2777,10 @@ export type IdentitiesAccessCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesAccessCreateError =
@@ -2693,6 +2800,12 @@ export type IdentitiesAccessCreateResponse =
 
 export type IdentitiesSendRulesDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2720,7 +2833,7 @@ export type IdentitiesSendRulesDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2735,6 +2848,10 @@ export type IdentitiesSendRulesDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesSendRulesDeleteError =
@@ -2816,6 +2933,12 @@ export type IdentitiesSendRulesCreateData = {
     effect: 'allow' | 'block';
     value: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2841,7 +2964,7 @@ export type IdentitiesSendRulesCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2856,6 +2979,10 @@ export type IdentitiesSendRulesCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesSendRulesCreateError =
@@ -2875,6 +3002,12 @@ export type IdentitiesSendRulesCreateResponse =
 
 export type IdentitiesReceiveRulesDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -2902,7 +3035,7 @@ export type IdentitiesReceiveRulesDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -2917,6 +3050,10 @@ export type IdentitiesReceiveRulesDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesReceiveRulesDeleteError =
@@ -2998,6 +3135,12 @@ export type IdentitiesReceiveRulesCreateData = {
     action: 'reject' | 'spam' | 'trash' | 'archive' | 'inbox';
     value: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3023,7 +3166,7 @@ export type IdentitiesReceiveRulesCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3038,6 +3181,10 @@ export type IdentitiesReceiveRulesCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesReceiveRulesCreateError =
@@ -3057,6 +3204,12 @@ export type IdentitiesReceiveRulesCreateResponse =
 
 export type IdentitiesSuspendTenantData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     /**
      * Your own tenant id, URL-encoded.
@@ -3085,7 +3238,7 @@ export type IdentitiesSuspendTenantErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3100,6 +3253,10 @@ export type IdentitiesSuspendTenantErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type IdentitiesSuspendTenantError =
@@ -3282,6 +3439,12 @@ export type PodsCreateResponse = PodsCreateResponses[keyof PodsCreateResponses];
 
 export type PodsDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3312,7 +3475,7 @@ export type PodsDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3327,6 +3490,10 @@ export type PodsDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type PodsDeleteError = PodsDeleteErrors[keyof PodsDeleteErrors];
@@ -3407,6 +3574,12 @@ export type PodsUpdateData = {
      */
     client_id?: string | null;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3432,7 +3605,7 @@ export type PodsUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3447,6 +3620,10 @@ export type PodsUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type PodsUpdateError = PodsUpdateErrors[keyof PodsUpdateErrors];
@@ -3598,6 +3775,12 @@ export type LabelsCreateResponse = LabelsCreateResponses[keyof LabelsCreateRespo
 
 export type LabelsDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3623,7 +3806,7 @@ export type LabelsDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3638,6 +3821,10 @@ export type LabelsDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type LabelsDeleteError = LabelsDeleteErrors[keyof LabelsDeleteErrors];
@@ -3657,6 +3844,12 @@ export type LabelsUpdateData = {
   body: {
     name?: string;
     colour?: 'slate' | 'red' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink';
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -3683,7 +3876,7 @@ export type LabelsUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3698,6 +3891,10 @@ export type LabelsUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type LabelsUpdateError = LabelsUpdateErrors[keyof LabelsUpdateErrors];
@@ -3715,6 +3912,12 @@ export type LabelsUpdateResponse = LabelsUpdateResponses[keyof LabelsUpdateRespo
 
 export type ThreadsLabelsDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3742,7 +3945,7 @@ export type ThreadsLabelsDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3757,6 +3960,10 @@ export type ThreadsLabelsDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type ThreadsLabelsDeleteError = ThreadsLabelsDeleteErrors[keyof ThreadsLabelsDeleteErrors];
@@ -3839,6 +4046,12 @@ export type ThreadsLabelsCreateData = {
   body: {
     label_id: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -3864,7 +4077,7 @@ export type ThreadsLabelsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -3879,6 +4092,10 @@ export type ThreadsLabelsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type ThreadsLabelsCreateError = ThreadsLabelsCreateErrors[keyof ThreadsLabelsCreateErrors];
@@ -4113,6 +4330,10 @@ export type MessagesSearchData = {
     is_starred?: string;
     label_id?: string;
     limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
   };
   url: '/messages/search';
 };
@@ -4189,6 +4410,12 @@ export type MessagesActData = {
       | 'not_spam'
       | 'delete_forever';
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/messages/actions';
@@ -4212,7 +4439,7 @@ export type MessagesActErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4227,6 +4454,10 @@ export type MessagesActErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesActError = MessagesActErrors[keyof MessagesActErrors];
@@ -4244,7 +4475,23 @@ export type MessagesActResponse = MessagesActResponses[keyof MessagesActResponse
 
 export type MessagesUndoData = {
   body: {
-    undo: Array<unknown>;
+    undo: Array<{
+      messageId: string;
+      rows: Array<{
+        id: string;
+        is_starred: boolean;
+        is_archived: boolean;
+        is_deleted: boolean;
+        is_spam: boolean;
+      }>;
+      read?: Array<string>;
+    }>;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path?: never;
   query?: never;
@@ -4269,7 +4516,7 @@ export type MessagesUndoErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4284,6 +4531,10 @@ export type MessagesUndoErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesUndoError = MessagesUndoErrors[keyof MessagesUndoErrors];
@@ -4441,6 +4692,12 @@ export type MessagesUpdateData = {
     is_starred?: boolean;
     folder?: 'inbox' | 'archive' | 'spam' | 'trash';
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -4466,7 +4723,7 @@ export type MessagesUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -4481,6 +4738,10 @@ export type MessagesUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MessagesUpdateError = MessagesUpdateErrors[keyof MessagesUpdateErrors];
@@ -5058,6 +5319,12 @@ export type ThreadsUpdateData = {
     assignee_id?: string | null;
     reason?: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -5083,7 +5350,7 @@ export type ThreadsUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5098,6 +5365,10 @@ export type ThreadsUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type ThreadsUpdateError = ThreadsUpdateErrors[keyof ThreadsUpdateErrors];
@@ -5374,6 +5645,12 @@ export type DomainsGetSetupLinkResponse =
 
 export type DomainsVerifyData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -5399,7 +5676,7 @@ export type DomainsVerifyErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5414,6 +5691,10 @@ export type DomainsVerifyErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DomainsVerifyError = DomainsVerifyErrors[keyof DomainsVerifyErrors];
@@ -5431,6 +5712,12 @@ export type DomainsVerifyResponse = DomainsVerifyResponses[keyof DomainsVerifyRe
 
 export type DomainsDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -5456,7 +5743,7 @@ export type DomainsDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5471,6 +5758,10 @@ export type DomainsDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DomainsDeleteError = DomainsDeleteErrors[keyof DomainsDeleteErrors];
@@ -5547,6 +5838,12 @@ export type DomainsUpdateData = {
   body: {
     catch_all_enabled: boolean;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -5572,7 +5869,7 @@ export type DomainsUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5587,6 +5884,10 @@ export type DomainsUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DomainsUpdateError = DomainsUpdateErrors[keyof DomainsUpdateErrors];
@@ -5755,6 +6056,12 @@ export type RoutingCreateResponse = RoutingCreateResponses[keyof RoutingCreateRe
 
 export type RoutingDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -5780,7 +6087,7 @@ export type RoutingDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5795,6 +6102,10 @@ export type RoutingDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type RoutingDeleteError = RoutingDeleteErrors[keyof RoutingDeleteErrors];
@@ -5813,6 +6124,12 @@ export type RoutingDeleteResponse = RoutingDeleteResponses[keyof RoutingDeleteRe
 export type RoutingUpdateData = {
   body: {
     status: 'active' | 'disabled';
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -5839,7 +6156,7 @@ export type RoutingUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -5854,6 +6171,10 @@ export type RoutingUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type RoutingUpdateError = RoutingUpdateErrors[keyof RoutingUpdateErrors];
@@ -6001,6 +6322,12 @@ export type MailboxesChangesResponse = MailboxesChangesResponses[keyof Mailboxes
 
 export type MailboxesEmptyTrashData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     folder: string;
   };
@@ -6028,7 +6355,7 @@ export type MailboxesEmptyTrashErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6043,6 +6370,10 @@ export type MailboxesEmptyTrashErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type MailboxesEmptyTrashError = MailboxesEmptyTrashErrors[keyof MailboxesEmptyTrashErrors];
@@ -6302,6 +6633,12 @@ export type KeysCreateResponse = KeysCreateResponses[keyof KeysCreateResponses];
 
 export type KeysRevokeData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -6327,7 +6664,7 @@ export type KeysRevokeErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6342,6 +6679,10 @@ export type KeysRevokeErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type KeysRevokeError = KeysRevokeErrors[keyof KeysRevokeErrors];
@@ -6418,6 +6759,12 @@ export type KeysUpdateData = {
   body: {
     name: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -6443,7 +6790,7 @@ export type KeysUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6458,6 +6805,10 @@ export type KeysUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type KeysUpdateError = KeysUpdateErrors[keyof KeysUpdateErrors];
@@ -6710,6 +7061,12 @@ export type AppPasswordsCreateData = {
     identity_id: string;
     name: string;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/app-passwords';
@@ -6737,7 +7094,7 @@ export type AppPasswordsCreateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6752,6 +7109,10 @@ export type AppPasswordsCreateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type AppPasswordsCreateError = AppPasswordsCreateErrors[keyof AppPasswordsCreateErrors];
@@ -6761,7 +7122,7 @@ export type AppPasswordsCreateResponses = {
    * The credentials, once.
    */
   201: {
-    data: AppPassword;
+    data: AppPasswordCreated;
   };
 };
 
@@ -6770,6 +7131,12 @@ export type AppPasswordsCreateResponse =
 
 export type AppPasswordsRevokeData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -6795,7 +7162,7 @@ export type AppPasswordsRevokeErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -6810,6 +7177,10 @@ export type AppPasswordsRevokeErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type AppPasswordsRevokeError = AppPasswordsRevokeErrors[keyof AppPasswordsRevokeErrors];
@@ -7412,6 +7783,12 @@ export type WebhooksCreateResponse = WebhooksCreateResponses[keyof WebhooksCreat
 
 export type WebhooksDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -7437,7 +7814,7 @@ export type WebhooksDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7452,6 +7829,10 @@ export type WebhooksDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type WebhooksDeleteError = WebhooksDeleteErrors[keyof WebhooksDeleteErrors];
@@ -7528,6 +7909,12 @@ export type WebhooksUpdateData = {
   body: {
     status: 'active' | 'disabled';
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -7553,7 +7940,7 @@ export type WebhooksUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7568,6 +7955,10 @@ export type WebhooksUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type WebhooksUpdateError = WebhooksUpdateErrors[keyof WebhooksUpdateErrors];
@@ -7647,6 +8038,12 @@ export type WebhooksUpdateHeadersData = {
       [key: string]: string;
     };
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -7672,7 +8069,7 @@ export type WebhooksUpdateHeadersErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7687,6 +8084,10 @@ export type WebhooksUpdateHeadersErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type WebhooksUpdateHeadersError =
@@ -7710,6 +8111,10 @@ export type WebhooksDeliveriesData = {
   query: {
     webhook_id: string;
     limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
   };
   url: '/deliveries';
 };
@@ -7770,6 +8175,12 @@ export type WebhooksDeliveriesResponse =
 
 export type WebhooksReplayData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -7795,7 +8206,7 @@ export type WebhooksReplayErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -7810,6 +8221,10 @@ export type WebhooksReplayErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type WebhooksReplayError = WebhooksReplayErrors[keyof WebhooksReplayErrors];
@@ -7972,6 +8387,10 @@ export type CalendarUpdateData = {
      * The `etag` you last read. A stale one is a `409` naming the current version — two agents on one mailbox is the case this product is for, and last-write-wins loses a meeting.
      */
     'If-Match'?: string;
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
   };
   path: {
     id: string;
@@ -7998,7 +8417,7 @@ export type CalendarUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8013,6 +8432,10 @@ export type CalendarUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type CalendarUpdateError = CalendarUpdateErrors[keyof CalendarUpdateErrors];
@@ -8282,6 +8705,10 @@ export type CalendarListEventInstancesData = {
     after?: string;
     before?: string;
     limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
   };
   url: '/identities/{id}/calendar/events/{eventId}/instances';
 };
@@ -8355,6 +8782,10 @@ export type CalendarGetAgendaData = {
     before?: string;
     include_overlapping?: 'true' | 'false';
     limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
   };
   url: '/identities/{id}/calendar/agenda';
 };
@@ -8670,6 +9101,10 @@ export type DraftsListData = {
   query: {
     identity_id: string;
     limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
   };
   url: '/drafts';
 };
@@ -8848,6 +9283,12 @@ export type DraftsCreateResponse = DraftsCreateResponses[keyof DraftsCreateRespo
 
 export type DraftsDeleteData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -8873,7 +9314,7 @@ export type DraftsDeleteErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -8888,6 +9329,10 @@ export type DraftsDeleteErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsDeleteError = DraftsDeleteErrors[keyof DraftsDeleteErrors];
@@ -9004,6 +9449,12 @@ export type DraftsUpdateData = {
      */
     attachment_ids?: Array<string>;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -9029,7 +9480,7 @@ export type DraftsUpdateErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9044,6 +9495,10 @@ export type DraftsUpdateErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsUpdateError = DraftsUpdateErrors[keyof DraftsUpdateErrors];
@@ -9128,6 +9583,12 @@ export type DraftsSendResponse = DraftsSendResponses[keyof DraftsSendResponses];
 
 export type DraftsCancelScheduleData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
   };
@@ -9153,7 +9614,7 @@ export type DraftsCancelScheduleErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9168,6 +9629,10 @@ export type DraftsCancelScheduleErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsCancelScheduleError =
@@ -9256,6 +9721,12 @@ export type DraftsScheduleResponse = DraftsScheduleResponses[keyof DraftsSchedul
 
 export type DraftsRemoveAttachmentData = {
   body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path: {
     id: string;
     attachmentId: string;
@@ -9282,7 +9753,7 @@ export type DraftsRemoveAttachmentErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9297,6 +9768,10 @@ export type DraftsRemoveAttachmentErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type DraftsRemoveAttachmentError =
@@ -9378,6 +9853,12 @@ export type AttachmentsUploadData = {
     identity_id: string;
     file: Blob | File;
   };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
   path?: never;
   query?: never;
   url: '/attachments';
@@ -9401,7 +9882,7 @@ export type AttachmentsUploadErrors = {
    */
   404: Error;
   /**
-   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
    */
   409: Error;
   /**
@@ -9416,6 +9897,10 @@ export type AttachmentsUploadErrors = {
    * Something this needs is not answering right now. Retry in a moment.
    */
   503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
 };
 
 export type AttachmentsUploadError = AttachmentsUploadErrors[keyof AttachmentsUploadErrors];
