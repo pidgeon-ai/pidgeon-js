@@ -7,6 +7,24 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.39.0 — what happened to a send
+
+- Every `Message` carries `delivery`: `state`, the worst any recipient has
+  reached (`queued` through `delivered`, `bounced` or `complained`),
+  `delivered_at`, and each recipient's `state`, `bounce_type` and
+  `diagnostic`. Null for mail that arrived and for a send nobody has
+  reported on yet. `/docs/test-mode` called it `delivery_state`; it is
+  `delivery.state`.
+- `to`, `cc` and `bcc` take one address or several on `draftsCreate`,
+  `draftsUpdate`, `messagesReply`, `messagesReplyAll` and
+  `messagesForward`, as they did on `messagesSend`.
+- `draftsUpdate` adds the uploads named in `attachment_ids`. It took them
+  and did nothing. A create refused for an upload that does not exist no
+  longer saves the draft first.
+- `message.delivered`, `message.bounced`, `message.rejected` and
+  `message.complained`, and the calendar events an invitation makes, carry
+  `thread_id`.
+
 ## 1.38.0 — a Gmail forward Google vouched for
 
 `authentication` gains `arc`: `{ sealer: "google.com", dmarc: "pass" }` on a

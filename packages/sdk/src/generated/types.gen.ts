@@ -245,6 +245,22 @@ export type Message = {
     downloadable: boolean;
   }>;
   /**
+   * What happened to mail we sent, per recipient and overall. Null for mail that arrived, and for a send nobody has reported on yet. `message.delivered` and `message.bounced` say the same as events.
+   */
+  delivery: {
+    /**
+     * `queued`, `sent`, `delivered`, `deferred`, `rejected`, `bounced` or `complained`: the worst any recipient has reached, so one bounce shows through a delivery.
+     */
+    state: string;
+    delivered_at: string | null;
+    recipients: Array<{
+      address: string;
+      state: string;
+      bounce_type: string | null;
+      diagnostic: string | null;
+    }>;
+  } | null;
+  /**
    * The calendar part this message carried, or null — the invitation, who was asked, and what they answered.
    */
   invitation: {
@@ -484,6 +500,22 @@ export type AwaitedMessage = {
        */
       downloadable: boolean;
     }>;
+    /**
+     * What happened to mail we sent, per recipient and overall. Null for mail that arrived, and for a send nobody has reported on yet. `message.delivered` and `message.bounced` say the same as events.
+     */
+    delivery: {
+      /**
+       * `queued`, `sent`, `delivered`, `deferred`, `rejected`, `bounced` or `complained`: the worst any recipient has reached, so one bounce shows through a delivery.
+       */
+      state: string;
+      delivered_at: string | null;
+      recipients: Array<{
+        address: string;
+        state: string;
+        bounce_type: string | null;
+        diagnostic: string | null;
+      }>;
+    } | null;
     /**
      * The calendar part this message carried, or null — the invitation, who was asked, and what they answered.
      */
@@ -4803,15 +4835,15 @@ export type MessagesReplyData = {
     /**
      * One address or several. A string is accepted for the single case.
      */
-    to?: Array<string>;
+    to?: string | Array<string>;
     /**
      * Copied, and visible to everybody who receives the message.
      */
-    cc?: Array<string>;
+    cc?: string | Array<string>;
     /**
      * Copied, and visible to nobody else.
      */
-    bcc?: Array<string>;
+    bcc?: string | Array<string>;
     /**
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
@@ -4908,15 +4940,15 @@ export type MessagesReplyAllData = {
     /**
      * One address or several. A string is accepted for the single case.
      */
-    to?: Array<string>;
+    to?: string | Array<string>;
     /**
      * Copied, and visible to everybody who receives the message.
      */
-    cc?: Array<string>;
+    cc?: string | Array<string>;
     /**
      * Copied, and visible to nobody else.
      */
-    bcc?: Array<string>;
+    bcc?: string | Array<string>;
     /**
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
@@ -5013,15 +5045,15 @@ export type MessagesForwardData = {
     /**
      * One address or several. A string is accepted for the single case.
      */
-    to?: Array<string>;
+    to?: string | Array<string>;
     /**
      * Copied, and visible to everybody who receives the message.
      */
-    cc?: Array<string>;
+    cc?: string | Array<string>;
     /**
      * Copied, and visible to nobody else.
      */
-    bcc?: Array<string>;
+    bcc?: string | Array<string>;
     /**
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
@@ -9195,15 +9227,15 @@ export type DraftsCreateData = {
     /**
      * One address or several. A string is accepted for the single case.
      */
-    to?: Array<string>;
+    to?: string | Array<string>;
     /**
      * Copied, and visible to everybody who receives the message.
      */
-    cc?: Array<string>;
+    cc?: string | Array<string>;
     /**
      * Copied, and visible to nobody else.
      */
-    bcc?: Array<string>;
+    bcc?: string | Array<string>;
     /**
      * Left off a reply, where the thread already has one.
      */
@@ -9434,15 +9466,15 @@ export type DraftsUpdateData = {
     /**
      * One address or several. A string is accepted for the single case.
      */
-    to?: Array<string>;
+    to?: string | Array<string>;
     /**
      * Copied, and visible to everybody who receives the message.
      */
-    cc?: Array<string>;
+    cc?: string | Array<string>;
     /**
      * Copied, and visible to nobody else.
      */
-    bcc?: Array<string>;
+    bcc?: string | Array<string>;
     /**
      * Left off a reply, where the thread already has one.
      */
