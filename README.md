@@ -75,6 +75,10 @@ agent on the hosted server, [`examples/claude-agent-sdk`](examples/claude-agent-
 a Claude Agent SDK one, and [`examples/mastra`](examples/mastra) a Mastra one. None
 needs a package of ours.
 
+[`activepieces/pidgeon`](activepieces/pidgeon) is the Activepieces piece,
+`@pidgeon-ai/piece-pidgeon`, in the layout Activepieces' own repository
+uses ([setup](https://pidgeon.ai/docs/activepieces)).
+
 **An MCP client needs no package at all.** Point it at
 `https://pidgeon.ai/api/mcp` and it signs you in with OAuth:
 
