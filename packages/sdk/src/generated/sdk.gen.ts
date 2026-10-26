@@ -739,7 +739,7 @@ export const podsList = <ThrowOnError extends boolean = false>(
  *
  * Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.
  *
- * **Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead.
+ * **Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead. `key.access` is required; until 26 November 2026 leaving it out still works, with a `warnings` entry, and then it is a 400.
  *
  * **The token is shown once.** Send an `Idempotency-Key`: a retry with it returns the same pod, address and key, with `token: null`, because the secret is never stored. If the first answer was lost, rotate the key (`POST /api-keys/{id}/rotate`) for a new secret.
  */
@@ -1441,7 +1441,11 @@ export const keysList = <ThrowOnError extends boolean = false>(
 /**
  * Mint a key
  *
- * `identity_ids` is required and must be a subset of what the calling key already reaches: a key cannot delegate reach it does not have. The `token` is in this response and nowhere else, ever.
+ * Say what the key reaches and what it may do: one of `identity_ids` or `pod_id`, and `access`. `identity_ids` must be addresses the calling key administers, at no more than its own `access`: a key cannot delegate reach it does not have, and `reaches_all` is refused to a key.
+ *
+ * Until 26 November 2026 a request without `access` still works — the new key takes the calling key’s level — and is answered with `Deprecation`, `Sunset` and a `warnings` entry. From that date it is a 400 with `field: "access"`.
+ *
+ * The `token` is in this response and nowhere else, ever.
  */
 export const keysCreate = <ThrowOnError extends boolean = false>(
   options: Options<KeysCreateData, ThrowOnError>,

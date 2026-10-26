@@ -677,6 +677,7 @@ export type {
   Undo,
   UploadedAttachment,
   Verification,
+  Warning,
   Webhook,
   WebhookCreated,
   WebhookHeaders,

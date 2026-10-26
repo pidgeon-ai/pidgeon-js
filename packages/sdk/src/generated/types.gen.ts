@@ -1372,6 +1372,19 @@ export type ApiKeyCreated = {
   token: string | null;
 };
 
+export type Warning = {
+  code: 'implicit_scope';
+  /**
+   * What the request left out, as the wire spells it: `access`, `key.access`.
+   */
+  fields: Array<string>;
+  message: string;
+  /**
+   * When leaving them out becomes a 400.
+   */
+  sunset: string;
+};
+
 export type AppPassword = {
   id: string;
   name: string;
@@ -3414,7 +3427,7 @@ export type PodsCreateData = {
      */
     key?: {
       name?: string;
-      access?: 'read' | 'draft' | 'send' | 'admin';
+      access: 'read' | 'draft' | 'send' | 'admin';
       expires_at?: string | null;
       /**
        * Mint a test-mode key (`pgn_test_`) for the pod instead of a live one.
@@ -3484,6 +3497,10 @@ export type PodsCreateResponses = {
    */
   201: {
     data: PodCreated;
+    /**
+     * Present only when the request used something deprecated: what it left out and the date it stops working. Answered with `Deprecation` and `Sunset` headers too.
+     */
+    warnings?: Array<Warning>;
   };
 };
 
@@ -6598,15 +6615,22 @@ export type KeysListResponse = KeysListResponses[keyof KeysListResponses];
 export type KeysCreateData = {
   body: {
     name: string;
+    /**
+     * The addresses this key may reach. One of `identity_ids`, `pod_id` or `reaches_all` is required. A key can only name addresses it administers itself.
+     */
     identity_ids?: Array<string>;
     /**
-     * The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one.
+     * A pod: the key reaches every address in it, now and as it grows. Minted by an owner, or a key at `admin` over every address.
      */
     pod_id?: string;
     /**
+     * Every address in the account, now and later. Only an owner can ask for it, from the dashboard or a consent screen — a key cannot create a key that reaches everything.
+     */
+    reaches_all?: boolean;
+    /**
      * What a key may do. Give an agent the narrowest one that works.
      */
-    access?: 'read' | 'draft' | 'send' | 'admin';
+    access: 'read' | 'draft' | 'send' | 'admin';
     /**
      * When it stops accepting mail. Expiry suspends; it never deletes, so the correspondence survives.
      */
@@ -6678,6 +6702,10 @@ export type KeysCreateResponses = {
    */
   201: {
     data: ApiKeyCreated;
+    /**
+     * Present only when the request used something deprecated: what it left out and the date it stops working. Answered with `Deprecation` and `Sunset` headers too.
+     */
+    warnings?: Array<Warning>;
   };
 };
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.39.0",
+    "version": "1.40.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -4395,6 +4395,40 @@
           "test",
           "previous_token_expires_at",
           "token"
+        ],
+        "additionalProperties": false
+      },
+      "Warning": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "implicit_scope"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the request left out, as the wire spells it: `access`, `key.access`."
+          },
+          "message": {
+            "type": "string"
+          },
+          "sunset": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "description": "When leaving them out becomes a 400."
+          }
+        },
+        "required": [
+          "code",
+          "fields",
+          "message",
+          "sunset"
         ],
         "additionalProperties": false
       },
@@ -9146,7 +9180,7 @@
       "post": {
         "operationId": "podsCreate",
         "summary": "Create a pod",
-        "description": "Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.\n\n**Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead.\n\n**The token is shown once.** Send an `Idempotency-Key`: a retry with it returns the same pod, address and key, with `token: null`, because the secret is never stored. If the first answer was lost, rotate the key (`POST /api-keys/{id}/rotate`) for a new secret.",
+        "description": "Name it after whatever it holds — a customer, an environment. `client_id` is your own id for it, carried and never parsed, and has to be unique within the account so that looking one up by it has an answer.\n\n**Provisioning in one call.** Pass `address` to create an address in the new pod (the same fields as `POST /identities`) and `key` to mint a pod key: a key that reaches the pod’s addresses, now and later, and nothing else. All of it is made or none of it is. Needs a live key over the whole account; a test key gets 403, and `key.test` mints a test key for the pod instead. `key.access` is required; until 26 November 2026 leaving it out still works, with a `warnings` entry, and then it is a 400.\n\n**The token is shown once.** Send an `Idempotency-Key`: a retry with it returns the same pod, address and key, with `token: null`, because the secret is never stored. If the first answer was lost, rotate the key (`POST /api-keys/{id}/rotate`) for a new secret.",
         "requestBody": {
           "required": true,
           "content": {
@@ -9299,6 +9333,9 @@
                         "type": "boolean"
                       }
                     },
+                    "required": [
+                      "access"
+                    ],
                     "additionalProperties": false
                   }
                 },
@@ -9320,6 +9357,13 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/PodCreated"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Warning"
+                      },
+                      "description": "Present only when the request used something deprecated: what it left out and the date it stops working. Answered with `Deprecation` and `Sunset` headers too."
                     }
                   },
                   "required": [
@@ -16656,7 +16700,7 @@
       "post": {
         "operationId": "keysCreate",
         "summary": "Mint a key",
-        "description": "`identity_ids` is required and must be a subset of what the calling key already reaches: a key cannot delegate reach it does not have. The `token` is in this response and nowhere else, ever.",
+        "description": "Say what the key reaches and what it may do: one of `identity_ids` or `pod_id`, and `access`. `identity_ids` must be addresses the calling key administers, at no more than its own `access`: a key cannot delegate reach it does not have, and `reaches_all` is refused to a key.\n\nUntil 26 November 2026 a request without `access` still works — the new key takes the calling key’s level — and is answered with `Deprecation`, `Sunset` and a `warnings` entry. From that date it is a 400 with `field: \"access\"`.\n\nThe `token` is in this response and nowhere else, ever.",
         "requestBody": {
           "required": true,
           "content": {
@@ -16670,6 +16714,7 @@
                     "maxLength": 60
                   },
                   "identity_ids": {
+                    "description": "The addresses this key may reach. One of `identity_ids`, `pod_id` or `reaches_all` is required. A key can only name addresses it administers itself.",
                     "maxItems": 100,
                     "type": "array",
                     "items": {
@@ -16679,10 +16724,14 @@
                     }
                   },
                   "pod_id": {
+                    "description": "A pod: the key reaches every address in it, now and as it grows. Minted by an owner, or a key at `admin` over every address.",
                     "type": "string",
                     "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                    "description": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "reaches_all": {
+                    "description": "Every address in the account, now and later. Only an owner can ask for it, from the dashboard or a consent screen — a key cannot create a key that reaches everything.",
+                    "type": "boolean"
                   },
                   "access": {
                     "type": "string",
@@ -16713,7 +16762,8 @@
                   }
                 },
                 "required": [
-                  "name"
+                  "name",
+                  "access"
                 ],
                 "additionalProperties": false
               }
@@ -16730,6 +16780,13 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/ApiKeyCreated"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Warning"
+                      },
+                      "description": "Present only when the request used something deprecated: what it left out and the date it stops working. Answered with `Deprecation` and `Sunset` headers too."
                     }
                   },
                   "required": [

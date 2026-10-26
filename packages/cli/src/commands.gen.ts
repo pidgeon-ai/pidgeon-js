@@ -2098,14 +2098,22 @@ export const COMMANDS: Command[] = [
         "name": "identity_ids",
         "kind": "list",
         "required": false,
-        "where": "body"
+        "where": "body",
+        "describe": "The addresses this key may reach. One of `identity_ids`, `pod_id` or `reaches_all` is required. A key can only name addresses it administers itself."
       },
       {
         "name": "pod_id",
         "kind": "string",
         "required": false,
         "where": "body",
-        "describe": "The pod this belongs to — your account’s default when you name none. A pod is a sending boundary: mail from it lands on its own reputation, so one of your customers cannot damage another’s delivery. It does not change what an address can do, and no key is scoped to one."
+        "describe": "A pod: the key reaches every address in it, now and as it grows. Minted by an owner, or a key at `admin` over every address."
+      },
+      {
+        "name": "reaches_all",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "Every address in the account, now and later. Only an owner can ask for it, from the dashboard or a consent screen — a key cannot create a key that reaches everything."
       },
       {
         "name": "access",
@@ -2116,7 +2124,7 @@ export const COMMANDS: Command[] = [
           "send",
           "admin"
         ],
-        "required": false,
+        "required": true,
         "where": "body",
         "describe": "What a key may do. Give an agent the narrowest one that works."
       },

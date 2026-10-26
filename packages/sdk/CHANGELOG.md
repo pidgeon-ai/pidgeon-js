@@ -7,6 +7,17 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.40.0 — every key states its scope
+
+- `keysCreate` requires `access`, and takes `reaches_all` beside
+  `identity_ids` and `pod_id`: one of the three is the key's reach. A key
+  cannot ask for `reaches_all`; an owner chooses it in the dashboard.
+- `podsCreate`'s `key` requires `access`.
+- Both answers may carry `warnings` beside `data`. Until 26 November 2026 the
+  API still takes a mint without `access` — the new key gets the calling
+  key's level — and says so there; from that date it is a 400 with
+  `field: "access"`. Code built against this version never sees it.
+
 ## 1.39.0 — what happened to a send
 
 - Every `Message` carries `delivery`: `state`, the worst any recipient has
