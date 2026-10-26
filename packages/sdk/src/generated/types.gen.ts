@@ -1525,6 +1525,24 @@ export type UploadedAttachment = {
   size: number;
 };
 
+export type SignedUpload = {
+  id: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  upload: {
+    method: 'PUT';
+    url: string;
+    headers: {
+      [key: string]: string;
+    };
+    /**
+     * ISO-8601, UTC.
+     */
+    expires_at: string;
+  };
+};
+
 export type MailboxChange = {
   id: string;
   identity_id?: string | null;
@@ -9996,6 +10014,150 @@ export type AttachmentsUploadResponses = {
 
 export type AttachmentsUploadResponse =
   AttachmentsUploadResponses[keyof AttachmentsUploadResponses];
+
+export type AttachmentsCreateUploadData = {
+  body: {
+    /**
+     * The address this belongs to.
+     */
+    identity_id: string;
+    filename: string;
+    content_type: string;
+    size: number;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/attachments/uploads';
+};
+
+export type AttachmentsCreateUploadErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type AttachmentsCreateUploadError =
+  AttachmentsCreateUploadErrors[keyof AttachmentsCreateUploadErrors];
+
+export type AttachmentsCreateUploadResponses = {
+  /**
+   * The upload to make.
+   */
+  201: {
+    data: SignedUpload;
+  };
+};
+
+export type AttachmentsCreateUploadResponse =
+  AttachmentsCreateUploadResponses[keyof AttachmentsCreateUploadResponses];
+
+export type AttachmentsCompleteUploadData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/attachments/{id}/complete';
+};
+
+export type AttachmentsCompleteUploadErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type AttachmentsCompleteUploadError =
+  AttachmentsCompleteUploadErrors[keyof AttachmentsCompleteUploadErrors];
+
+export type AttachmentsCompleteUploadResponses = {
+  /**
+   * The upload, ready to send.
+   */
+  200: {
+    data: UploadedAttachment;
+  };
+};
+
+export type AttachmentsCompleteUploadResponse =
+  AttachmentsCompleteUploadResponses[keyof AttachmentsCompleteUploadResponses];
 
 export type AttachmentsDownloadUrlData = {
   body?: never;

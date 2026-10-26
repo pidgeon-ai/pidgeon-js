@@ -29,6 +29,12 @@ import type {
   AppPasswordsRevokeData,
   AppPasswordsRevokeErrors,
   AppPasswordsRevokeResponses,
+  AttachmentsCompleteUploadData,
+  AttachmentsCompleteUploadErrors,
+  AttachmentsCompleteUploadResponses,
+  AttachmentsCreateUploadData,
+  AttachmentsCreateUploadErrors,
+  AttachmentsCreateUploadResponses,
   AttachmentsDownloadUrlData,
   AttachmentsDownloadUrlErrors,
   AttachmentsDownloadUrlResponses,
@@ -2223,7 +2229,7 @@ export const metricsQuery = <ThrowOnError extends boolean = false>(
 /**
  * Upload a file to send
  *
- * Multipart, with `identity_id` and `file` parts — not base64 in JSON, because a ten-megabyte PDF is thirteen megabytes of base64 and every proxy in between would have to be told. Name the returned id in `attachment_ids` on a send. An upload expires in a day: it is a file no message refers to yet.
+ * Multipart, with `identity_id` and `file` parts — not base64 in JSON, because a ten-megabyte PDF is thirteen megabytes of base64 and every proxy in between would have to be told. **Under 4 MB only**: the platform refuses a request body over 4.5 MB with its own `413`, whatever your plan allows, so use `POST /attachments/uploads` for anything larger. Name the returned id in `attachment_ids` on a send. An upload expires in a day: it is a file no message refers to yet.
  */
 export const attachmentsUpload = <ThrowOnError extends boolean = false>(
   options: Options<AttachmentsUploadData, ThrowOnError>,
@@ -2241,6 +2247,50 @@ export const attachmentsUpload = <ThrowOnError extends boolean = false>(
       'Content-Type': null,
       ...options.headers,
     },
+  });
+
+/**
+ * Upload a large file straight to storage
+ *
+ * For a file of any size up to your plan’s limit. Say what it is — `identity_id`, `filename`, `content_type` and `size` in bytes — and the answer’s `upload` is a signed URL: `PUT` the bytes there with the `headers` it lists, within 15 minutes. The size and type are signed, so a body of another length or type is refused. Then call `POST /attachments/{id}/complete`; until then a send naming the id is a `409`. The same checks as `POST /attachments`: `draft` on the address, the allowed types, the plan’s per-file size. Expires in a day if never sent.
+ */
+export const attachmentsCreateUpload = <ThrowOnError extends boolean = false>(
+  options: Options<AttachmentsCreateUploadData, ThrowOnError>,
+): RequestResult<AttachmentsCreateUploadResponses, AttachmentsCreateUploadErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    AttachmentsCreateUploadResponses,
+    AttachmentsCreateUploadErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/attachments/uploads',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Finish a large upload
+ *
+ * After the `PUT` to the URL `POST /attachments/uploads` gave you. Checks that the file arrived at the size and type declared and makes the id sendable. A `409` means nothing has arrived yet. Safe to repeat.
+ */
+export const attachmentsCompleteUpload = <ThrowOnError extends boolean = false>(
+  options: Options<AttachmentsCompleteUploadData, ThrowOnError>,
+): RequestResult<
+  AttachmentsCompleteUploadResponses,
+  AttachmentsCompleteUploadErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    AttachmentsCompleteUploadResponses,
+    AttachmentsCompleteUploadErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/attachments/{id}/complete',
+    ...options,
   });
 
 /**

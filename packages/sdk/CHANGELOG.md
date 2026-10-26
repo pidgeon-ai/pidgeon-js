@@ -7,6 +7,18 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.41.0 — files larger than a request body
+
+- `attachmentsCreateUpload` takes `identity_id`, `filename`, `content_type`
+  and `size`, and answers with `upload`: a signed URL to `PUT` the bytes to,
+  the `headers` to send with them, and `expires_at` (15 minutes). The size and
+  type are signed, so the store refuses anything else. Then
+  `attachmentsCompleteUpload` makes the id sendable; a send naming it before
+  then is a 409 `conflict`.
+- `attachmentsUpload` is unchanged, and capped at 4.5 MB a request by the
+  platform whatever the plan allows — which is why the two above exist. Use
+  it for small files.
+
 ## 1.40.0 — every key states its scope
 
 - `keysCreate` requires `access`, and takes `reaches_all` beside
