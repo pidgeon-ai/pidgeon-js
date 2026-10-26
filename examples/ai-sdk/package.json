@@ -1,0 +1,26 @@
+{
+  "name": "@pidgeon-ai/example-ai-sdk",
+  "private": true,
+  "description": "A Pidgeon inbox for a Vercel AI SDK agent. Not published.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "tsx main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.102",
+    "@pidgeon-ai/ai-sdk": "^0.6.6",
+    "@pidgeon-ai/sdk": "^1.31.2",
+    "ai": "^7.0.153",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

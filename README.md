@@ -73,7 +73,8 @@ your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 [`examples/openai-agents`](examples/openai-agents) is an OpenAI Agents SDK
 agent on the hosted server, [`examples/claude-agent-sdk`](examples/claude-agent-sdk)
 a Claude Agent SDK one, and [`examples/mastra`](examples/mastra) a Mastra one. None
-needs a package of ours.
+needs a package of ours. [`examples/ai-sdk`](examples/ai-sdk) is a Vercel AI SDK
+agent on `@pidgeon-ai/ai-sdk`, asking before it replies.
 
 [`activepieces/pidgeon`](activepieces/pidgeon) is the Activepieces piece,
 `@pidgeon-ai/piece-pidgeon`, in the layout Activepieces' own repository
