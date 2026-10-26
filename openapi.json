@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.37.0",
+    "version": "1.38.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -502,16 +502,43 @@
                   "string",
                   "null"
                 ]
+              },
+              "arc": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sealer": {
+                        "type": "string",
+                        "description": "The forwarder that sealed it, such as `google.com`."
+                      },
+                      "dmarc": {
+                        "type": "string",
+                        "const": "pass"
+                      }
+                    },
+                    "required": [
+                      "sealer",
+                      "dmarc"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Set when `dmarc` did not pass here, but the message was forwarded by a sealer Pidgeon trusts (Google, for a Gmail or Workspace forward), its ARC chain verified, and that sealer recorded DMARC pass for the `From:` domain. Null otherwise."
               }
             },
             "required": [
               "spf",
               "dkim",
               "dmarc",
-              "signature"
+              "signature",
+              "arc"
             ],
             "additionalProperties": false,
-            "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`."
+            "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`, or `arc` is set."
           },
           "sender": {
             "type": "object",
@@ -1157,16 +1184,43 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "arc": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sealer": {
+                                "type": "string",
+                                "description": "The forwarder that sealed it, such as `google.com`."
+                              },
+                              "dmarc": {
+                                "type": "string",
+                                "const": "pass"
+                              }
+                            },
+                            "required": [
+                              "sealer",
+                              "dmarc"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Set when `dmarc` did not pass here, but the message was forwarded by a sealer Pidgeon trusts (Google, for a Gmail or Workspace forward), its ARC chain verified, and that sealer recorded DMARC pass for the `From:` domain. Null otherwise."
                       }
                     },
                     "required": [
                       "spf",
                       "dkim",
                       "dmarc",
-                      "signature"
+                      "signature",
+                      "arc"
                     ],
                     "additionalProperties": false,
-                    "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`."
+                    "description": "What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`, or `arc` is set."
                   },
                   "sender": {
                     "type": "object",

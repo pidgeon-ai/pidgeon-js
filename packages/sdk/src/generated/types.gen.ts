@@ -178,7 +178,7 @@ export type Message = {
     [key: string]: string;
   };
   /**
-   * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`.
+   * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`, or `arc` is set.
    */
   authentication: {
     spf: string | null;
@@ -188,6 +188,16 @@ export type Message = {
      * `pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.
      */
     signature: string | null;
+    /**
+     * Set when `dmarc` did not pass here, but the message was forwarded by a sealer Pidgeon trusts (Google, for a Gmail or Workspace forward), its ARC chain verified, and that sealer recorded DMARC pass for the `From:` domain. Null otherwise.
+     */
+    arc: {
+      /**
+       * The forwarder that sealed it, such as `google.com`.
+       */
+      sealer: string;
+      dmarc: 'pass';
+    } | null;
   };
   /**
    * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.
@@ -408,7 +418,7 @@ export type AwaitedMessage = {
       [key: string]: string;
     };
     /**
-     * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`.
+     * What the receiving transport said about the sending domain. Null means it did not report, not that the check failed — normal on outbound, and on inbound it is the difference between unknown and forged. A `From:` is the sending domain's own word when `dmarc` or `signature` is `pass`, or `arc` is set.
      */
     authentication: {
       spf: string | null;
@@ -418,6 +428,16 @@ export type AwaitedMessage = {
        * `pass` when the message came from another Pidgeon address directly, and its signed sender verified against the sending domain's published key. Null on mail that came through SMTP, which DMARC speaks for instead.
        */
       signature: string | null;
+      /**
+       * Set when `dmarc` did not pass here, but the message was forwarded by a sealer Pidgeon trusts (Google, for a Gmail or Workspace forward), its ARC chain verified, and that sealer recorded DMARC pass for the `From:` domain. Null otherwise.
+       */
+      arc: {
+        /**
+         * The forwarder that sealed it, such as `google.com`.
+         */
+        sealer: string;
+        dmarc: 'pass';
+      } | null;
     };
     /**
      * Who this message says it is from. A Pidgeon sender declares it on every message it sends; mail from ordinary email has only the address.

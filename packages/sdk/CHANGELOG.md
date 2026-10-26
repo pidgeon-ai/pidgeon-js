@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.38.0 — a Gmail forward Google vouched for
+
+`authentication` gains `arc`: `{ sealer: "google.com", dmarc: "pass" }` on a
+message forwarded through Gmail or Workspace whose sender failed DMARC here
+(it signs nothing, and SPF passed for Google, not for it), when Google's ARC
+seal verified and recorded DMARC pass for the same domain as `From:`. Such a
+message counts as authenticated for allow lists, sender rules and
+`messagesAwait`'s `from`. Null otherwise. Additive.
+
 ## 1.37.0 — every endpoint keeps the API's promises
 
 - **Every write takes an `Idempotency-Key` header**, not only the sends and
