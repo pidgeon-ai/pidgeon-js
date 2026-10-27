@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.41.1",
+    "version": "1.42.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -294,6 +294,10 @@
             "type": "string",
             "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
           },
+          "hold_suspicious": {
+            "type": "boolean",
+            "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
+          },
           "tenant_id": {
             "description": "Your own opaque grouping for this address. Never parsed here.",
             "type": [
@@ -327,6 +331,7 @@
           "expires_at",
           "send_policy",
           "receive_policy",
+          "hold_suspicious",
           "tenant_id",
           "pod_id",
           "test"
@@ -465,6 +470,10 @@
           },
           "is_spam": {
             "type": "boolean"
+          },
+          "is_held": {
+            "type": "boolean",
+            "description": "Pidgeon Firewall held it for a person. To a key, every content field is empty — subject, text, html, headers, data, attachments — and `firewall` keeps the verdict and where each signal fired, without quotes. A person releases it from the dashboard, and `message.released` fires."
           },
           "headers": {
             "type": "object",
@@ -894,7 +903,7 @@
                       "clean",
                       "suspicious"
                     ],
-                    "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                    "description": "`suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`."
                   },
                   "signals": {
                     "type": "array",
@@ -1063,6 +1072,7 @@
           "reply_text",
           "is_read",
           "is_spam",
+          "is_held",
           "headers",
           "authentication",
           "sender",
@@ -1216,6 +1226,10 @@
                   },
                   "is_spam": {
                     "type": "boolean"
+                  },
+                  "is_held": {
+                    "type": "boolean",
+                    "description": "Pidgeon Firewall held it for a person. To a key, every content field is empty — subject, text, html, headers, data, attachments — and `firewall` keeps the verdict and where each signal fired, without quotes. A person releases it from the dashboard, and `message.released` fires."
                   },
                   "headers": {
                     "type": "object",
@@ -1645,7 +1659,7 @@
                               "clean",
                               "suspicious"
                             ],
-                            "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                            "description": "`suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`."
                           },
                           "signals": {
                             "type": "array",
@@ -1814,6 +1828,7 @@
                   "reply_text",
                   "is_read",
                   "is_spam",
+                  "is_held",
                   "headers",
                   "authentication",
                   "sender",
@@ -1858,6 +1873,12 @@
                 "maximum": 9007199254740991,
                 "description": "Messages that matched `from` but did not pass DMARC, so their From may be forged."
               },
+              "held": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Messages Pidgeon Firewall held for a person. Matched on `from` alone; returned by a later wait once a person releases them. Absent before 1.42.0."
+              },
               "message_ids": {
                 "type": "array",
                 "items": {
@@ -1880,7 +1901,7 @@
               "how_to_include"
             ],
             "additionalProperties": false,
-            "description": "What matched and was not returned. A wait that times out with `spam` or `unauthenticated` above zero did not miss the message: it was held back."
+            "description": "What matched and was not returned. A wait that times out with `spam`, `unauthenticated` or `held` above zero did not miss the message: it was held back."
           }
         },
         "required": [
@@ -4960,6 +4981,10 @@
           "is_spam": {
             "type": "boolean"
           },
+          "is_held": {
+            "type": "boolean",
+            "description": "Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it."
+          },
           "has_attachments": {
             "type": "boolean"
           },
@@ -5164,6 +5189,10 @@
           "is_spam": {
             "type": "boolean"
           },
+          "is_held": {
+            "type": "boolean",
+            "description": "Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it."
+          },
           "has_attachments": {
             "type": "boolean"
           },
@@ -5204,6 +5233,7 @@
           "is_starred",
           "is_draft",
           "is_spam",
+          "is_held",
           "has_attachments",
           "attachment_count",
           "message_count",
@@ -5597,6 +5627,10 @@
           "is_spam": {
             "type": "boolean"
           },
+          "is_held": {
+            "type": "boolean",
+            "description": "Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it."
+          },
           "has_attachments": {
             "type": "boolean"
           },
@@ -5660,6 +5694,7 @@
           "is_starred",
           "is_draft",
           "is_spam",
+          "is_held",
           "has_attachments",
           "attachment_count",
           "message_count",
@@ -5821,6 +5856,10 @@
                     "type": "string",
                     "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
                   },
+                  "hold_suspicious": {
+                    "type": "boolean",
+                    "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
+                  },
                   "tenant_id": {
                     "description": "Your own opaque grouping for this address. Never parsed here.",
                     "type": [
@@ -5854,6 +5893,7 @@
                   "expires_at",
                   "send_policy",
                   "receive_policy",
+                  "hold_suspicious",
                   "tenant_id",
                   "pod_id",
                   "test"
@@ -6152,7 +6192,7 @@
                       "clean",
                       "suspicious"
                     ],
-                    "description": "`suspicious` when any signal fired. Observe-only: nothing is held or changed."
+                    "description": "`suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`."
                   },
                   "signals": {
                     "type": "array",
@@ -7361,6 +7401,10 @@
                       "list"
                     ],
                     "description": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
+                  },
+                  "hold_suspicious": {
+                    "type": "boolean",
+                    "description": "Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to."
                   },
                   "tenant_id": {
                     "anyOf": [
@@ -19331,6 +19375,8 @@
                         "message.read",
                         "message.handed_off",
                         "message.spam",
+                        "message.held",
+                        "message.released",
                         "message.invitation",
                         "message.archived",
                         "message.deleted",

@@ -7,6 +7,20 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.42.0 — suspicious mail is held for a person
+
+- `Message.is_held` and `MessageListItem.is_held`. A held message's content is
+  empty to a key — `subject`, `text`, `html`, `headers`, `data`,
+  `attachments` — and `firewall` keeps the verdict and each signal's `kind`
+  and `where`. `messagesGet`, `messagesGetRaw`, `attachmentsGet` and
+  `attachmentsGetText` on it answer `403` with `error.code: "held"`, and a
+  reply or forward to it is refused the same way.
+- `Identity.hold_suspicious`, settable on `identitiesUpdate`. A key can turn it
+  on, never off.
+- Two event types: `message.held` (instead of `message.received`, with ids,
+  the verdict and signal kinds, never content) and `message.released`, when a
+  person lets the agent read it.
+
 ## 1.41.1 — a refusal for what a key read
 
 - A send can be refused `403 exfiltration_blocked`: it carries text an API

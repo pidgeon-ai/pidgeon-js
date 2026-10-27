@@ -2124,6 +2124,13 @@ export const COMMANDS: Command[] = [
         "describe": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
       },
       {
+        "name": "hold_suspicious",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to."
+      },
+      {
         "name": "tenant_id",
         "kind": "string",
         "required": false,

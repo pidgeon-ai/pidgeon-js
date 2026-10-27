@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "mcpName": "ai.pidgeon/mcp",
   "description": "Email inboxes for AI agents: an MCP server that gives your agent its own inbox (Pidgeon).",
   "keywords": [

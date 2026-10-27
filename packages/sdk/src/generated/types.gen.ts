@@ -110,6 +110,10 @@ export type Identity = {
    */
   receive_policy: string;
   /**
+   * Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026.
+   */
+  hold_suspicious: boolean;
+  /**
    * Your own opaque grouping for this address. Never parsed here.
    */
   tenant_id: string | null;
@@ -174,6 +178,10 @@ export type Message = {
   reply_text: string;
   is_read: boolean;
   is_spam: boolean;
+  /**
+   * Pidgeon Firewall held it for a person. To a key, every content field is empty — subject, text, html, headers, data, attachments — and `firewall` keeps the verdict and where each signal fired, without quotes. A person releases it from the dashboard, and `message.released` fires.
+   */
+  is_held: boolean;
   /**
    * The headers we keep, lowercased: `message-id`, `in-reply-to`, `references`, `date`, `reply-to`, `return-path`, `list-id`, `list-unsubscribe`, `precedence`, `auto-submitted`, `x-auto-response-suppress`, `x-mailer` and `x-priority`. Not the whole envelope — that is `GET /messages/{id}/raw`. Empty when none were present.
    */
@@ -307,7 +315,7 @@ export type Message = {
    */
   firewall: {
     /**
-     * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+     * `suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`.
      */
     verdict: 'clean' | 'suspicious';
     /**
@@ -433,6 +441,10 @@ export type AwaitedMessage = {
     reply_text: string;
     is_read: boolean;
     is_spam: boolean;
+    /**
+     * Pidgeon Firewall held it for a person. To a key, every content field is empty — subject, text, html, headers, data, attachments — and `firewall` keeps the verdict and where each signal fired, without quotes. A person releases it from the dashboard, and `message.released` fires.
+     */
+    is_held: boolean;
     /**
      * The headers we keep, lowercased: `message-id`, `in-reply-to`, `references`, `date`, `reply-to`, `return-path`, `list-id`, `list-unsubscribe`, `precedence`, `auto-submitted`, `x-auto-response-suppress`, `x-mailer` and `x-priority`. Not the whole envelope — that is `GET /messages/{id}/raw`. Empty when none were present.
      */
@@ -566,7 +578,7 @@ export type AwaitedMessage = {
      */
     firewall: {
       /**
-       * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+       * `suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`.
        */
       verdict: 'clean' | 'suspicious';
       /**
@@ -642,7 +654,7 @@ export type AwaitedMessage = {
    */
   cursor: string;
   /**
-   * What matched and was not returned. A wait that times out with `spam` or `unauthenticated` above zero did not miss the message: it was held back.
+   * What matched and was not returned. A wait that times out with `spam`, `unauthenticated` or `held` above zero did not miss the message: it was held back.
    */
   held_back: {
     /**
@@ -653,6 +665,10 @@ export type AwaitedMessage = {
      * Messages that matched `from` but did not pass DMARC, so their From may be forged.
      */
     unauthenticated: number;
+    /**
+     * Messages Pidgeon Firewall held for a person. Matched on `from` alone; returned by a later wait once a person releases them. Absent before 1.42.0.
+     */
+    held?: number;
     /**
      * Their ids, spam first, for `GET /messages/{id}`.
      */
@@ -1580,6 +1596,10 @@ export type MailboxChange = {
   is_starred?: boolean;
   is_draft?: boolean;
   is_spam?: boolean;
+  /**
+   * Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it.
+   */
+  is_held?: boolean;
   has_attachments?: boolean;
   attachment_count?: number;
   message_count?: number;
@@ -1647,6 +1667,10 @@ export type MessageListItem = {
   is_starred: boolean;
   is_draft: boolean;
   is_spam: boolean;
+  /**
+   * Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it.
+   */
+  is_held: boolean;
   has_attachments: boolean;
   attachment_count: number;
   message_count: number;
@@ -1801,6 +1825,10 @@ export type SearchHit = {
   is_starred: boolean;
   is_draft: boolean;
   is_spam: boolean;
+  /**
+   * Held by Pidgeon Firewall for a person. To a key, `subject`, `preview` and `from_name` are null until a person releases it.
+   */
+  is_held: boolean;
   has_attachments: boolean;
   attachment_count: number;
   message_count: number;
@@ -1916,6 +1944,10 @@ export type PodCreated = {
      */
     receive_policy: string;
     /**
+     * Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026.
+     */
+    hold_suspicious: boolean;
+    /**
      * Your own opaque grouping for this address. Never parsed here.
      */
     tenant_id: string | null;
@@ -2029,7 +2061,7 @@ export type AttachmentText = {
    */
   firewall: {
     /**
-     * `suspicious` when any signal fired. Observe-only: nothing is held or changed.
+     * `suspicious` when any signal fired. At an address that holds suspicious mail (`hold_suspicious`) the message is also held for a person: `is_held`.
      */
     verdict: 'clean' | 'suspicious';
     /**
@@ -2607,6 +2639,10 @@ export type IdentitiesUpdateData = {
      * Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner.
      */
     receive_policy?: 'open' | 'list';
+    /**
+     * Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to.
+     */
+    hold_suspicious?: boolean;
     /**
      * Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here.
      */
@@ -7798,6 +7834,8 @@ export type WebhooksCreateData = {
       | 'message.read'
       | 'message.handed_off'
       | 'message.spam'
+      | 'message.held'
+      | 'message.released'
       | 'message.invitation'
       | 'message.archived'
       | 'message.deleted'
