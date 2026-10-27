@@ -98,6 +98,9 @@ import type {
   DomainsZoneFileData,
   DomainsZoneFileErrors,
   DomainsZoneFileResponses,
+  DraftsApprovalData,
+  DraftsApprovalErrors,
+  DraftsApprovalResponses,
   DraftsCancelScheduleData,
   DraftsCancelScheduleErrors,
   DraftsCancelScheduleResponses,
@@ -2157,6 +2160,20 @@ export const draftsSend = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<DraftsSendResponses, DraftsSendErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/drafts/{id}/send',
+    ...options,
+  });
+
+/**
+ * Where a held send stands
+ *
+ * A send answered `status: "pending_approval"` is a draft waiting for a person: a first message to someone new on an address that asks first, or a reply on a conversation where a message tried to give the agent instructions. Poll this, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`. Only a person approves, in the dashboard; no key can, including the one that asked. Unanswered for 24 hours, it expires unsent and stays a draft. After approval `message_id` is the sent message.
+ */
+export const draftsApproval = <ThrowOnError extends boolean = false>(
+  options: Options<DraftsApprovalData, ThrowOnError>,
+): RequestResult<DraftsApprovalResponses, DraftsApprovalErrors, ThrowOnError> =>
+  (options.client ?? client).get<DraftsApprovalResponses, DraftsApprovalErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/drafts/{id}/approval',
     ...options,
   });
 

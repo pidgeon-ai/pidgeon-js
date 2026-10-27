@@ -369,7 +369,9 @@ export const TOOLS: ToolDefinition[] = [
       'Send from an address this credential may send as. Refused if the address’s send ' +
       'policy does not permit the recipient, or if the recipient previously bounced or ' +
       'reported mail as spam. When retrying a send, reuse its `idempotency_key` so it goes ' +
-      'out once. A key with read-and-draft access is refused: use `create_draft` instead.',
+      'out once. A key with read-and-draft access is refused: use `create_draft` instead. ' +
+      '**Read `status`**: `pending_approval` means nothing was sent — a person must approve ' +
+      'it first — so do not send it again; check it with `get_draft_approval`.',
     endpoint: 'POST /messages',
     annotations: SEND,
     /*
@@ -520,7 +522,9 @@ export const TOOLS: ToolDefinition[] = [
       'The recipients, the subject and the thread are read off the message being answered, ' +
       'so you bring the words and nothing else. Use `to` only to change who it goes to. ' +
       'When retrying a reply, reuse its `idempotency_key` so it goes out once. A key with ' +
-      'read-and-draft access is refused: use `create_draft` with `in_reply_to` instead.',
+      'read-and-draft access is refused: use `create_draft` with `in_reply_to` instead. ' +
+      '**Read `status`**: `pending_approval` means nothing was sent — a person must approve ' +
+      'it first — so do not send it again; check it with `get_draft_approval`.',
     endpoint: 'POST /messages/{id}/reply',
     annotations: SEND,
     inputSchema: {
@@ -559,6 +563,24 @@ export const TOOLS: ToolDefinition[] = [
       in_reply_to: z.string().optional(),
       attachment_ids: z.array(z.string()).optional(),
     },
+  },
+  /*
+   * The other half of a held send: the agent was told "waiting for a
+   * person", and this is how it finds out what the person decided without
+   * a webhook. Read-only — no tool approves, because no key may.
+   */
+  {
+    name: 'get_draft_approval',
+    title: 'Check a send that is waiting for approval',
+    description:
+      'Where a held send stands, by its `draft_id`: `pending` until a person approves or ' +
+      'rejects it in the dashboard, then `approved` (it was sent, and `message_id` is the ' +
+      'message), `rejected`, or `expired` after 24 hours with nobody deciding. You cannot ' +
+      'approve it yourself. Check again after a while rather than in a loop, and tell the ' +
+      'person you are working for that it is waiting.',
+    endpoint: 'GET /drafts/{id}/approval',
+    annotations: READ,
+    inputSchema: { id: z.string() },
   },
   /*
    * Screened, because an attachment is the injection path nobody suspects:

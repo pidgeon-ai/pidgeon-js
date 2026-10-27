@@ -38,6 +38,30 @@ export const REPLAY_NOTE =
   'with a new `idempotency_key`.';
 
 /**
+ * Told to the model when a send was held for a person rather than sent.
+ *
+ * Led with for the reason `REPLAY_NOTE` is: the answer carries an `id`, and
+ * a model reads an id as "sent" unless something says otherwise. Here rather
+ * than a file of its own because the same two callers need it.
+ */
+export function pendingApprovalNote(result: unknown): string | null {
+  const answer = result as { status?: unknown; draft_id?: unknown; approval?: unknown } | null;
+  if (answer?.status !== 'pending_approval') return null;
+
+  const reason = (answer.approval as { reason?: unknown } | null)?.reason;
+  const why =
+    reason === 'risky_thread'
+      ? 'a message in this conversation tried to give you instructions'
+      : 'this address asks a person before writing to someone it has never written to';
+
+  return (
+    `Not sent: it is waiting for a person to approve it, because ${why}. It is draft ` +
+    `${String(answer.draft_id)}. Do not send it again. Call \`get_draft_approval\` with that id ` +
+    'to see whether it was approved; it expires unsent after 24 hours.'
+  );
+}
+
+/**
  * Takes the key out of `input` and answers the one to send.
  *
  * Undefined for a tool without the field. `input` is the arguments still

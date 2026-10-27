@@ -1037,6 +1037,22 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "drafts",
+    "name": "approval",
+    "operationId": "draftsApproval",
+    "method": "GET",
+    "path": "/drafts/{id}/approval",
+    "summary": "Where a held send stands",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "drafts",
     "name": "cancelSchedule",
     "operationId": "draftsCancelSchedule",
     "method": "DELETE",
@@ -2111,6 +2127,17 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger."
+      },
+      {
+        "name": "send_approval",
+        "kind": "string",
+        "choices": [
+          "none",
+          "first_contact"
+        ],
+        "required": false,
+        "where": "body",
+        "describe": "`first_contact` holds a send to somebody the address has never written to or heard from until a person approves it in the dashboard. A key with admin on the address may turn it on; turning it off needs its owner."
       },
       {
         "name": "receive_policy",

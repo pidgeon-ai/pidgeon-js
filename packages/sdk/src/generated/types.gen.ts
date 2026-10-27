@@ -32,7 +32,18 @@ export type AgentSignup = {
 };
 
 export type Sent = {
+  /**
+   * `sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`.
+   */
+  status: 'sent' | 'pending_approval';
+  /**
+   * The message. On `pending_approval` it is the draft’s id, which the message keeps if it is approved.
+   */
   id: string;
+  /**
+   * The held draft on `pending_approval`; null on `sent`.
+   */
+  draft_id: string | null;
   thread_id: string;
   rejected: Array<{
     address: string;
@@ -42,6 +53,19 @@ export type Sent = {
    * True when this was a test-mode send: nothing was handed to the mail provider, and only this account’s own addresses received it.
    */
   test: boolean;
+  /**
+   * Why the send is waiting, on `pending_approval`. Null on `sent`.
+   */
+  approval: {
+    /**
+     * `first_contact`: the address asks a person before writing to someone new. `risky_thread`: a message in this conversation from the last 72 hours tried to give the agent instructions.
+     */
+    reason: 'first_contact' | 'risky_thread';
+    /**
+     * It expires unsent at this time if nobody decides.
+     */
+    expires_at: string;
+  } | null;
 };
 
 export type TestInboundDelivered = {
@@ -105,6 +129,10 @@ export type Identity = {
    * Who it may write to: open, reply_only (somebody who wrote to it first), or list.
    */
   send_policy: string;
+  /**
+   * none, or first_contact: a send to somebody this address has never written to or heard from waits for a person to approve it, and is answered `status: "pending_approval"`.
+   */
+  send_approval: string;
   /**
    * Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC).
    */
@@ -783,6 +811,23 @@ export type Draft = {
   failed_reason: string | null;
   saved_at: string | null;
   created_at: string;
+  /**
+   * Set when a send of this draft was held for a person to approve. Null on a draft nobody tried to send.
+   */
+  approval: {
+    /**
+     * `pending` until a person decides. `expired` after 24 hours with no decision; the draft stays, unsent.
+     */
+    status: 'pending' | 'approved' | 'rejected' | 'expired';
+    /**
+     * `first_contact`: a first message to someone the address has never written to or heard from. `risky_thread`: a reply or forward on a conversation where a message from the last 72 hours tried to give the agent instructions.
+     */
+    reason: 'first_contact' | 'risky_thread';
+    /**
+     * When a pending send expires unsent.
+     */
+    expires_at: string;
+  } | null;
   attachments: Array<{
     id: string;
     filename: string;
@@ -793,6 +838,30 @@ export type Draft = {
      */
     downloadable: boolean;
   }>;
+};
+
+export type Approval = {
+  draft_id: string;
+  identity_id: string;
+  thread_id: string;
+  /**
+   * `pending` until a person decides, or 24 hours pass.
+   */
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  /**
+   * Why it was held. The person approving sees the same reason.
+   */
+  reason: 'first_contact' | 'risky_thread';
+  requested_at: string;
+  expires_at: string;
+  /**
+   * When it was approved, rejected or expired. Null while pending.
+   */
+  decided_at: string | null;
+  /**
+   * The sent message, once approved — the draft’s own id, because a send converts the draft.
+   */
+  message_id: string | null;
 };
 
 export type Calendar = {
@@ -1940,6 +2009,10 @@ export type PodCreated = {
      */
     send_policy: string;
     /**
+     * none, or first_contact: a send to somebody this address has never written to or heard from waits for a person to approve it, and is answered `status: "pending_approval"`.
+     */
+    send_approval: string;
+    /**
      * Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC).
      */
     receive_policy: string;
@@ -2635,6 +2708,10 @@ export type IdentitiesUpdateData = {
      * Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger.
      */
     send_policy?: 'open' | 'reply_only' | 'list';
+    /**
+     * `first_contact` holds a send to somebody the address has never written to or heard from until a person approves it in the dashboard. A key with admin on the address may turn it on; turning it off needs its owner.
+     */
+    send_approval?: 'none' | 'first_contact';
     /**
      * Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner.
      */
@@ -7849,6 +7926,10 @@ export type WebhooksCreateData = {
       | 'thread.updated'
       | 'thread.assigned'
       | 'thread.unassigned'
+      | 'draft.approval_requested'
+      | 'draft.approved'
+      | 'draft.rejected'
+      | 'draft.expired'
       | 'identity.created'
       | 'identity.updated'
       | 'identity.suspended'
@@ -9722,6 +9803,63 @@ export type DraftsSendResponses = {
 };
 
 export type DraftsSendResponse = DraftsSendResponses[keyof DraftsSendResponses];
+
+export type DraftsApprovalData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/drafts/{id}/approval';
+};
+
+export type DraftsApprovalErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type DraftsApprovalError = DraftsApprovalErrors[keyof DraftsApprovalErrors];
+
+export type DraftsApprovalResponses = {
+  /**
+   * Where it stands.
+   */
+  200: {
+    data: Approval;
+  };
+};
+
+export type DraftsApprovalResponse = DraftsApprovalResponses[keyof DraftsApprovalResponses];
 
 export type DraftsCancelScheduleData = {
   body?: never;

@@ -15,6 +15,7 @@ import {
   messagesGet,
   messagesListInThread,
   messagesReply,
+  draftsApproval,
   draftsCreate,
   attachmentsText,
   messagesSearch,
@@ -43,7 +44,7 @@ import { z } from 'zod';
  * and `tsup` bundles it, so the published package carries the text and does
  * not depend on `@pidgeon-ai/mcp` or the protocol SDK it pulls in.
  */
-import { REPLAY_NOTE, takeIdempotencyKey } from '../../mcp/src/idempotency';
+import { pendingApprovalNote, REPLAY_NOTE, takeIdempotencyKey } from '../../mcp/src/idempotency';
 import { TOOLS, type ToolDefinition } from '../../mcp/src/tools';
 
 export const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
@@ -79,6 +80,7 @@ export type PidgeonToolName =
   | 'await_message'
   | 'reply_to_message'
   | 'create_draft'
+  | 'get_draft_approval'
   | 'read_attachment'
   | 'update_thread'
   | 'update_message'
@@ -109,6 +111,7 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   await_message: messagesAwait,
   reply_to_message: messagesReply,
   create_draft: draftsCreate,
+  get_draft_approval: draftsApproval,
   read_attachment: attachmentsText,
   update_thread: threadsUpdate,
   update_message: messagesUpdate,
@@ -272,6 +275,10 @@ function build(
       });
 
       const result = unwrap(answer);
+
+      /* Not sent: held for a person (`pendingApprovalNote`). Before the replay, which it outranks. */
+      const held = pendingApprovalNote(result);
+      if (held) return { note: held, result };
 
       /* The same sentence the MCP server leads with: the model must not read a replay as a send. */
       if (answer.response?.headers?.get('Idempotent-Replay') === 'true') {

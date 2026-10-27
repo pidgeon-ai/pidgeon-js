@@ -7,6 +7,19 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.43.0 — a person approves the risky sends
+
+- Every send result carries `status`: `sent`, or `pending_approval` — nothing
+  was sent, the message is a draft waiting for a person, `draft_id` names it
+  and `approval` says why (`first_contact` or `risky_thread`) and when it
+  expires (24 hours). Read `status` before treating a send as sent.
+- `draftsApproval` (`GET /drafts/{id}/approval`) says where a held send
+  stands; `message_id` is set once it is approved and sent.
+- `Draft.approval`, and `Identity.send_approval` (`none` or `first_contact`),
+  settable with `identitiesUpdate`.
+- Events `draft.approval_requested`, `draft.approved`, `draft.rejected` and
+  `draft.expired`, carrying `draft_id`, `thread_id` and `reason`.
+
 ## 1.42.0 — suspicious mail is held for a person
 
 - `Message.is_held` and `MessageListItem.is_held`. A held message's content is

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.42.0",
+    "version": "1.43.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -107,8 +107,24 @@
       "Sent": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "pending_approval"
+            ],
+            "description": "`sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`."
+          },
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "The message. On `pending_approval` it is the draft’s id, which the message keeps if it is approved."
+          },
+          "draft_id": {
+            "description": "The held draft on `pending_approval`; null on `sent`.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "thread_id": {
             "type": "string"
@@ -135,13 +151,46 @@
           "test": {
             "type": "boolean",
             "description": "True when this was a test-mode send: nothing was handed to the mail provider, and only this account’s own addresses received it."
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "first_contact",
+                      "risky_thread"
+                    ],
+                    "description": "`first_contact`: the address asks a person before writing to someone new. `risky_thread`: a message in this conversation from the last 72 hours tried to give the agent instructions."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "description": "It expires unsent at this time if nobody decides."
+                  }
+                },
+                "required": [
+                  "reason",
+                  "expires_at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the send is waiting, on `pending_approval`. Null on `sent`."
           }
         },
         "required": [
+          "status",
           "id",
+          "draft_id",
           "thread_id",
           "rejected",
-          "test"
+          "test",
+          "approval"
         ],
         "additionalProperties": false
       },
@@ -290,6 +339,10 @@
             "type": "string",
             "description": "Who it may write to: open, reply_only (somebody who wrote to it first), or list."
           },
+          "send_approval": {
+            "type": "string",
+            "description": "none, or first_contact: a send to somebody this address has never written to or heard from waits for a person to approve it, and is answered `status: \"pending_approval\"`."
+          },
           "receive_policy": {
             "type": "string",
             "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
@@ -330,6 +383,7 @@
           "created_at",
           "expires_at",
           "send_policy",
+          "send_approval",
           "receive_policy",
           "hold_suspicious",
           "tenant_id",
@@ -2294,6 +2348,47 @@
           "created_at": {
             "type": "string"
           },
+          "approval": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "approved",
+                      "rejected",
+                      "expired"
+                    ],
+                    "description": "`pending` until a person decides. `expired` after 24 hours with no decision; the draft stays, unsent."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "first_contact",
+                      "risky_thread"
+                    ],
+                    "description": "`first_contact`: a first message to someone the address has never written to or heard from. `risky_thread`: a reply or forward on a conversation where a message from the last 72 hours tried to give the agent instructions."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "description": "When a pending send expires unsent."
+                  }
+                },
+                "required": [
+                  "status",
+                  "reason",
+                  "expires_at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when a send of this draft was held for a person to approve. Null on a draft nobody tried to send."
+          },
           "attachments": {
             "type": "array",
             "items": {
@@ -2345,7 +2440,72 @@
           "failed_reason",
           "saved_at",
           "created_at",
+          "approval",
           "attachments"
+        ],
+        "additionalProperties": false
+      },
+      "Approval": {
+        "type": "object",
+        "properties": {
+          "draft_id": {
+            "type": "string"
+          },
+          "identity_id": {
+            "type": "string"
+          },
+          "thread_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "expired"
+            ],
+            "description": "`pending` until a person decides, or 24 hours pass."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "first_contact",
+              "risky_thread"
+            ],
+            "description": "Why it was held. The person approving sees the same reason."
+          },
+          "requested_at": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "decided_at": {
+            "description": "When it was approved, rejected or expired. Null while pending.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_id": {
+            "description": "The sent message, once approved — the draft’s own id, because a send converts the draft.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "draft_id",
+          "identity_id",
+          "thread_id",
+          "status",
+          "reason",
+          "requested_at",
+          "expires_at",
+          "decided_at",
+          "message_id"
         ],
         "additionalProperties": false
       },
@@ -5852,6 +6012,10 @@
                     "type": "string",
                     "description": "Who it may write to: open, reply_only (somebody who wrote to it first), or list."
                   },
+                  "send_approval": {
+                    "type": "string",
+                    "description": "none, or first_contact: a send to somebody this address has never written to or heard from waits for a person to approve it, and is answered `status: \"pending_approval\"`."
+                  },
                   "receive_policy": {
                     "type": "string",
                     "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
@@ -5892,6 +6056,7 @@
                   "created_at",
                   "expires_at",
                   "send_policy",
+                  "send_approval",
                   "receive_policy",
                   "hold_suspicious",
                   "tenant_id",
@@ -7393,6 +7558,14 @@
                       "list"
                     ],
                     "description": "Who it may write to. `reply_only` makes an address structurally unable to start a conversation with a stranger."
+                  },
+                  "send_approval": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "first_contact"
+                    ],
+                    "description": "`first_contact` holds a send to somebody the address has never written to or heard from until a person approves it in the dashboard. A key with admin on the address may turn it on; turning it off needs its owner."
                   },
                   "receive_policy": {
                     "type": "string",
@@ -19390,6 +19563,10 @@
                         "thread.updated",
                         "thread.assigned",
                         "thread.unassigned",
+                        "draft.approval_requested",
+                        "draft.approved",
+                        "draft.rejected",
+                        "draft.expired",
                         "identity.created",
                         "identity.updated",
                         "identity.suspended",
@@ -23811,6 +23988,126 @@
           },
           "504": {
             "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "drafts"
+        ]
+      }
+    },
+    "/drafts/{id}/approval": {
+      "get": {
+        "operationId": "draftsApproval",
+        "summary": "Where a held send stands",
+        "description": "A send answered `status: \"pending_approval\"` is a draft waiting for a person: a first message to someone new on an address that asks first, or a reply on a conversation where a message tried to give the agent instructions. Poll this, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`. Only a person approves, in the dashboard; no key can, including the one that asked. Unanswered for 24 hours, it expires unsent and stays a draft. After approval `message_id` is the sent message.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where it stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Approval"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
             "content": {
               "application/json": {
                 "schema": {

@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { type CallContext, dispatch, PidgeonHttpError } from './call.js';
-import { REPLAY_NOTE } from './idempotency.js';
+import { pendingApprovalNote, REPLAY_NOTE } from './idempotency.js';
 import { TOOLS } from './tools.js';
 
 /**
@@ -52,7 +52,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.17.1';
+export const VERSION = '0.18.0';
 
 export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
@@ -87,6 +87,7 @@ export function createServer(context: CallContext): McpServer {
       async (input: Record<string, unknown>) => {
         try {
           const { data, replayed } = await dispatch(tool, input, calling);
+          const held = pendingApprovalNote(data);
 
           return {
             content: [
@@ -95,6 +96,7 @@ export function createServer(context: CallContext): McpServer {
                * answer as "sent" unless something says otherwise.
                */
               ...(replayed ? [{ type: 'text' as const, text: REPLAY_NOTE }] : []),
+              ...(held ? [{ type: 'text' as const, text: held }] : []),
               { type: 'text' as const, text: JSON.stringify(data, null, 2) },
             ],
           };
