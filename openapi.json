@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.41.0",
+    "version": "1.41.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -435,6 +435,7 @@
             ]
           },
           "text": {
+            "description": "Read with an API key, every body field carries an invisible canary token tied to this conversation. Quote it in a reply here and it is removed before sending; send it anywhere else and the send is refused `exfiltration_blocked`. See /docs/firewall.",
             "type": [
               "string",
               "null"
@@ -1185,6 +1186,7 @@
                     ]
                   },
                   "text": {
+                    "description": "Read with an API key, every body field carries an invisible canary token tied to this conversation. Quote it in a reply here and it is removed before sending; send it anywhere else and the send is refused `exfiltration_blocked`. See /docs/firewall.",
                     "type": [
                       "string",
                       "null"
@@ -11434,7 +11436,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12849,7 +12851,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -13099,7 +13101,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -13349,7 +13351,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -20608,7 +20610,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -21353,7 +21355,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -21542,7 +21544,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -22384,7 +22386,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -22563,7 +22565,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -23702,7 +23704,7 @@
             }
           },
           "403": {
-            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).",
             "content": {
               "application/json": {
                 "schema": {

@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.41.1 — a refusal for what a key read
+
+- A send can be refused `403 exfiltration_blocked`: it carries text an API
+  key read in another conversation, and the message names that
+  conversation. Bodies read with a key carry an invisible canary token for
+  this; a reply in the same conversation has it removed before sending.
+  Descriptions only: no type changed.
+
 ## 1.41.0 — files larger than a request body
 
 - `attachmentsCreateUpload` takes `identity_id`, `filename`, `content_type`
