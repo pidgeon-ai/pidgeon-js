@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.43.1 — forwards and raw reads
+
+- `messagesForward` from a key is refused `403 exfiltration_blocked` when a
+  recipient is new to the conversation: not on any of its messages, not one
+  of your addresses, and not named by an `allow` send rule.
+- `messagesRaw` gives a key the rebuilt message with a canary token in its
+  text, never the archived original; `X-Pidgeon-Reconstructed` is `true`.
+  Descriptions only: no type changed.
+
 ## 1.43.0 — a person approves the risky sends
 
 - Every send result carries `status`: `sent`, or `pending_approval` — nothing

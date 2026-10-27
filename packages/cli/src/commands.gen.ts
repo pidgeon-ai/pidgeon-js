@@ -2882,7 +2882,7 @@ export const COMMANDS: Command[] = [
     "operationId": "messagesRaw",
     "method": "GET",
     "path": "/messages/{id}/raw",
-    "summary": "The message as it arrived",
+    "summary": "The message as MIME",
     "flags": [
       {
         "name": "id",

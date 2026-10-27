@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.43.0",
+    "version": "1.43.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -13646,8 +13646,8 @@
     "/messages/{id}/raw": {
       "get": {
         "operationId": "messagesRaw",
-        "summary": "The message as it arrived",
-        "description": "`message/rfc822`, not JSON — the point is bytes nobody re-encoded. Received mail is the archived original while it is kept; sent mail, and received mail past its retention, is rebuilt from the stored message. `X-Pidgeon-Reconstructed` says which: a rebuild is not the signed bytes and cannot verify DKIM.",
+        "summary": "The message as MIME",
+        "description": "`message/rfc822`, not JSON. An API key gets the message rebuilt from the stored message, with a canary token in its text (/docs/firewall): the original bytes cannot carry one, so `X-Pidgeon-Reconstructed` is `true` and a rebuild cannot verify DKIM. The message’s `authentication` is our check of the original’s signatures.",
         "parameters": [
           {
             "name": "id",
