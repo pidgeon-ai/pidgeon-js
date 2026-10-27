@@ -19,7 +19,7 @@ const { text } = await generateText({
   model: 'anthropic/claude-sonnet-5.5',
   tools: pidgeonTools({
     apiKey: process.env.PIDGEON_API_KEY,
-    identityId: process.env.PIDGEON_IDENTITY_ID,
+    identityId: process.env.PIDGEON_ADDRESS_ID,
   }),
   stopWhen: isStepCount(10),
   prompt:
