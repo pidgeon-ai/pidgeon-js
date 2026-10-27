@@ -98,7 +98,7 @@ export class Pidgeon implements INodeType {
  * first one's keys and every write was refused as a conflict. Hashed,
  * because Pidgeon takes at most 255 characters.
  */
-function idempotencyKey(this: IExecuteFunctions, item: number): Record<string, string> {
+function idempotencyKey(this: IExecuteFunctions, item: number | string): Record<string, string> {
   const run = [
     this.getInstanceId(),
     this.getWorkflow().id,
@@ -127,9 +127,17 @@ async function run(this: IExecuteFunctions, i: number): Promise<INodeExecutionDa
       if (extra.display_name) body.display_name = extra.display_name;
       if (extra.pod_id) body.pod_id = extra.pod_id;
 
+      /*
+       * **Keyed by the address, not the item.** n8n runs a node once per
+       * input item, so a create fed two items asked for the same address
+       * twice: the first made it and the second showed "already exists"
+       * (Patrick, recording the verification video, 27 October). One address
+       * per name per run is what a create means, so a second item naming the
+       * same address replays the first one's answer.
+       */
       const created = await pidgeonRequest.call(this, 'POST', '/identities', {
         body,
-        headers: idempotencyKey.call(this, i),
+        headers: idempotencyKey.call(this, `address:${String(body.address).toLowerCase()}`),
       });
       return json(created.data);
     }
