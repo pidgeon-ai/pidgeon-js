@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/n8n-nodes-pidgeon",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Email inboxes for AI agents, in n8n. A trigger for mail that arrives at an address and for a thread handed to a person, and actions to reply, save a draft, send, and wait for a verification code.",
   "keywords": [
     "n8n-community-node-package",
