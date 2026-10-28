@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.43.1",
+    "version": "1.44.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -1094,14 +1094,63 @@
                   "additionalProperties": false
                 },
                 "description": "Links, verification links first. Unsubscribe and social links are left out."
+              },
+              "forwarded": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "string",
+                        "description": "The original sender’s address, lower-cased."
+                      },
+                      "from_name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "date": {
+                        "description": "As the forwarding client printed it, not parsed.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "subject": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "text": {
+                        "type": "string",
+                        "description": "The original’s text, without its header block."
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "from_name",
+                      "date",
+                      "subject",
+                      "text"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The email somebody forwarded, when this message is an inline forward (Gmail, Apple Mail or Outlook, in English or German): `from` here is the original sender, where the message’s own `from` is the person who forwarded it. `null` when this is not a forward, or the original names no sender address. With `body=clean`, `null` when the Firewall found the message suspicious."
               }
             },
             "required": [
               "codes",
-              "links"
+              "links",
+              "forwarded"
             ],
             "additionalProperties": false,
-            "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found."
+            "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history — and the original inside a forward. Empty lists when nothing was found."
           },
           "created_at": {
             "type": "string",
@@ -1850,14 +1899,63 @@
                           "additionalProperties": false
                         },
                         "description": "Links, verification links first. Unsubscribe and social links are left out."
+                      },
+                      "forwarded": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "from": {
+                                "type": "string",
+                                "description": "The original sender’s address, lower-cased."
+                              },
+                              "from_name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "date": {
+                                "description": "As the forwarding client printed it, not parsed.",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "subject": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "text": {
+                                "type": "string",
+                                "description": "The original’s text, without its header block."
+                              }
+                            },
+                            "required": [
+                              "from",
+                              "from_name",
+                              "date",
+                              "subject",
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The email somebody forwarded, when this message is an inline forward (Gmail, Apple Mail or Outlook, in English or German): `from` here is the original sender, where the message’s own `from` is the person who forwarded it. `null` when this is not a forward, or the original names no sender address. With `body=clean`, `null` when the Firewall found the message suspicious."
                       }
                     },
                     "required": [
                       "codes",
-                      "links"
+                      "links",
+                      "forwarded"
                     ],
                     "additionalProperties": false,
-                    "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found."
+                    "description": "Verification codes and links found in the message, most likely first — read from the new text, never the quoted history — and the original inside a forward. Empty lists when nothing was found."
                   },
                   "created_at": {
                     "type": "string",

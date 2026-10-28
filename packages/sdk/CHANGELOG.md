@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.44.0 — the original inside a forward
+
+- `Message.extracted.forwarded`: when a message is an inline forward (Gmail,
+  Apple Mail or Outlook, in English or German), the original's sender, name,
+  date, subject and text. `null` otherwise, and with `body=clean` when the
+  Firewall found the message suspicious.
+- The `message.received` event carries `from_name`, `cc`, `owner_type` and
+  `auth: { spf, dkim, dmarc }`. Event payloads are not typed by this package.
+
 ## 1.43.1 — forwards and raw reads
 
 - `messagesForward` from a key is refused `403 exfiltration_blocked` when a

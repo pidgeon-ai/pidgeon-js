@@ -42,7 +42,10 @@ export function flatMessage(input: {
     (message.to as Person[] | undefined)?.map((person) => person.email) ??
     (event.to as string[] | undefined) ??
     [];
-  const cc = (message.cc as Person[] | undefined)?.map((person) => person.email) ?? [];
+  const cc =
+    (message.cc as Person[] | undefined)?.map((person) => person.email) ??
+    (event.cc as string[] | undefined) ??
+    [];
   const deliveredTo =
     (message.delivered_to as string | null | undefined) ??
     (event.delivered_to as string | undefined) ??
@@ -51,10 +54,11 @@ export function flatMessage(input: {
     (message.identity as string | undefined) ?? (event.identity as string | undefined);
   const firewall = (message.firewall ?? event.firewall) as
     { verdict?: string; signals?: Array<string | { kind: string }> } | null | undefined;
-  const auth = message.authentication as
+  // The message read has it; since API 1.44 the event carries it too.
+  const auth = (message.authentication ?? event.auth) as
     { spf: string | null; dkim: string | null; dmarc: string | null } | undefined;
   const extracted = message.extracted as
-    { codes?: IDataObject[]; links?: IDataObject[] } | undefined;
+    { codes?: IDataObject[]; links?: IDataObject[]; forwarded?: IDataObject | null } | undefined;
 
   const item: IDataObject = {};
   if (input.envelope) {
@@ -67,7 +71,7 @@ export function flatMessage(input: {
     thread_id: (message.thread_id as string | undefined) ?? event.thread_id ?? null,
     address: address ?? null,
     from: from?.email ?? (event.from as string | undefined) ?? null,
-    from_name: from?.name ?? null,
+    from_name: from?.name ?? (event.from_name as string | null | undefined) ?? null,
     to,
     cc,
     delivered_to: deliveredTo,
@@ -86,6 +90,8 @@ export function flatMessage(input: {
   });
 
   if (event.matched_by !== undefined) item.matched_by = event.matched_by;
+  // On the event since API 1.44, so a trigger that does not read the message still routes on it.
+  if (event.owner_type !== undefined) item.thread_owner_type = event.owner_type;
 
   if (thread) {
     Object.assign(item, {
@@ -103,6 +109,8 @@ export function flatMessage(input: {
     reply_text: (message.reply_text as string | undefined) ?? text ?? null,
     codes: (extracted?.codes ?? []).map((code) => code.value),
     links: extracted?.links ?? [],
+    // The email somebody forwarded: its sender, not the forwarder, and its text.
+    forwarded: extracted?.forwarded ?? null,
     attachments: (message.attachments as IDataObject[] | undefined) ?? event.attachments ?? [],
     test: (message.test as boolean | undefined) ?? (event.test as boolean | undefined) ?? false,
   });

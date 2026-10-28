@@ -376,7 +376,7 @@ export type Message = {
     version: number;
   } | null;
   /**
-   * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
+   * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history — and the original inside a forward. Empty lists when nothing was found.
    */
   extracted: {
     /**
@@ -407,6 +407,25 @@ export type Message = {
        */
       text: string | null;
     }>;
+    /**
+     * The email somebody forwarded, when this message is an inline forward (Gmail, Apple Mail or Outlook, in English or German): `from` here is the original sender, where the message’s own `from` is the person who forwarded it. `null` when this is not a forward, or the original names no sender address. With `body=clean`, `null` when the Firewall found the message suspicious.
+     */
+    forwarded: {
+      /**
+       * The original sender’s address, lower-cased.
+       */
+      from: string;
+      from_name: string | null;
+      /**
+       * As the forwarding client printed it, not parsed.
+       */
+      date: string | null;
+      subject: string | null;
+      /**
+       * The original’s text, without its header block.
+       */
+      text: string;
+    } | null;
   };
   /**
    * ISO-8601, UTC.
@@ -639,7 +658,7 @@ export type AwaitedMessage = {
       version: number;
     } | null;
     /**
-     * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history. Empty lists when nothing was found.
+     * Verification codes and links found in the message, most likely first — read from the new text, never the quoted history — and the original inside a forward. Empty lists when nothing was found.
      */
     extracted: {
       /**
@@ -670,6 +689,25 @@ export type AwaitedMessage = {
          */
         text: string | null;
       }>;
+      /**
+       * The email somebody forwarded, when this message is an inline forward (Gmail, Apple Mail or Outlook, in English or German): `from` here is the original sender, where the message’s own `from` is the person who forwarded it. `null` when this is not a forward, or the original names no sender address. With `body=clean`, `null` when the Firewall found the message suspicious.
+       */
+      forwarded: {
+        /**
+         * The original sender’s address, lower-cased.
+         */
+        from: string;
+        from_name: string | null;
+        /**
+         * As the forwarding client printed it, not parsed.
+         */
+        date: string | null;
+        subject: string | null;
+        /**
+         * The original’s text, without its header block.
+         */
+        text: string;
+      } | null;
     };
     /**
      * ISO-8601, UTC.
