@@ -18,16 +18,19 @@ The package has two nodes:
 
 ## Install
 
-On a self-hosted n8n: **Settings → Community Nodes → Install**, then enter:
+n8n has verified the node.
+
+- **n8n Cloud:** search for Pidgeon in the nodes panel of the canvas and add
+  it. An owner or admin may need to allow verified community nodes first.
+- **Self-hosted:** as an owner or admin, **Settings → Community Nodes →
+  Install**, then enter:
 
 ```text
 @pidgeon-ai/n8n-nodes-pidgeon
 ```
 
-Only an owner or admin can install community nodes. On n8n 3.0 and later,
-set `N8N_UNVERIFIED_PACKAGES_ENABLED=true` first. n8n Cloud runs only
-verified community nodes; until this one is verified, use n8n's own MCP
-Client node there, as `/docs/n8n` describes.
+n8n reviews each new version before Cloud offers it, so Cloud can be a release
+behind npm for a short while.
 
 ## The credential
 
