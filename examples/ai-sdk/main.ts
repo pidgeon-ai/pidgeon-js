@@ -156,19 +156,20 @@ try {
   });
   const key = minted.data;
 
+  // The revoke covers the send too: a key left behind counts against the
+  // workspace's limit until it expires.
   const code = String(randomInt(100_000, 1_000_000));
-  await messagesSend({
-    body: {
-      from: address.email,
-      to: address.email,
-      subject: 'Your sign-in code',
-      text: `Your sign-in code is ${code}. It expires in ten minutes.`,
-    },
-    throwOnError: true,
-  });
-
   let replyId: string;
   try {
+    await messagesSend({
+      body: {
+        from: address.email,
+        to: address.email,
+        subject: 'Your sign-in code',
+        text: `Your sign-in code is ${code}. It expires in ten minutes.`,
+      },
+      throwOnError: true,
+    });
     check(key.token, 'the new key came back without its token');
     replyId = await runAgent(address.id, key.token, code);
   } finally {
