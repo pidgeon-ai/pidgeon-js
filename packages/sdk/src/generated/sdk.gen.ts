@@ -1166,7 +1166,7 @@ export const threadsGet = <ThrowOnError extends boolean = false>(
 /**
  * Update a thread
  *
- * Its status and who owns it — the state a conversation carries. Handing it to a person notifies them: the assignee if you name one, otherwise everybody who can answer as the address. `reason` is shown in that notification.
+ * Its status and who owns it — the state a conversation carries. Handing it to a person notifies them: the assignee if you name one, otherwise everybody who can answer as the address. `reason` is shown in that notification. While a person has the conversation (it is `human` with an assignee, or in `human_review`), a key may not set `owner_type` to anything else: `403 taken_over`. The person hands it back.
  */
 export const threadsUpdate = <ThrowOnError extends boolean = false>(
   options: Options<ThreadsUpdateData, ThrowOnError>,

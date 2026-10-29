@@ -7,6 +7,19 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.46.0 — a person's conversation is theirs, and new values do not break Python
+
+- A send with a key in a conversation a person has (it is `human` with an
+  assignee, or in `human_review`) is refused `403 taken_over`: a reply, a
+  forward, or sending a draft that answers it. So is `threadsUpdate` setting
+  `owner_type` to anything but `human` while they have it. The person hands it
+  back from the dashboard. Saving a draft there still works.
+- Python (`pidgeon` 1.46.0): every enum keeps a value it does not know as
+  itself instead of raising `ValueError`, so a Firewall signal kind added
+  later (`model_intent`) reads as that string. Known values are unchanged.
+- TypeScript needed no change for unknown values: its types are unions,
+  checked at compile time only, so an unknown kind already passed through.
+
 ## 1.45.0 — an agent reads the PDF, the Word file and the spreadsheet
 
 - `attachmentsText` reads PDF (the text layer), `.docx` and `.xlsx` as well

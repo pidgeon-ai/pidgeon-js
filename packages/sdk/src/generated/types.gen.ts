@@ -4512,7 +4512,7 @@ export type MessagesSendErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -5068,7 +5068,7 @@ export type MessagesReplyErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -5173,7 +5173,7 @@ export type MessagesReplyAllErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -5278,7 +5278,7 @@ export type MessagesForwardErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -8533,7 +8533,7 @@ export type MessagesRespondToInvitationErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -8835,7 +8835,7 @@ export type CalendarCreateEventErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -8912,7 +8912,7 @@ export type CalendarRespondToEventErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -9144,7 +9144,7 @@ export type CalendarDeleteEventErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -9313,7 +9313,7 @@ export type CalendarUpdateEventErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**
@@ -9804,7 +9804,7 @@ export type DraftsSendErrors = {
    */
   401: Error;
   /**
-   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it) or `forbidden` (the address is not one this key can send from, or is not active).
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
    */
   403: Error;
   /**

@@ -708,13 +708,15 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'update_thread',
-    title: 'Hand a conversation over, or take it back',
+    title: 'Hand a conversation to a person',
     description:
       'Who owns a conversation and where it has got to. `owner_type: "human"` with `status: ' +
       '"human_review"` hands it to a person: the people who can answer as the address are ' +
       'notified, or only `assignee_id` when you name one. Say why in `reason` — it is in ' +
-      'their notification. `"agent"` takes it back. A person replying from the inbox or a ' +
-      'mail client takes it over themselves, and `thread.updated` tells you.',
+      'their notification. `"agent"` claims a conversation nobody has stepped into. A person ' +
+      'replying from the inbox or a mail client takes it over themselves, and ' +
+      '`thread.updated` tells you. **While a person has it, you cannot send in it or take it ' +
+      'back** (`403 taken_over`); they hand it back.',
     endpoint: 'PATCH /threads/{id}',
     annotations: FILE,
     inputSchema: {
