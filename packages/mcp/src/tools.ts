@@ -507,7 +507,9 @@ export const TOOLS: ToolDefinition[] = [
       'returns the newest match from then, so a code that arrived before you called is not ' +
       'missed; narrow it with `from` (address or domain), `subject_contains`, or ' +
       '`has_code: "true"` so an earlier email is not mistaken for the one you want, and pass ' +
-      '`after: "now"` to wait only for new mail. Answers ' +
+      '`after: "now"` to wait only for new mail (with `has_code` and a real wait, a code ' +
+      'that landed up to 60 seconds before the call and that no key has read still counts, ' +
+      'with `looked_back: true`). Answers ' +
       '`timed_out: true` after `timeout` seconds (default 50, at most 280); pass the returned ' +
       '`cursor` as `after` to keep waiting without missing anything. Most MCP clients give up ' +
       'on a call at 60 seconds, so keep each wait under that and chain them with `after`, ' +

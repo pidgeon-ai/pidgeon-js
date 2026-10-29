@@ -1,5 +1,6 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { McpServer } from '@modelcontextprotocol/server';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { z } from 'zod';
 
 import { type CallContext, dispatch, PidgeonHttpError } from './call.js';
 import { pendingApprovalNote, REPLAY_NOTE } from './idempotency.js';
@@ -52,7 +53,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.19.1';
+export const VERSION = '0.20.0';
 
 export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
@@ -80,7 +81,8 @@ export function createServer(context: CallContext): McpServer {
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: tool.inputSchema,
+        // An object schema: v2 takes the raw shape only as a deprecated form.
+        inputSchema: z.object(tool.inputSchema),
         /* Per tool, in `tools.ts` — and so the same on npm and at `/api/mcp`. */
         annotations: tool.annotations,
       },

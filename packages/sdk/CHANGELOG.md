@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.47.0 — a code that beat the wait is not lost
+
+- `messagesAwait` with `after: "now"`, `has_code: "true"` and a `timeout`
+  above 5 also returns a matching message that arrived up to 60 seconds before
+  the call and that no key has read, with `looked_back: true` (a new optional
+  field on `AwaitedMessage`). The cursor-first call (`timeout: 1`) is
+  unchanged: it never returns an older code.
+
 ## 1.46.0 — a person's conversation is theirs, and new values do not break Python
 
 - A send with a key in a conversation a person has (it is `human` with an

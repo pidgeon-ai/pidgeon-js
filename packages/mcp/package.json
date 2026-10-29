@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "mcpName": "ai.pidgeon/mcp",
   "description": "Email inboxes for AI agents: an MCP server that gives your agent its own inbox (Pidgeon).",
   "keywords": [
@@ -54,16 +54,16 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/server": "2.4.0",
     "@pidgeon-ai/sdk": "workspace:*",
     "jsonc-parser": "^3.3.1",
     "smol-toml": "^1.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/node": "^24",
     "tsup": "^8.5.0",
-    "typescript": "^5",
-    "@types/node": "^24"
+    "typescript": "^5"
   },
   "bugs": {
     "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"

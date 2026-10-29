@@ -716,6 +716,10 @@ export type AwaitedMessage = {
   } | null;
   timed_out: boolean;
   /**
+   * Only on `after: "now"` with `has_code: "true"` and `timeout` above 5: true when the message arrived up to 60 seconds before the call and no key had read it yet, so a code that beat your wait is still yours.
+   */
+  looked_back?: boolean;
+  /**
    * Pass as `after` on the next call, so a message arriving between two calls is not missed.
    */
   cursor: string;
