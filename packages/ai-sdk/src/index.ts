@@ -18,6 +18,19 @@ import {
   draftsApproval,
   draftsCreate,
   attachmentsText,
+  calendarCreateEvent,
+  calendarDeleteEvent,
+  calendarGet,
+  calendarGetAgenda,
+  calendarGetEvent,
+  calendarUpdate,
+  calendarUpdateEvent,
+  draftsDelete,
+  draftsGet,
+  draftsList,
+  draftsUpdate,
+  messagesForward,
+  messagesRespondToInvitation,
   messagesSearch,
   messagesSend,
   messagesUpdate,
@@ -96,7 +109,20 @@ export type PidgeonToolName =
   | 'remove_label'
   | 'list_pods'
   | 'create_pod'
-  | 'get_metrics';
+  | 'get_metrics'
+  | 'forward_message'
+  | 'list_drafts'
+  | 'get_draft'
+  | 'update_draft'
+  | 'delete_draft'
+  | 'get_calendar'
+  | 'update_calendar'
+  | 'get_agenda'
+  | 'get_calendar_event'
+  | 'create_calendar_event'
+  | 'update_calendar_event'
+  | 'delete_calendar_event'
+  | 'respond_to_invitation';
 
 export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   list_addresses: identitiesList,
@@ -128,6 +154,19 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   list_pods: podsList,
   create_pod: podsCreate,
   get_metrics: metricsQuery,
+  forward_message: messagesForward,
+  list_drafts: draftsList,
+  get_draft: draftsGet,
+  update_draft: draftsUpdate,
+  delete_draft: draftsDelete,
+  get_calendar: calendarGet,
+  update_calendar: calendarUpdate,
+  get_agenda: calendarGetAgenda,
+  get_calendar_event: calendarGetEvent,
+  create_calendar_event: calendarCreateEvent,
+  update_calendar_event: calendarUpdateEvent,
+  delete_calendar_event: calendarDeleteEvent,
+  respond_to_invitation: messagesRespondToInvitation,
 };
 
 export type PidgeonTools = Record<PidgeonToolName, Tool<Record<string, unknown>, unknown>>;
