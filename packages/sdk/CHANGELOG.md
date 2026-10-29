@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.45.0 — an agent reads the PDF, the Word file and the spreadsheet
+
+- `attachmentsText` reads PDF (the text layer), `.docx` and `.xlsx` as well
+  as text formats, up to 10 MB, screened like a message body.
+  `AttachmentText.format` says how: `text`, `pdf`, `docx` or `xlsx`.
+- Text a document hides from a person (a hidden Word run, a hidden sheet,
+  row or column) counts as `hidden_text`. Where the address holds suspicious
+  mail, a flagged attachment holds its message and a key gets `403 held`.
+
 ## 1.44.0 — the original inside a forward
 
 - `Message.extracted.forwarded`: when a message is an inline forward (Gmail,

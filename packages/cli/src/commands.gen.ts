@@ -266,7 +266,7 @@ export const COMMANDS: Command[] = [
     "operationId": "attachmentsText",
     "method": "GET",
     "path": "/attachments/{id}/text",
-    "summary": "Read a text attachment",
+    "summary": "Read an attachment as text",
     "flags": [
       {
         "name": "id",

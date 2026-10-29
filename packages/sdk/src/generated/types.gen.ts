@@ -2160,7 +2160,11 @@ export type AttachmentText = {
    */
   size: number;
   /**
-   * The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed.
+   * How it was read. `pdf`: the text layer, a form feed between pages. `docx`: headers, body and footers, table rows tab-separated; footnotes and comments left out. `xlsx`: each sheet as `## Sheet: <name>` and CSV, dates as Excel serial numbers.
+   */
+  format: 'text' | 'pdf' | 'docx' | 'xlsx';
+  /**
+   * The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed; for a document, also what it hid from a person opening it (a hidden Word run, a hidden sheet, row or column).
    */
   text: string;
   /**

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.44.0",
+    "version": "1.45.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -6436,9 +6436,19 @@
             "maximum": 9007199254740991,
             "description": "Bytes, as stored."
           },
+          "format": {
+            "type": "string",
+            "enum": [
+              "text",
+              "pdf",
+              "docx",
+              "xlsx"
+            ],
+            "description": "How it was read. `pdf`: the text layer, a form feed between pages. `docx`: headers, body and footers, table rows tab-separated; footnotes and comments left out. `xlsx`: each sheet as `## Sheet: <name>` and CSV, dates as Excel serial numbers."
+          },
           "text": {
             "type": "string",
-            "description": "The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed."
+            "description": "The file as text. With `body=clean`, hidden characters removed and lines posing as a chat turn marked, under a first line saying what changed; for a document, also what it hid from a person opening it (a hidden Word run, a hidden sheet, row or column)."
           },
           "truncated": {
             "type": "boolean",
@@ -6526,6 +6536,7 @@
           "filename",
           "content_type",
           "size",
+          "format",
           "text",
           "truncated",
           "firewall"
@@ -25403,8 +25414,8 @@
     "/attachments/{id}/text": {
       "get": {
         "operationId": "attachmentsText",
-        "summary": "Read a text attachment",
-        "description": "A CSV, a log, JSON or another text format, as text — up to 5 MB, and the first 200,000 characters of it. Screened by Pidgeon Firewall with the sender of the message it came with, because a file in an email is mail a model reads: `firewall` says whether it tries to steer you, and `body=clean` returns it with hidden characters removed and lines posing as a chat turn marked. HTML, PDF, Office files and images are refused; `GET /attachments/{id}` gives a link to those.",
+        "summary": "Read an attachment as text",
+        "description": "A CSV, a log, JSON or another text format (up to 5 MB), or a PDF, a `.docx` or an `.xlsx` (up to 10 MB), as text: the first 200,000 characters of it. Screened by Pidgeon Firewall with the sender of the message it came with, because a file in an email is mail a model reads: `firewall` says whether it tries to steer you, and `body=clean` returns it with hidden content removed. Text a document hides from a person (a hidden Word run, a hidden sheet, row or column) counts as hidden text. Where the address holds suspicious mail, a flagged attachment holds its message, and a key is answered `403 held`. A scanned or password-protected PDF, `.doc`, `.xls`, PowerPoint, HTML and images are refused; `GET /attachments/{id}` gives a link to those.",
         "parameters": [
           {
             "name": "id",
