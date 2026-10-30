@@ -82,6 +82,13 @@ export type TestInboundDelivered = {
   spam: boolean;
 };
 
+export type AgentConnected = {
+  address: string;
+  identity_id: string;
+  api_key: string;
+  api_key_id: string;
+};
+
 export type AgentVerified = {
   address: string;
   identity_id: string;
@@ -2421,6 +2428,68 @@ export type AgentVerifyResponses = {
 };
 
 export type AgentVerifyResponse = AgentVerifyResponses[keyof AgentVerifyResponses];
+
+export type AgentConnectData = {
+  body: {
+    code: string;
+    name?: string | null;
+  };
+  path?: never;
+  query?: never;
+  url: '/agent/connect';
+};
+
+export type AgentConnectErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Your plan does not include this. `error.message` says what does.
+   */
+  402: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type AgentConnectError = AgentConnectErrors[keyof AgentConnectErrors];
+
+export type AgentConnectResponses = {
+  /**
+   * The address and its key.
+   */
+  200: {
+    data: AgentConnected;
+  };
+};
+
+export type AgentConnectResponse = AgentConnectResponses[keyof AgentConnectResponses];
 
 export type IdentitiesListData = {
   body?: never;

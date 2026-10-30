@@ -55,6 +55,28 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "agent",
+    "name": "connect",
+    "operationId": "agentConnect",
+    "method": "POST",
+    "path": "/agent/connect",
+    "summary": "Connect an agent with a setup code",
+    "flags": [
+      {
+        "name": "code",
+        "kind": "string",
+        "required": true,
+        "where": "body"
+      },
+      {
+        "name": "name",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      }
+    ]
+  },
+  {
+    "group": "agent",
     "name": "signUp",
     "operationId": "agentSignUp",
     "method": "POST",

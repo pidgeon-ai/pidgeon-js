@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.48.0 — an agent joins the inbox a person already has
+
+- `agentConnect({ body: { code, name } })` spends a setup code from the
+  dashboard's Overview and returns `api_key` with `send` on that one address,
+  plus `address` and `identity_id`. No account is created and no code is
+  emailed. A code works once, for 10 minutes; every failure is the same
+  `400`. The key shows under the person's API keys and is held for approval
+  like any other.
+
 ## 1.47.0 — a code that beat the wait is not lost
 
 - `messagesAwait` with `after: "now"`, `has_code: "true"` and a `timeout`

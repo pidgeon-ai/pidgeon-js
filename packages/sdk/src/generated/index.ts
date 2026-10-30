@@ -2,6 +2,7 @@
 
 export {
   agentAttachHuman,
+  agentConnect,
   agentSignUp,
   agentVerify,
   appPasswordsCreate,
@@ -125,6 +126,12 @@ export type {
   AgentAttachHumanErrors,
   AgentAttachHumanResponse,
   AgentAttachHumanResponses,
+  AgentConnectData,
+  AgentConnected,
+  AgentConnectError,
+  AgentConnectErrors,
+  AgentConnectResponse,
+  AgentConnectResponses,
   AgentSignup,
   AgentSignUpData,
   AgentSignUpError,

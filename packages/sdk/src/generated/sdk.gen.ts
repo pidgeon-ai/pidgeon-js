@@ -14,6 +14,9 @@ import type {
   AgentAttachHumanData,
   AgentAttachHumanErrors,
   AgentAttachHumanResponses,
+  AgentConnectData,
+  AgentConnectErrors,
+  AgentConnectResponses,
   AgentSignUpData,
   AgentSignUpErrors,
   AgentSignUpResponses,
@@ -420,6 +423,23 @@ export const agentVerify = <ThrowOnError extends boolean = false>(
 ): RequestResult<AgentVerifyResponses, AgentVerifyErrors, ThrowOnError> =>
   (options.client ?? client).post<AgentVerifyResponses, AgentVerifyErrors, ThrowOnError>({
     url: '/agent/verify',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Connect an agent with a setup code
+ *
+ * For an inbox a person already has. They press "Get a setup code" on the dashboard and give the agent the code; this returns an API key with `send` on that one address. No account is created and no code is emailed. A code works once, for 10 minutes; every way one fails gets the same `400`. The key is returned once and never again, shows under the person’s API keys, and is held for approval like any other key.
+ */
+export const agentConnect = <ThrowOnError extends boolean = false>(
+  options: Options<AgentConnectData, ThrowOnError>,
+): RequestResult<AgentConnectResponses, AgentConnectErrors, ThrowOnError> =>
+  (options.client ?? client).post<AgentConnectResponses, AgentConnectErrors, ThrowOnError>({
+    url: '/agent/connect',
     ...options,
     headers: {
       'Content-Type': 'application/json',
