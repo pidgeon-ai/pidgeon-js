@@ -34,6 +34,7 @@ import {
   messagesRespondToInvitation,
   messagesSearch,
   messagesSend,
+  messagesCheck,
   messagesUpdate,
   eventsList,
   metricsQuery,
@@ -91,6 +92,7 @@ export type PidgeonToolName =
   | 'list_messages'
   | 'search_messages'
   | 'send_message'
+  | 'check_message'
   | 'get_message'
   | 'await_message'
   | 'reply_to_message'
@@ -136,6 +138,7 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   list_messages: messagesListInThread,
   search_messages: messagesSearch,
   send_message: messagesSend,
+  check_message: messagesCheck,
   get_message: messagesGet,
   await_message: messagesAwait,
   reply_to_message: messagesReply,

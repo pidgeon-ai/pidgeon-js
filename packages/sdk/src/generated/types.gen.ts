@@ -68,6 +68,39 @@ export type Sent = {
   } | null;
 };
 
+export type SendCheck = {
+  /**
+   * Always true: nothing was sent, written or counted.
+   */
+  dry_run: true;
+  /**
+   * True when the real send would go now. False when it would wait for a person (`status: "pending_approval"`).
+   */
+  would_send: boolean;
+  /**
+   * The `status` the real send would answer.
+   */
+  status: 'sent' | 'pending_approval';
+  from: string;
+  to: Array<string>;
+  cc: Array<string>;
+  bcc: Array<string>;
+  /**
+   * The conversation it would go in. Null for a new message, which starts one.
+   */
+  thread_id: string | null;
+  /**
+   * True when the real send would be a test-mode send.
+   */
+  test: boolean;
+  /**
+   * Why it would wait, when `status` is `pending_approval`. Null otherwise.
+   */
+  approval: {
+    reason: 'first_contact' | 'risky_thread';
+  } | null;
+};
+
 export type TestInboundDelivered = {
   /**
    * `delivered` in the normal case; `rejected` when a sender rule on the address refuses it, as it would refuse the real thing.
@@ -348,6 +381,10 @@ export type Identity = {
    * Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC).
    */
   receive_policy: string;
+  /**
+   * Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10.
+   */
+  recipient_cooldown_minutes: number;
   /**
    * Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026.
    */
@@ -2270,6 +2307,10 @@ export type PodCreated = {
      */
     receive_policy: string;
     /**
+     * Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10.
+     */
+    recipient_cooldown_minutes: number;
+    /**
      * Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026.
      */
     hold_suspicious: boolean;
@@ -3092,6 +3133,10 @@ export type IdentitiesUpdateData = {
      * Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner.
      */
     receive_policy?: 'open' | 'list';
+    /**
+     * Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner.
+     */
+    recipient_cooldown_minutes?: number;
     /**
      * Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to.
      */
@@ -4858,7 +4903,7 @@ export type MessagesSendErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -4887,6 +4932,129 @@ export type MessagesSendResponses = {
 };
 
 export type MessagesSendResponse = MessagesSendResponses[keyof MessagesSendResponses];
+
+export type MessagesCheckData = {
+  body: {
+    /**
+     * An address on a domain you own, and one this key may send from.
+     */
+    from: string;
+    /**
+     * One address or several. A string is accepted for the single case.
+     */
+    to: string | Array<string>;
+    /**
+     * Copied, and visible to everybody who receives the message.
+     */
+    cc?: string | Array<string>;
+    /**
+     * Copied, and visible to nobody else.
+     */
+    bcc?: string | Array<string>;
+    /**
+     * Left off a reply, where the thread already has one.
+     */
+    subject?: string;
+    /**
+     * The plain-text body. Send this even when you send `html` — some clients only read it.
+     */
+    text?: string;
+    /**
+     * The rich body. Sanitised on the way in; scripts and remote content are removed.
+     */
+    html?: string;
+    /**
+     * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
+     */
+    data?: {
+      /**
+       * A URL naming what `body` is, such as `https://schema.org/Invoice`.
+       */
+      schema: string;
+      /**
+       * The JSON itself. Up to 64 KB once serialised.
+       */
+      body: unknown;
+    };
+    /**
+     * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
+     */
+    attachment_ids?: Array<string>;
+    /**
+     * The message being answered. Keeps the conversation together in the recipient’s client too.
+     */
+    in_reply_to?: string | null;
+    /**
+     * The same field as `in_reply_to`, under the name this endpoint has always used. Both names work on both endpoints; reach for `in_reply_to`.
+     */
+    in_reply_to_message_id?: string | null;
+    /**
+     * Check this as a forward of the message in `in_reply_to`, rather than a reply to it. A forward is not a reply, so the per-recipient cooldown applies.
+     */
+    forward?: boolean;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/messages/check';
+};
+
+export type MessagesCheckErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type MessagesCheckError = MessagesCheckErrors[keyof MessagesCheckErrors];
+
+export type MessagesCheckResponses = {
+  /**
+   * Every check passed. Nothing was sent.
+   */
+  200: {
+    data: SendCheck;
+  };
+};
+
+export type MessagesCheckResponse = MessagesCheckResponses[keyof MessagesCheckResponses];
 
 export type MessagesSearchData = {
   body?: never;
@@ -5414,7 +5582,7 @@ export type MessagesReplyErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -5519,7 +5687,7 @@ export type MessagesReplyAllErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -5624,7 +5792,7 @@ export type MessagesForwardErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -8879,7 +9047,7 @@ export type MessagesRespondToInvitationErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -9181,7 +9349,7 @@ export type CalendarCreateEventErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -9262,7 +9430,7 @@ export type CalendarRespondToEventErrors = {
    */
   410: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -9494,7 +9662,7 @@ export type CalendarDeleteEventErrors = {
    */
   410: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -9663,7 +9831,7 @@ export type CalendarUpdateEventErrors = {
    */
   410: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**
@@ -10150,7 +10318,7 @@ export type DraftsSendErrors = {
    */
   409: Error;
   /**
-   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   * Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.
    */
   429: Error;
   /**

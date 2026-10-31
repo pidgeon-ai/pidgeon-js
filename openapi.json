@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.49.0",
+    "version": "1.50.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -189,6 +189,97 @@
           "draft_id",
           "thread_id",
           "rejected",
+          "test",
+          "approval"
+        ],
+        "additionalProperties": false
+      },
+      "SendCheck": {
+        "type": "object",
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "const": true,
+            "description": "Always true: nothing was sent, written or counted."
+          },
+          "would_send": {
+            "type": "boolean",
+            "description": "True when the real send would go now. False when it would wait for a person (`status: \"pending_approval\"`)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "pending_approval"
+            ],
+            "description": "The `status` the real send would answer."
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bcc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thread_id": {
+            "description": "The conversation it would go in. Null for a new message, which starts one.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test": {
+            "type": "boolean",
+            "description": "True when the real send would be a test-mode send."
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "first_contact",
+                      "risky_thread"
+                    ]
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it would wait, when `status` is `pending_approval`. Null otherwise."
+          }
+        },
+        "required": [
+          "dry_run",
+          "would_send",
+          "status",
+          "from",
+          "to",
+          "cc",
+          "bcc",
+          "thread_id",
           "test",
           "approval"
         ],
@@ -851,6 +942,12 @@
             "type": "string",
             "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
           },
+          "recipient_cooldown_minutes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10."
+          },
           "hold_suspicious": {
             "type": "boolean",
             "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
@@ -889,6 +986,7 @@
           "send_policy",
           "send_approval",
           "receive_policy",
+          "recipient_cooldown_minutes",
           "hold_suspicious",
           "tenant_id",
           "pod_id",
@@ -6626,6 +6724,12 @@
                     "type": "string",
                     "description": "Who may write to it: open, or list (only senders with an inbox rule, on mail that passes DMARC)."
                   },
+                  "recipient_cooldown_minutes": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991,
+                    "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10."
+                  },
                   "hold_suspicious": {
                     "type": "boolean",
                     "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
@@ -6664,6 +6768,7 @@
                   "send_policy",
                   "send_approval",
                   "receive_policy",
+                  "recipient_cooldown_minutes",
                   "hold_suspicious",
                   "tenant_id",
                   "pod_id",
@@ -8465,6 +8570,12 @@
                       "list"
                     ],
                     "description": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
+                  },
+                  "recipient_cooldown_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1440,
+                    "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
                   },
                   "hold_suspicious": {
                     "type": "boolean",
@@ -12574,7 +12685,297 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "messages"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "description": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs."
+          }
+        ]
+      }
+    },
+    "/messages/check": {
+      "post": {
+        "operationId": "messagesCheck",
+        "summary": "Check a send without sending",
+        "description": "Would this send? The body `POST /messages` takes, plus `forward`, through every check a send makes: the address, the plan’s sending limits, suppression, the send policy and rules, the per-recipient cooldown, the daily cap, canary tokens, hand-over and approval. Answers `200` with `would_send` and the envelope, or the exact refusal the send would give — the same status, `error.code`, message, field and `Retry-After`. Nothing is sent or written, and nothing counts against a limit. A reply is checked with `in_reply_to`; a forward with `in_reply_to` and `forward: true`. The answer is for now: a send a moment later can meet a limit this did not.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "An address on a domain you own, and one this key may send from."
+                  },
+                  "to": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "email",
+                          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                        }
+                      }
+                    ],
+                    "description": "One address or several. A string is accepted for the single case."
+                  },
+                  "cc": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "email",
+                          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                        }
+                      }
+                    ],
+                    "description": "Copied, and visible to everybody who receives the message."
+                  },
+                  "bcc": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "email",
+                          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                        }
+                      }
+                    ],
+                    "description": "Copied, and visible to nobody else."
+                  },
+                  "subject": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Left off a reply, where the thread already has one."
+                  },
+                  "text": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 500000,
+                    "description": "The plain-text body. Send this even when you send `html` — some clients only read it."
+                  },
+                  "html": {
+                    "type": "string",
+                    "maxLength": 1000000,
+                    "description": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "schema": {
+                        "type": "string",
+                        "maxLength": 900,
+                        "description": "A URL naming what `body` is, such as `https://schema.org/Invoice`."
+                      },
+                      "body": {
+                        "description": "The JSON itself. Up to 64 KB once serialised."
+                      }
+                    },
+                    "required": [
+                      "schema",
+                      "body"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+                  },
+                  "attachment_ids": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+                  },
+                  "in_reply_to": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The message being answered. Keeps the conversation together in the recipient’s client too."
+                  },
+                  "in_reply_to_message_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The same field as `in_reply_to`, under the name this endpoint has always used. Both names work on both endpoints; reach for `in_reply_to`."
+                  },
+                  "forward": {
+                    "type": "boolean",
+                    "description": "Check this as a forward of the message in `in_reply_to`, rather than a reply to it. A forward is not a reply, so the per-recipient cooldown applies."
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every check passed. Nothing was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SendCheck"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was sent to anybody. `error.code` says why: `blocked` (a rule), `not_permitted` (the send policy), `abuse_blocked` (a sending limit), `exfiltration_blocked` (it carries text a key read in another conversation; the message names it), `taken_over` (a person has this conversation: a key does not send in it until they hand it back) or `forbidden` (the address is not one this key can send from, or is not active).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13989,7 +14390,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14239,7 +14640,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14489,7 +14890,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -21754,7 +22155,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -22499,7 +22900,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -22698,7 +23099,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23540,7 +23941,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23719,7 +24120,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {
@@ -24848,7 +25249,7 @@
             }
           },
           "429": {
-            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "description": "Too soon, and nothing was sent. `error.code` says which: `rate_limited` (the plan’s five-minute sending limit) or `recipient_cooldown` (this address wrote to that recipient within its `recipient_cooldown_minutes`, and this is not a reply; the message names them). Wait `Retry-After` seconds, or reply in the conversation instead.",
             "content": {
               "application/json": {
                 "schema": {

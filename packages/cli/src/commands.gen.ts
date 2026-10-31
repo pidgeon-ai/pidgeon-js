@@ -2189,6 +2189,13 @@ export const COMMANDS: Command[] = [
         "describe": "Who may write to it. `list` accepts only senders with an `inbox` receive rule whose mail passes DMARC, and refuses everybody else before anything is stored. A key with admin on the address may tighten it; loosening needs its owner."
       },
       {
+        "name": "recipient_cooldown_minutes",
+        "kind": "number",
+        "required": false,
+        "where": "body",
+        "describe": "Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
+      },
+      {
         "name": "hold_suspicious",
         "kind": "boolean",
         "required": false,
@@ -2773,6 +2780,108 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "messages",
+    "name": "check",
+    "operationId": "messagesCheck",
+    "method": "POST",
+    "path": "/messages/check",
+    "summary": "Check a send without sending",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "from",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "An address on a domain you own, and one this key may send from."
+      },
+      {
+        "name": "to",
+        "kind": "list",
+        "required": true,
+        "where": "body",
+        "describe": "One address or several. A string is accepted for the single case."
+      },
+      {
+        "name": "cc",
+        "kind": "list",
+        "required": false,
+        "where": "body",
+        "describe": "Copied, and visible to everybody who receives the message."
+      },
+      {
+        "name": "bcc",
+        "kind": "list",
+        "required": false,
+        "where": "body",
+        "describe": "Copied, and visible to nobody else."
+      },
+      {
+        "name": "subject",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Left off a reply, where the thread already has one."
+      },
+      {
+        "name": "text",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The plain-text body. Send this even when you send `html` — some clients only read it."
+      },
+      {
+        "name": "html",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+      },
+      {
+        "name": "data",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text."
+      },
+      {
+        "name": "attachment_ids",
+        "kind": "list",
+        "required": false,
+        "where": "body",
+        "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "in_reply_to",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The message being answered. Keeps the conversation together in the recipient’s client too."
+      },
+      {
+        "name": "in_reply_to_message_id",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The same field as `in_reply_to`, under the name this endpoint has always used. Both names work on both endpoints; reach for `in_reply_to`."
+      },
+      {
+        "name": "forward",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "Check this as a forward of the message in `in_reply_to`, rather than a reply to it. A forward is not a reply, so the per-recipient cooldown applies."
       }
     ]
   },

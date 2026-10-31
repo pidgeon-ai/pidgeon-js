@@ -7,6 +7,18 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.50.0 — a loop stops at the second message, and an agent can ask first
+
+- `messagesCheck({ body })` takes the body `messagesSend` takes, plus
+  `forward`, and runs every check a send makes without sending: it returns a
+  `SendCheck` (`would_send`, `status`, the envelope) or the exact error the
+  send would give. Nothing is written or counted.
+- `Identity.recipient_cooldown_minutes` (default 10, 0 is off, at most 1440),
+  settable with `identitiesUpdate`. A send that is not a reply, to somebody the
+  address wrote to inside it, is refused `429 recipient_cooldown` with
+  `Retry-After`. Replies are exempt.
+- No send's result type changed.
+
 ## 1.49.0 — what stands between a key and sending
 
 - `agentSetup({ query: { identity_id } })` asks every check a send would

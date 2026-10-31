@@ -245,6 +245,9 @@ import type {
   MessagesAwaitData,
   MessagesAwaitErrors,
   MessagesAwaitResponses,
+  MessagesCheckData,
+  MessagesCheckErrors,
+  MessagesCheckResponses,
   MessagesForwardData,
   MessagesForwardErrors,
   MessagesForwardResponses,
@@ -989,6 +992,24 @@ export const messagesSend = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<MessagesSendResponses, MessagesSendErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/messages',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Check a send without sending
+ *
+ * Would this send? The body `POST /messages` takes, plus `forward`, through every check a send makes: the address, the plan’s sending limits, suppression, the send policy and rules, the per-recipient cooldown, the daily cap, canary tokens, hand-over and approval. Answers `200` with `would_send` and the envelope, or the exact refusal the send would give — the same status, `error.code`, message, field and `Retry-After`. Nothing is sent or written, and nothing counts against a limit. A reply is checked with `in_reply_to`; a forward with `in_reply_to` and `forward: true`. The answer is for now: a send a moment later can meet a limit this did not.
+ */
+export const messagesCheck = <ThrowOnError extends boolean = false>(
+  options: Options<MessagesCheckData, ThrowOnError>,
+): RequestResult<MessagesCheckResponses, MessagesCheckErrors, ThrowOnError> =>
+  (options.client ?? client).post<MessagesCheckResponses, MessagesCheckErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/messages/check',
     ...options,
     headers: {
       'Content-Type': 'application/json',

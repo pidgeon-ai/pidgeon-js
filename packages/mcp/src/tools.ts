@@ -440,6 +440,41 @@ export const TOOLS: ToolDefinition[] = [
     },
   },
   /*
+   * **Asking before sending, as its own tool** (31 October). `dry_run` on
+   * the send tools was the brief; this adapter has one endpoint per tool and
+   * never dispatches on an argument, and `POST /messages/check` is its own
+   * endpoint for the reasons in its route. Its own tool is also the better
+   * shape for a client: it is `READ`, so a host may run it without asking,
+   * while `send_message` stays gated. One tool rather than one per send
+   * route: a reply is checked with `in_reply_to`, a forward with `forward`.
+   */
+  {
+    name: 'check_message',
+    title: 'Check a send without sending',
+    description:
+      'Asks whether `send_message` with these arguments would go, and sends nothing. Every ' +
+      'check runs — the address, sending limits, suppression, send policy and rules, the ' +
+      'per-recipient cooldown, the daily cap — and the answer is `would_send` with the ' +
+      'envelope, or the exact error the send would give. Use it before a send you are unsure ' +
+      'of, or to test a rule. For a reply pass `in_reply_to`; for a forward, also ' +
+      '`forward: true`. It answers for now: a send a moment later can meet a limit this did not.',
+    endpoint: 'POST /messages/check',
+    annotations: READ,
+    inputSchema: {
+      from: z.string(),
+      to: z.union([z.string(), z.array(z.string())]),
+      cc: z.union([z.string(), z.array(z.string())]).optional(),
+      bcc: z.union([z.string(), z.array(z.string())]).optional(),
+      subject: z.string().optional(),
+      text: z.string().optional(),
+      html: z.string().optional(),
+      data: DATA,
+      attachment_ids: z.array(z.string()).optional(),
+      in_reply_to: z.string().optional(),
+      forward: z.boolean().optional(),
+    },
+  },
+  /*
    * ---------------------------------------------------------------------
    * The desk: reading one message, answering it, and saying who has it.
    *
