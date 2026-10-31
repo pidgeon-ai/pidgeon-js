@@ -97,6 +97,210 @@ export type AgentVerified = {
   api_key_id: string;
 };
 
+export type AgentSetup = {
+  /**
+   * True when every step is done for the address below. A test key is never ready: its mail stays inside Pidgeon.
+   */
+  ready_to_send: boolean;
+  /**
+   * The address `steps` are about: the one you named, or the one nearest to sending. Null when the key reaches none.
+   */
+  identity_id: string | null;
+  address: string | null;
+  /**
+   * The first step not done. Null when there is nothing left to do.
+   */
+  next: {
+    /**
+     * Stable: branch on this, not on `what`. `address` (the key reaches none), `human_code` (a signup waiting for its code), `domain` (DNS), `address_active`, `allowance` (the account may send nothing a day), `key_send` (the key is below `send` here), `live_key` (a test key), `send_policy` (a list with nobody on it), `daily_limit`.
+     */
+    id:
+      | 'address'
+      | 'human_code'
+      | 'domain'
+      | 'address_active'
+      | 'allowance'
+      | 'key_send'
+      | 'live_key'
+      | 'send_policy'
+      | 'daily_limit';
+    done: boolean;
+    /**
+     * Who acts: you, or a person you have to ask.
+     */
+    owner: 'agent' | 'person';
+    /**
+     * The step, in a few words.
+     */
+    what: string;
+    /**
+     * What to do, or, when it is done, what is true.
+     */
+    how: string;
+    /**
+     * On `domain` while it is not verified: the records still to publish. Else null.
+     */
+    records: Array<{
+      type: string;
+      record_type: string;
+      /**
+       * Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`.
+       */
+      name: string;
+      /**
+       * The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`.
+       */
+      zone: string;
+      /**
+       * The full name, no trailing dot: `_dmarc.agents.example.com`.
+       */
+      fqdn: string;
+      /**
+       * The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself.
+       */
+      host_relative: string;
+      value: string;
+      priority: number | null;
+      status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
+      /**
+       * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+       */
+      state:
+        | 'connected'
+        | 'published'
+        | 'missing'
+        | 'wrong_value'
+        | 'wrong_name'
+        | 'not_required'
+        | null;
+      found: string | null;
+      /**
+       * Where `found` was read, when that was not `fqdn`.
+       */
+      found_at: string | null;
+      /**
+       * Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured.
+       */
+      optional: boolean;
+      description: string;
+      checked_at: string | null;
+    }> | null;
+    /**
+     * On `daily_limit` while it refuses: when sending frees up. Else null.
+     */
+    resets_at: string | null;
+  } | null;
+  /**
+   * In the order to clear them, done ones included.
+   */
+  steps: Array<{
+    /**
+     * Stable: branch on this, not on `what`. `address` (the key reaches none), `human_code` (a signup waiting for its code), `domain` (DNS), `address_active`, `allowance` (the account may send nothing a day), `key_send` (the key is below `send` here), `live_key` (a test key), `send_policy` (a list with nobody on it), `daily_limit`.
+     */
+    id:
+      | 'address'
+      | 'human_code'
+      | 'domain'
+      | 'address_active'
+      | 'allowance'
+      | 'key_send'
+      | 'live_key'
+      | 'send_policy'
+      | 'daily_limit';
+    done: boolean;
+    /**
+     * Who acts: you, or a person you have to ask.
+     */
+    owner: 'agent' | 'person';
+    /**
+     * The step, in a few words.
+     */
+    what: string;
+    /**
+     * What to do, or, when it is done, what is true.
+     */
+    how: string;
+    /**
+     * On `domain` while it is not verified: the records still to publish. Else null.
+     */
+    records: Array<{
+      type: string;
+      record_type: string;
+      /**
+       * Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`.
+       */
+      name: string;
+      /**
+       * The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`.
+       */
+      zone: string;
+      /**
+       * The full name, no trailing dot: `_dmarc.agents.example.com`.
+       */
+      fqdn: string;
+      /**
+       * The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself.
+       */
+      host_relative: string;
+      value: string;
+      priority: number | null;
+      status: 'connected' | 'waiting' | 'incorrect' | 'not_required';
+      /**
+       * Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check.
+       */
+      state:
+        | 'connected'
+        | 'published'
+        | 'missing'
+        | 'wrong_value'
+        | 'wrong_name'
+        | 'not_required'
+        | null;
+      found: string | null;
+      /**
+       * Where `found` was read, when that was not `fqdn`.
+       */
+      found_at: string | null;
+      /**
+       * Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured.
+       */
+      optional: boolean;
+      description: string;
+      checked_at: string | null;
+    }> | null;
+    /**
+     * On `daily_limit` while it refuses: when sending frees up. Else null.
+     */
+    resets_at: string | null;
+  }>;
+  /**
+   * Every address the key reaches, nearest to sending first, up to 20. Call again with one’s `identity_id` for its steps, or to ask about an address past the first 20.
+   */
+  addresses: Array<{
+    identity_id: string;
+    address: string;
+    ready_to_send: boolean;
+    /**
+     * The `id` of its first step not done, or null when it is ready.
+     */
+    next:
+      | 'address'
+      | 'human_code'
+      | 'domain'
+      | 'address_active'
+      | 'allowance'
+      | 'key_send'
+      | 'live_key'
+      | 'send_policy'
+      | 'daily_limit'
+      | null;
+  }>;
+  /**
+   * How many addresses the key reaches.
+   */
+  addresses_total: number;
+};
+
 export type Identity = {
   id: string;
   email: string;
@@ -2490,6 +2694,63 @@ export type AgentConnectResponses = {
 };
 
 export type AgentConnectResponse = AgentConnectResponses[keyof AgentConnectResponses];
+
+export type AgentSetupData = {
+  body?: never;
+  path?: never;
+  query?: {
+    identity_id?: string;
+  };
+  url: '/agent/setup';
+};
+
+export type AgentSetupErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type AgentSetupError = AgentSetupErrors[keyof AgentSetupErrors];
+
+export type AgentSetupResponses = {
+  /**
+   * Where this key stands.
+   */
+  200: {
+    data: AgentSetup;
+  };
+};
+
+export type AgentSetupResponse = AgentSetupResponses[keyof AgentSetupResponses];
 
 export type IdentitiesListData = {
   body?: never;

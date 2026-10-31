@@ -77,6 +77,22 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "agent",
+    "name": "setup",
+    "operationId": "agentSetup",
+    "method": "GET",
+    "path": "/agent/setup",
+    "summary": "What stands between this key and sending",
+    "flags": [
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": false,
+        "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "agent",
     "name": "signUp",
     "operationId": "agentSignUp",
     "method": "POST",

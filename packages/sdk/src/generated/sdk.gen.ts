@@ -17,6 +17,9 @@ import type {
   AgentConnectData,
   AgentConnectErrors,
   AgentConnectResponses,
+  AgentSetupData,
+  AgentSetupErrors,
+  AgentSetupResponses,
   AgentSignUpData,
   AgentSignUpErrors,
   AgentSignUpResponses,
@@ -445,6 +448,20 @@ export const agentConnect = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * What stands between this key and sending
+ *
+ * **Call this first.** It asks every check a send would, without sending, and answers in order: `steps[]`, each with `done`, who acts (`owner`: `agent` or `person`), `what` and `how`, and `next`, the first not done. A person returns the signup code, publishes DNS (the records are listed) or gives you a key that can send; you create an address or wait out a limit (`resets_at`). `ready_to_send` is true when nothing is left. Without `identity_id` it answers for the address nearest to sending and lists the rest. It sees only the addresses this key reaches.
+ */
+export const agentSetup = <ThrowOnError extends boolean = false>(
+  options?: Options<AgentSetupData, ThrowOnError>,
+): RequestResult<AgentSetupResponses, AgentSetupErrors, ThrowOnError> =>
+  (options?.client ?? client).get<AgentSetupResponses, AgentSetupErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/agent/setup',
+    ...options,
   });
 
 /**

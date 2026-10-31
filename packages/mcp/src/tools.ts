@@ -189,6 +189,24 @@ const DATA = z
   );
 
 export const TOOLS: ToolDefinition[] = [
+  /*
+   * First, because it is the call to make first: a model reading the list
+   * top-down meets it before the tools whose refusals it explains.
+   */
+  {
+    name: 'get_setup',
+    title: 'What stands between you and sending',
+    description:
+      'Call this first. It checks everything a send would, without sending, and returns ' +
+      '`steps` in order — each with `done`, `owner` (`agent`: you; `person`: someone you ' +
+      'must ask), `what` and `how` — plus `next`, the first not done, and `ready_to_send`. ' +
+      'When `owner` is `person`, tell them exactly what `how` says: return the signup code, ' +
+      'publish the DNS `records` listed, or give you a key that can send. Pass `identity_id` ' +
+      'to ask about one address; without it you get the one nearest to sending.',
+    endpoint: 'GET /agent/setup',
+    annotations: READ,
+    inputSchema: { identity_id: z.string().optional() },
+  },
   {
     name: 'list_addresses',
     title: 'List addresses',

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.48.0",
+    "version": "1.49.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -286,6 +286,486 @@
           "sign_in_url",
           "api_key",
           "api_key_id"
+        ],
+        "additionalProperties": false
+      },
+      "AgentSetup": {
+        "type": "object",
+        "properties": {
+          "ready_to_send": {
+            "type": "boolean",
+            "description": "True when every step is done for the address below. A test key is never ready: its mail stays inside Pidgeon."
+          },
+          "identity_id": {
+            "description": "The address `steps` are about: the one you named, or the one nearest to sending. Null when the key reaches none.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "enum": [
+                      "address",
+                      "human_code",
+                      "domain",
+                      "address_active",
+                      "allowance",
+                      "key_send",
+                      "live_key",
+                      "send_policy",
+                      "daily_limit"
+                    ],
+                    "description": "Stable: branch on this, not on `what`. `address` (the key reaches none), `human_code` (a signup waiting for its code), `domain` (DNS), `address_active`, `allowance` (the account may send nothing a day), `key_send` (the key is below `send` here), `live_key` (a test key), `send_policy` (a list with nobody on it), `daily_limit`."
+                  },
+                  "done": {
+                    "type": "boolean"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "enum": [
+                      "agent",
+                      "person"
+                    ],
+                    "description": "Who acts: you, or a person you have to ask."
+                  },
+                  "what": {
+                    "type": "string",
+                    "description": "The step, in a few words."
+                  },
+                  "how": {
+                    "type": "string",
+                    "description": "What to do, or, when it is done, what is true."
+                  },
+                  "records": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "record_type": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+                            },
+                            "zone": {
+                              "type": "string",
+                              "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+                            },
+                            "fqdn": {
+                              "type": "string",
+                              "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+                            },
+                            "host_relative": {
+                              "type": "string",
+                              "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "priority": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "connected",
+                                "waiting",
+                                "incorrect",
+                                "not_required"
+                              ]
+                            },
+                            "state": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "connected",
+                                    "published",
+                                    "missing",
+                                    "wrong_value",
+                                    "wrong_name",
+                                    "not_required"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                            },
+                            "found": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "found_at": {
+                              "description": "Where `found` was read, when that was not `fqdn`.",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "optional": {
+                              "type": "boolean",
+                              "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "checked_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "description": "ISO-8601, UTC."
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "record_type",
+                            "name",
+                            "zone",
+                            "fqdn",
+                            "host_relative",
+                            "value",
+                            "priority",
+                            "status",
+                            "state",
+                            "found",
+                            "found_at",
+                            "optional",
+                            "description",
+                            "checked_at"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On `domain` while it is not verified: the records still to publish. Else null."
+                  },
+                  "resets_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "ISO-8601, UTC."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On `daily_limit` while it refuses: when sending frees up. Else null."
+                  }
+                },
+                "required": [
+                  "id",
+                  "done",
+                  "owner",
+                  "what",
+                  "how",
+                  "records",
+                  "resets_at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first step not done. Null when there is nothing left to do."
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "enum": [
+                    "address",
+                    "human_code",
+                    "domain",
+                    "address_active",
+                    "allowance",
+                    "key_send",
+                    "live_key",
+                    "send_policy",
+                    "daily_limit"
+                  ],
+                  "description": "Stable: branch on this, not on `what`. `address` (the key reaches none), `human_code` (a signup waiting for its code), `domain` (DNS), `address_active`, `allowance` (the account may send nothing a day), `key_send` (the key is below `send` here), `live_key` (a test key), `send_policy` (a list with nobody on it), `daily_limit`."
+                },
+                "done": {
+                  "type": "boolean"
+                },
+                "owner": {
+                  "type": "string",
+                  "enum": [
+                    "agent",
+                    "person"
+                  ],
+                  "description": "Who acts: you, or a person you have to ask."
+                },
+                "what": {
+                  "type": "string",
+                  "description": "The step, in a few words."
+                },
+                "how": {
+                  "type": "string",
+                  "description": "What to do, or, when it is done, what is true."
+                },
+                "records": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "record_type": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Relative to the domain: `@` is the domain itself. Kept as it was; see `host_relative`."
+                          },
+                          "zone": {
+                            "type": "string",
+                            "description": "The registrable domain the record is published in, from the Public Suffix List: `example.com` for `agents.example.com`."
+                          },
+                          "fqdn": {
+                            "type": "string",
+                            "description": "The full name, no trailing dot: `_dmarc.agents.example.com`."
+                          },
+                          "host_relative": {
+                            "type": "string",
+                            "description": "The name relative to `zone`, which is what most DNS panels ask for: `_dmarc.agents`, or `@` for the zone itself."
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "priority": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "connected",
+                              "waiting",
+                              "incorrect",
+                              "not_required"
+                            ]
+                          },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "connected",
+                                  "published",
+                                  "missing",
+                                  "wrong_value",
+                                  "wrong_name",
+                                  "not_required"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why `status` is what it is. `published`: correct in public DNS, waiting on the mail provider to confirm (DKIM; usually under an hour), or on its certificate (`signing_host`; usually ten minutes). `wrong_name`: our value is at `found_at` instead, often the zone typed twice. Null before the first check."
+                          },
+                          "found": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "found_at": {
+                            "description": "Where `found` was read, when that was not `fqdn`.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "optional": {
+                            "type": "boolean",
+                            "description": "Not needed for mail: `signing` and `signing_host`, which let receivers check a signed sender from this domain. Its own `status`; never counted towards whether the domain is configured."
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "checked_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "description": "ISO-8601, UTC."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "record_type",
+                          "name",
+                          "zone",
+                          "fqdn",
+                          "host_relative",
+                          "value",
+                          "priority",
+                          "status",
+                          "state",
+                          "found",
+                          "found_at",
+                          "optional",
+                          "description",
+                          "checked_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "On `domain` while it is not verified: the records still to publish. Else null."
+                },
+                "resets_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "ISO-8601, UTC."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "On `daily_limit` while it refuses: when sending frees up. Else null."
+                }
+              },
+              "required": [
+                "id",
+                "done",
+                "owner",
+                "what",
+                "how",
+                "records",
+                "resets_at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "In the order to clear them, done ones included."
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identity_id": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                },
+                "ready_to_send": {
+                  "type": "boolean"
+                },
+                "next": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "address",
+                        "human_code",
+                        "domain",
+                        "address_active",
+                        "allowance",
+                        "key_send",
+                        "live_key",
+                        "send_policy",
+                        "daily_limit"
+                      ],
+                      "description": "Stable: branch on this, not on `what`. `address` (the key reaches none), `human_code` (a signup waiting for its code), `domain` (DNS), `address_active`, `allowance` (the account may send nothing a day), `key_send` (the key is below `send` here), `live_key` (a test key), `send_policy` (a list with nobody on it), `daily_limit`."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The `id` of its first step not done, or null when it is ready."
+                }
+              },
+              "required": [
+                "identity_id",
+                "address",
+                "ready_to_send",
+                "next"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Every address the key reaches, nearest to sending first, up to 20. Call again with one’s `identity_id` for its steps, or to ask about an address past the first 20."
+          },
+          "addresses_total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "How many addresses the key reaches."
+          }
+        },
+        "required": [
+          "ready_to_send",
+          "identity_id",
+          "address",
+          "next",
+          "steps",
+          "addresses",
+          "addresses_total"
         ],
         "additionalProperties": false
       },
@@ -7204,6 +7684,128 @@
           }
         },
         "security": [],
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/agent/setup": {
+      "get": {
+        "operationId": "agentSetup",
+        "summary": "What stands between this key and sending",
+        "description": "**Call this first.** It asks every check a send would, without sending, and answers in order: `steps[]`, each with `done`, who acts (`owner`: `agent` or `person`), `what` and `how`, and `next`, the first not done. A person returns the signup code, publishes DNS (the records are listed) or gives you a key that can send; you create an address or wait out a limit (`resets_at`). `ready_to_send` is true when nothing is left. Without `identity_id` it answers for the address nearest to sending and lists the rest. It sees only the addresses this key reaches.",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where this key stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentSetup"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
         "tags": [
           "agent"
         ]

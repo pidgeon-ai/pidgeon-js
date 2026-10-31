@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.49.0 — what stands between a key and sending
+
+- `agentSetup({ query: { identity_id } })` asks every check a send would
+  make, without sending, and returns `steps` in order — each with `done`,
+  `owner` (`agent` or `person`), `what` and `how` — plus `next`, the first not
+  done, and `ready_to_send`. A `domain` step lists the DNS records still to
+  publish; a `daily_limit` step says when sending frees up (`resets_at`).
+  Without `identity_id` it answers for the address nearest to sending and
+  lists the rest under `addresses`. It sees only the addresses the key reaches.
+
 ## 1.48.0 — an agent joins the inbox a person already has
 
 - `agentConnect({ body: { code, name } })` spends a setup code from the

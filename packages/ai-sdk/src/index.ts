@@ -1,4 +1,5 @@
 import {
+  agentSetup,
   createClient,
   createConfig,
   identitiesCreate,
@@ -81,6 +82,7 @@ export type Operation = (options: never) => Promise<Answer>;
  * the MCP list name the same tools.
  */
 export type PidgeonToolName =
+  | 'get_setup'
   | 'list_addresses'
   | 'create_address'
   | 'get_address'
@@ -125,6 +127,7 @@ export type PidgeonToolName =
   | 'respond_to_invitation';
 
 export const OPERATIONS: Record<PidgeonToolName, Operation> = {
+  get_setup: agentSetup,
   list_addresses: identitiesList,
   create_address: identitiesCreate,
   get_address: identitiesGet,
