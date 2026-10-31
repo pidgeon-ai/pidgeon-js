@@ -2193,7 +2193,7 @@ export const COMMANDS: Command[] = [
         "kind": "number",
         "required": false,
         "where": "body",
-        "describe": "Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
+        "describe": "The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is `429 recipient_cooldown`. 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
       },
       {
         "name": "hold_suspicious",

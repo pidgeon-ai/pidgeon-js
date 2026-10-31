@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.51.0",
+    "version": "1.51.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -946,7 +946,7 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991,
-            "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10."
+            "description": "The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is refused `429 recipient_cooldown`. 0 is off. Default 10."
           },
           "hold_suspicious": {
             "type": "boolean",
@@ -6728,7 +6728,7 @@
                     "type": "integer",
                     "minimum": -9007199254740991,
                     "maximum": 9007199254740991,
-                    "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10."
+                    "description": "The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is refused `429 recipient_cooldown`. 0 is off. Default 10."
                   },
                   "hold_suspicious": {
                     "type": "boolean",
@@ -8575,7 +8575,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 1440,
-                    "description": "Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
+                    "description": "The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is `429 recipient_cooldown`. 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner."
                   },
                   "hold_suspicious": {
                     "type": "boolean",

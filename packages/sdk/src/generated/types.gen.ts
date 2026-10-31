@@ -382,7 +382,7 @@ export type Identity = {
    */
   receive_policy: string;
   /**
-   * Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10.
+   * The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is refused `429 recipient_cooldown`. 0 is off. Default 10.
    */
   recipient_cooldown_minutes: number;
   /**
@@ -2307,7 +2307,7 @@ export type PodCreated = {
      */
     receive_policy: string;
     /**
-     * Minutes before a send that is not a reply may go to somebody this address just wrote to; sooner is refused `429 recipient_cooldown`. 0 is off. Default 10.
+     * The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is refused `429 recipient_cooldown`. 0 is off. Default 10.
      */
     recipient_cooldown_minutes: number;
     /**
@@ -3134,7 +3134,7 @@ export type IdentitiesUpdateData = {
      */
     receive_policy?: 'open' | 'list';
     /**
-     * Minutes before a send that is not a reply may go to somebody this address just wrote to (`429 recipient_cooldown`). 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner.
+     * The window in minutes in which this address sends one person at most three messages that are not replies; the fourth is `429 recipient_cooldown`. 0 turns it off; at most 1440. Default 10. A key with admin on the address may lengthen it; shortening it or turning it off needs its owner.
      */
     recipient_cooldown_minutes?: number;
     /**
