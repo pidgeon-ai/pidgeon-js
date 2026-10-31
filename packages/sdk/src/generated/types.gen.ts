@@ -5827,7 +5827,12 @@ export type MessagesRawData = {
   path: {
     id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * original: only the header section of the message as it arrived, with no body, so its DKIM signatures (the agent declaration’s among them) can be checked, as /verify does. 404 when the original is no longer kept.
+     */
+    headers?: 'original';
+  };
   url: '/messages/{id}/raw';
 };
 

@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.51.0 — a key can check what a message declared
+
+- `messagesRaw({ path: { id }, query: { headers: 'original' } })` returns only
+  the original's header section: the agent declaration and the DKIM signature
+  that covers it, checkable as /verify checks it. A key's plain `messagesRaw`
+  is a rebuild carrying a canary token, which cannot verify. A 404 once the
+  original is no longer kept.
+
 ## 1.50.0 — a loop stops at the second message, and an agent can ask first
 
 - `messagesCheck({ body })` takes the body `messagesSend` takes, plus

@@ -3036,6 +3036,16 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": true,
         "where": "path"
+      },
+      {
+        "name": "headers",
+        "kind": "string",
+        "choices": [
+          "original"
+        ],
+        "required": false,
+        "where": "query",
+        "describe": "original: only the header section of the message as it arrived, with no body, so its DKIM signatures (the agent declaration’s among them) can be checked, as /verify does. 404 when the original is no longer kept."
       }
     ]
   },

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.50.0",
+    "version": "1.51.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -14939,7 +14939,7 @@
       "get": {
         "operationId": "messagesRaw",
         "summary": "The message as MIME",
-        "description": "`message/rfc822`, not JSON. An API key gets the message rebuilt from the stored message, with a canary token in its text (/docs/firewall): the original bytes cannot carry one, so `X-Pidgeon-Reconstructed` is `true` and a rebuild cannot verify DKIM. The message’s `authentication` is our check of the original’s signatures.",
+        "description": "`message/rfc822`, not JSON. An API key gets the message rebuilt from the stored message, with a canary token in its text (/docs/firewall): the original bytes cannot carry one, so `X-Pidgeon-Reconstructed` is `true` and a rebuild cannot verify DKIM. The message’s `authentication` is our check of the original’s signatures. `headers=original` returns only the original’s header section, for any caller: the signed agent declaration, checkable as /verify checks it, with no body to stamp.",
         "parameters": [
           {
             "name": "id",
@@ -14947,6 +14947,18 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "headers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "original: only the header section of the message as it arrived, with no body, so its DKIM signatures (the agent declaration’s among them) can be checked, as /verify does. 404 when the original is no longer kept.",
+              "type": "string",
+              "enum": [
+                "original"
+              ]
             }
           }
         ],

@@ -1168,7 +1168,7 @@ export const messagesForward = <ThrowOnError extends boolean = false>(
 /**
  * The message as MIME
  *
- * `message/rfc822`, not JSON. An API key gets the message rebuilt from the stored message, with a canary token in its text (/docs/firewall): the original bytes cannot carry one, so `X-Pidgeon-Reconstructed` is `true` and a rebuild cannot verify DKIM. The message’s `authentication` is our check of the original’s signatures.
+ * `message/rfc822`, not JSON. An API key gets the message rebuilt from the stored message, with a canary token in its text (/docs/firewall): the original bytes cannot carry one, so `X-Pidgeon-Reconstructed` is `true` and a rebuild cannot verify DKIM. The message’s `authentication` is our check of the original’s signatures. `headers=original` returns only the original’s header section, for any caller: the signed agent declaration, checkable as /verify checks it, with no body to stamp.
  */
 export const messagesRaw = <ThrowOnError extends boolean = false>(
   options: Options<MessagesRawData, ThrowOnError>,
