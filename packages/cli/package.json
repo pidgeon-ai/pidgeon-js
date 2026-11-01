@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/cli",
-  "version": "1.32.0",
+  "version": "1.32.1",
   "description": "Email inboxes for your team and your AI agents, from a terminal — the Pidgeon CLI: create addresses, send, receive and reply.",
   "keywords": [
     "email",

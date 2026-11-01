@@ -8500,6 +8500,7 @@ export type WebhooksCreateData = {
       | 'identity.suspended'
       | 'identity.transferred'
       | 'domain.verified'
+      | 'domain.dns_changed'
     >;
   };
   headers?: {

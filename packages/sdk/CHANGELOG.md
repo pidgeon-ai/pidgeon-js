@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.53.0 — a record of every DNS change
+
+- New webhook event type `domain.dns_changed`: one event each time Pidgeon
+  writes to a domain's DNS (with a provider token, or a Domain Connect
+  request sent to the provider) and each time it undoes that. The payload
+  names the records, the value replaced, and who pressed it.
+
 ## 1.52.0 — send later, from Pidgeon's side
 
 - `send_at` (ISO 8601 with an offset) on `messagesSend` and `messagesReply`:
