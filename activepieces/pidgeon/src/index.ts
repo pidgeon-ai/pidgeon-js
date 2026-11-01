@@ -15,7 +15,7 @@ export { pidgeonAuth };
 export const pidgeon = createPiece({
   displayName: 'Pidgeon',
   description:
-    'Email inboxes for AI agents. Give a flow its own address: mail that arrives starts it, and it replies, hands threads to people and waits for verification codes.',
+    'Email inboxes for your team and your AI agents. Give a flow its own address: mail that arrives starts it, and it replies, hands threads to people and waits for verification codes.',
   minimumSupportedRelease: '0.36.1',
   logoUrl: 'https://pidgeon.ai/icon.png',
   authors: ['pidgeon-ai'],

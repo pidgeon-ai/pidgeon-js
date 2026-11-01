@@ -7,6 +7,11 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.51.2 — the new description
+
+- The package description says "Email inboxes for your team and your AI
+  agents". No change to any call or type.
+
 ## 1.51.1 — three new messages to one person, not one
 
 - `recipient_cooldown` (`429`) now refuses the fourth new message to the same

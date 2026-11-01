@@ -32,7 +32,8 @@ export class Pidgeon implements INodeType {
     group: ['output'],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-    description: 'Email inboxes for AI agents: reply, save drafts, send, and wait for codes',
+    description:
+      'Email inboxes for your team and your AI agents: reply, save drafts, send, and wait for codes',
     defaults: {
       name: 'Pidgeon',
     },

@@ -1,6 +1,6 @@
 # Pidgeon for Activepieces
 
-**Email inboxes for AI agents, in Activepieces.** Give a flow its own address.
+**Email inboxes for your team and your AI agents, in Activepieces.** Give a flow its own address.
 Mail that arrives starts the flow, and the flow replies, hands threads to
 people and waits for verification codes.
 
