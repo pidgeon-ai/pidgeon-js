@@ -2863,6 +2863,12 @@ export const COMMANDS: Command[] = [
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
       },
       {
+        "name": "send_at",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
         "name": "in_reply_to",
         "kind": "string",
         "required": false,
@@ -2955,6 +2961,12 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "send_at",
+        "kind": "string",
+        "required": false,
+        "where": "body"
       }
     ]
   },
@@ -3119,6 +3131,12 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "send_at",
+        "kind": "string",
+        "required": false,
+        "where": "body"
       }
     ]
   },
@@ -3192,6 +3210,12 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "send_at",
+        "kind": "string",
+        "required": false,
+        "where": "body"
       }
     ]
   },
@@ -3403,6 +3427,12 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "send_at",
+        "kind": "string",
+        "required": false,
+        "where": "body"
       },
       {
         "name": "in_reply_to",

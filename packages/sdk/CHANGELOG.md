@@ -7,6 +7,20 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.52.0 — send later, from Pidgeon's side
+
+- `send_at` (ISO 8601 with an offset) on `messagesSend` and `messagesReply`:
+  the message is queued on Pidgeon and sent at that time with no further
+  call. The result is `status: "scheduled"` with `draft_id`, `send_at` and a
+  `cancel` call (`DELETE /v1/drafts/{id}/schedule`). A forward cannot be
+  scheduled.
+- An address that asks a person first now holds a scheduled send when it is
+  scheduled, not when it falls due; approved before its time, it goes at
+  `send_at`.
+- `thread_id` on a send result is nullable: a scheduled new message has no
+  conversation until it goes. New fields `send_at` and `cancel` are null on
+  every other result.
+
 ## 1.51.2 — the new description
 
 - The package description says "Email inboxes for your team and your AI

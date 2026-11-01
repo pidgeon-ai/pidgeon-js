@@ -396,7 +396,12 @@ export const TOOLS: ToolDefinition[] = [
     name: 'send_message',
     title: 'Send a message',
     description:
-      'Send from an address this credential may send as. Refused if the address’s send ' +
+      'Send from an address this credential may send as. ' +
+      '**To send later, pass `send_at`** (ISO 8601 with an offset, e.g. ' +
+      '`2026-11-04T09:00:00+01:00`): Pidgeon sends it at that time, even if you and the person ' +
+      'are offline. Prefer this over scheduling a task on your side. It answers ' +
+      '`status: scheduled` with a `cancel` call. ' +
+      'Refused if the address’s send ' +
       'policy does not permit the recipient, or if the recipient previously bounced or ' +
       'reported mail as spam. When retrying a send, reuse its `idempotency_key` so it goes ' +
       'out once. A key with read-and-draft access is refused: use `create_draft` instead. ' +
@@ -436,6 +441,7 @@ export const TOOLS: ToolDefinition[] = [
       data: DATA,
       attachment_ids: z.array(z.string()).optional(),
       in_reply_to: z.string().optional(),
+      send_at: z.string().optional(),
       idempotency_key: IDEMPOTENCY_KEY_INPUT,
     },
   },
@@ -594,6 +600,10 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'The recipients, the subject and the thread are read off the message being answered, ' +
       'so you bring the words and nothing else. Use `to` only to change who it goes to. ' +
+      '**To send later, pass `send_at`** (ISO 8601 with an offset, e.g. ' +
+      '`2026-11-04T09:00:00+01:00`): Pidgeon sends it at that time, even if you and the person ' +
+      'are offline. Prefer this over scheduling a task on your side. It answers ' +
+      '`status: scheduled` with a `cancel` call. ' +
       'When retrying a reply, reuse its `idempotency_key` so it goes out once. A key with ' +
       'read-and-draft access is refused: use `create_draft` with `in_reply_to` instead. ' +
       '**Read `status`**: `pending_approval` means nothing was sent — a person must approve ' +
@@ -609,6 +619,7 @@ export const TOOLS: ToolDefinition[] = [
       cc: z.union([z.string(), z.array(z.string())]).optional(),
       bcc: z.union([z.string(), z.array(z.string())]).optional(),
       attachment_ids: z.array(z.string()).optional(),
+      send_at: z.string().optional(),
       idempotency_key: IDEMPOTENCY_KEY_INPUT,
     },
   },
@@ -734,6 +745,41 @@ export const TOOLS: ToolDefinition[] = [
       'only delete a draft you wrote or were asked to remove.',
     endpoint: 'DELETE /drafts/{id}',
     annotations: DISCARD,
+    inputSchema: { id: z.string(), idempotency_key: IDEMPOTENCY_KEY_INPUT },
+  },
+  /*
+   * **Scheduling on Pidgeon, for a draft already written** (1 November). A
+   * user's agent scheduled 24 sends on its own side, where each one needed
+   * the person at the computer when it fell due, and most never went. With
+   * a time on Pidgeon's side the send goes with nobody there. `send_at` on
+   * `send_message` and `reply_to_message` is the same thing for a new one.
+   */
+  {
+    name: 'schedule_draft',
+    title: 'Send a draft later',
+    description:
+      'Sends one draft later, from Pidgeon’s side, with no further call: it goes even if you ' +
+      'and the person are offline. Pass the time as `send_at`, ISO 8601 with an offset, a ' +
+      'minute to 90 days ahead. Prefer this over scheduling a task of your own. If the address asks a person ' +
+      'first, it waits for their approval and goes at `send_at` once they give it. Each ' +
+      'scheduled message goes on its own; one refused never stops another. ' +
+      '`unschedule_draft` takes it back.',
+    endpoint: 'POST /drafts/{id}/schedule',
+    annotations: SEND,
+    inputSchema: {
+      id: z.string(),
+      send_at: z.string(),
+      idempotency_key: IDEMPOTENCY_KEY_INPUT,
+    },
+  },
+  {
+    name: 'unschedule_draft',
+    title: 'Cancel a scheduled send',
+    description:
+      'Takes a scheduled draft off the schedule. It stays a draft, unsent, and can be ' +
+      'scheduled again.',
+    endpoint: 'DELETE /drafts/{id}/schedule',
+    annotations: FILE,
     inputSchema: { id: z.string(), idempotency_key: IDEMPOTENCY_KEY_INPUT },
   },
   /*

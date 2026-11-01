@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.51.2",
+    "version": "1.52.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -111,23 +111,42 @@
             "type": "string",
             "enum": [
               "sent",
-              "pending_approval"
+              "pending_approval",
+              "scheduled"
             ],
-            "description": "`sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`."
+            "description": "`sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`. `scheduled`: it was given a `send_at`, and Pidgeon sends it then with no further call; `cancel` takes it back. With `approval` set it also waits for a person, and goes at `send_at` once they approve."
           },
           "id": {
             "type": "string",
             "description": "The message. On `pending_approval` it is the draft’s id, which the message keeps if it is approved."
           },
           "draft_id": {
-            "description": "The held draft on `pending_approval`; null on `sent`.",
+            "description": "The draft that holds it on `pending_approval` or `scheduled`; null on `sent`.",
             "type": [
               "string",
               "null"
             ]
           },
           "thread_id": {
-            "type": "string"
+            "description": "The conversation. Null on a `scheduled` new message, which starts one when sent.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_at": {
+            "description": "When a `scheduled` send goes out. Null otherwise.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cancel": {
+            "description": "On `scheduled`: the call that takes it back, `DELETE /v1/drafts/{id}/schedule`.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "rejected": {
             "type": "array",
@@ -188,6 +207,8 @@
           "id",
           "draft_id",
           "thread_id",
+          "send_at",
+          "cancel",
           "rejected",
           "test",
           "approval"
@@ -12579,6 +12600,11 @@
                     },
                     "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
                   },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
                   "in_reply_to": {
                     "anyOf": [
                       {
@@ -12864,6 +12890,11 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+                  },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                   },
                   "in_reply_to": {
                     "anyOf": [
@@ -14314,6 +14345,11 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+                  },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                   }
                 }
               }
@@ -14564,6 +14600,11 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+                  },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                   }
                 }
               }
@@ -14814,6 +14855,11 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "description": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+                  },
+                  "send_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                   }
                 }
               }

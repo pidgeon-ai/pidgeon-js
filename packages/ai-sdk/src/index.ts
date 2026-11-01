@@ -26,7 +26,9 @@ import {
   calendarGetEvent,
   calendarUpdate,
   calendarUpdateEvent,
+  draftsCancelSchedule,
   draftsDelete,
+  draftsSchedule,
   draftsGet,
   draftsList,
   draftsUpdate,
@@ -119,6 +121,8 @@ export type PidgeonToolName =
   | 'get_draft'
   | 'update_draft'
   | 'delete_draft'
+  | 'schedule_draft'
+  | 'unschedule_draft'
   | 'get_calendar'
   | 'update_calendar'
   | 'get_agenda'
@@ -165,6 +169,8 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   get_draft: draftsGet,
   update_draft: draftsUpdate,
   delete_draft: draftsDelete,
+  schedule_draft: draftsSchedule,
+  unschedule_draft: draftsCancelSchedule,
   get_calendar: calendarGet,
   update_calendar: calendarUpdate,
   get_agenda: calendarGetAgenda,

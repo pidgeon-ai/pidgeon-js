@@ -33,18 +33,29 @@ export type AgentSignup = {
 
 export type Sent = {
   /**
-   * `sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`.
+   * `sent`: handed to the network. `pending_approval`: **nothing was sent** — the message is a draft waiting for a person to approve it (`approval` says why and until when). Poll `GET /drafts/{draft_id}/approval`, or subscribe to `draft.approved`, `draft.rejected` and `draft.expired`. `scheduled`: it was given a `send_at`, and Pidgeon sends it then with no further call; `cancel` takes it back. With `approval` set it also waits for a person, and goes at `send_at` once they approve.
    */
-  status: 'sent' | 'pending_approval';
+  status: 'sent' | 'pending_approval' | 'scheduled';
   /**
    * The message. On `pending_approval` it is the draft’s id, which the message keeps if it is approved.
    */
   id: string;
   /**
-   * The held draft on `pending_approval`; null on `sent`.
+   * The draft that holds it on `pending_approval` or `scheduled`; null on `sent`.
    */
   draft_id: string | null;
-  thread_id: string;
+  /**
+   * The conversation. Null on a `scheduled` new message, which starts one when sent.
+   */
+  thread_id: string | null;
+  /**
+   * When a `scheduled` send goes out. Null otherwise.
+   */
+  send_at: string | null;
+  /**
+   * On `scheduled`: the call that takes it back, `DELETE /v1/drafts/{id}/schedule`.
+   */
+  cancel: string | null;
   rejected: Array<{
     address: string;
     reason: string;
@@ -4861,6 +4872,7 @@ export type MessagesSendData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    send_at?: string;
     /**
      * The message being answered. Keeps the conversation together in the recipient’s client too.
      */
@@ -4980,6 +4992,7 @@ export type MessagesCheckData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    send_at?: string;
     /**
      * The message being answered. Keeps the conversation together in the recipient’s client too.
      */
@@ -5546,6 +5559,7 @@ export type MessagesReplyData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    send_at?: string;
   };
   headers?: {
     /**
@@ -5651,6 +5665,7 @@ export type MessagesReplyAllData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    send_at?: string;
   };
   headers?: {
     /**
@@ -5756,6 +5771,7 @@ export type MessagesForwardData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    send_at?: string;
   };
   headers?: {
     /**
