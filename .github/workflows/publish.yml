@@ -138,7 +138,7 @@ jobs:
       # The MCP server is also listed in the official registry,
       # registry.modelcontextprotocol.io — which Glama and PulseMCP read from,
       # and which is how a coding agent finds a server it was not told about
-      # (gtm.md §8). `packages/mcp/server.json` is the listing; its `name`
+      # (gtm.md §5). `packages/mcp/server.json` is the listing; its `name`
       # must equal `mcpName` in the published package.json, which is how the
       # registry checks the npm package is ours.
       #
