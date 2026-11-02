@@ -2203,6 +2203,13 @@ export const COMMANDS: Command[] = [
         "describe": "Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to."
       },
       {
+        "name": "ai_line",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "Whether mail an agent sends from it ends with one line a person can read: “Written by an AI agent for …. Check it: …”, linking to the message’s verify page. On by default, from 17 November 2026. Turn it off where the address’s own footer already says so; the signed declaration headers are sent either way. Needs admin on the address."
+      },
+      {
         "name": "tenant_id",
         "kind": "string",
         "required": false,

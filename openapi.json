@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.54.0",
+    "version": "1.55.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -973,6 +973,10 @@
             "type": "boolean",
             "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
           },
+          "ai_line": {
+            "type": "boolean",
+            "description": "Whether mail an agent sends from it ends with the visible AI line, from 17 November 2026. The signed declaration headers are sent either way."
+          },
           "tenant_id": {
             "description": "Your own opaque grouping for this address. Never parsed here.",
             "type": [
@@ -1009,6 +1013,7 @@
           "receive_policy",
           "recipient_cooldown_minutes",
           "hold_suspicious",
+          "ai_line",
           "tenant_id",
           "pod_id",
           "test"
@@ -6755,6 +6760,10 @@
                     "type": "boolean",
                     "description": "Whether Pidgeon Firewall holds suspicious mail here for a person: stored, and unreadable with a key until a person releases it from the dashboard. On by default for workspaces made from 27 October 2026."
                   },
+                  "ai_line": {
+                    "type": "boolean",
+                    "description": "Whether mail an agent sends from it ends with the visible AI line, from 17 November 2026. The signed declaration headers are sent either way."
+                  },
                   "tenant_id": {
                     "description": "Your own opaque grouping for this address. Never parsed here.",
                     "type": [
@@ -6791,6 +6800,7 @@
                   "receive_policy",
                   "recipient_cooldown_minutes",
                   "hold_suspicious",
+                  "ai_line",
                   "tenant_id",
                   "pod_id",
                   "test"
@@ -8601,6 +8611,10 @@
                   "hold_suspicious": {
                     "type": "boolean",
                     "description": "Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to."
+                  },
+                  "ai_line": {
+                    "type": "boolean",
+                    "description": "Whether mail an agent sends from it ends with one line a person can read: “Written by an AI agent for …. Check it: …”, linking to the message’s verify page. On by default, from 17 November 2026. Turn it off where the address’s own footer already says so; the signed declaration headers are sent either way. Needs admin on the address."
                   },
                   "tenant_id": {
                     "anyOf": [

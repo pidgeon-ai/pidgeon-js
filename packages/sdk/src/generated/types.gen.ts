@@ -401,6 +401,10 @@ export type Identity = {
    */
   hold_suspicious: boolean;
   /**
+   * Whether mail an agent sends from it ends with the visible AI line, from 17 November 2026. The signed declaration headers are sent either way.
+   */
+  ai_line: boolean;
+  /**
    * Your own opaque grouping for this address. Never parsed here.
    */
   tenant_id: string | null;
@@ -2326,6 +2330,10 @@ export type PodCreated = {
      */
     hold_suspicious: boolean;
     /**
+     * Whether mail an agent sends from it ends with the visible AI line, from 17 November 2026. The signed declaration headers are sent either way.
+     */
+    ai_line: boolean;
+    /**
      * Your own opaque grouping for this address. Never parsed here.
      */
     tenant_id: string | null;
@@ -3152,6 +3160,10 @@ export type IdentitiesUpdateData = {
      * Whether Pidgeon Firewall holds suspicious mail for a person. A key may turn it on; turning it off is a person’s, from the dashboard, because the agent it protects should not be able to.
      */
     hold_suspicious?: boolean;
+    /**
+     * Whether mail an agent sends from it ends with one line a person can read: “Written by an AI agent for …. Check it: …”, linking to the message’s verify page. On by default, from 17 November 2026. Turn it off where the address’s own footer already says so; the signed declaration headers are sent either way. Needs admin on the address.
+     */
+    ai_line?: boolean;
     /**
      * Your own opaque grouping — a customer id, whatever your side calls it. Never parsed here.
      */

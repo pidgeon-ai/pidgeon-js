@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.55.0 — the visible AI line
+
+- `ai_line` on `Identity` and on `identitiesUpdate`: whether mail an agent
+  sends from the address ends with one line a person can read, "Written by
+  an AI agent for …. Check it: …", linking to the message's verify page. On
+  by default, from 17 November 2026. Turn it off where the address's own
+  footer already says so; the signed declaration headers are sent either
+  way.
+
 ## 1.54.0 — referral months
 
 - New webhook event type `referral.rewarded`: a company that signed up
