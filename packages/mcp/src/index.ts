@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { type CallContext, dispatch, PidgeonHttpError } from './call.js';
 import { pendingApprovalNote, REPLAY_NOTE } from './idempotency.js';
+import { nullAsAbsent } from './null-as-absent.js';
 import { TOOLS } from './tools.js';
 
 /**
@@ -53,7 +54,7 @@ const DEFAULT_BASE_URL = 'https://pidgeon.ai/api/v1';
  * problem for no gain. `package-manifests.test.ts` pins it instead, the same
  * way it pins the clients to the contract.
  */
-export const VERSION = '0.23.0';
+export const VERSION = '0.24.0';
 
 export function createServer(context: CallContext): McpServer {
   const server = new McpServer({ name: 'pidgeon', version: VERSION });
@@ -82,7 +83,8 @@ export function createServer(context: CallContext): McpServer {
         title: tool.title,
         description: tool.description,
         // An object schema: v2 takes the raw shape only as a deprecated form.
-        inputSchema: z.object(tool.inputSchema),
+        // `null` for an option is the option left out (`null-as-absent.ts`).
+        inputSchema: nullAsAbsent(z.object(tool.inputSchema)),
         /* Per tool, in `tools.ts` — and so the same on npm and at `/api/mcp`. */
         annotations: tool.annotations,
       },

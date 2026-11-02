@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.54.0 — referral months
+
+- New webhook event type `referral.rewarded`: a company that signed up
+  through the workspace's referral link is up and running, and the workspace
+  earned a month of Pro. The payload says which month of 12, how it was
+  given (`credit`, `pro_month` or `manual`) and the sentence the Log shows.
+
 ## 1.53.0 — a record of every DNS change
 
 - New webhook event type `domain.dns_changed`: one event each time Pidgeon

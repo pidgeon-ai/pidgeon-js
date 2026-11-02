@@ -8501,6 +8501,7 @@ export type WebhooksCreateData = {
       | 'identity.transferred'
       | 'domain.verified'
       | 'domain.dns_changed'
+      | 'referral.rewarded'
     >;
   };
   headers?: {

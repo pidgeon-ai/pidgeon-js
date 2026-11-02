@@ -579,7 +579,12 @@ export const TOOLS: ToolDefinition[] = [
       'the same way (`held_back.unauthenticated`; `include_unauthenticated: "true"` returns ' +
       'it). Mail Pidgeon Firewall held for a person is counted in `held_back.held` and ' +
       'returned by a later wait once they release it. Its text is cleaned by Pidgeon ' +
-      'Firewall unless you pass `body: "original"`, as with `get_message`.',
+      'Firewall unless you pass `body: "original"`, as with `get_message`. ' +
+      '**Waiting never needs a second send.** On `timed_out: true`, call this again with ' +
+      'the `cursor` as `after`; do not send the message, submit the form or ask for a new ' +
+      'code again — that puts a second copy in someone’s inbox and often voids the first ' +
+      'code. If a send of yours timed out, retry it with the same `idempotency_key`, which ' +
+      'answers the first send instead of sending twice.',
     endpoint: 'GET /messages/await',
     annotations: READ,
     inputSchema: {
