@@ -1,6 +1,6 @@
 # `@pidgeon-ai/cli`
 
-Email inboxes for your team and your AI agents, from a terminal. Pidgeon is the email inbox API
+Email inboxes for AI agents, from a terminal. Pidgeon is the email inbox API
 for AI agents. It gives agents their own inboxes so they can work with emails
 just like a human. This is every endpoint as a command, so an agent with a
 shell, or you, can create an address, send, receive and reply.

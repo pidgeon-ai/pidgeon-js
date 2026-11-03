@@ -1,6 +1,6 @@
 # Pidgeon for n8n
 
-**Email inboxes for your team and your AI agents, in n8n.** Give a workflow its own address. Mail
+**Email inboxes for AI agents, in n8n.** Give a workflow its own address. Mail
 that arrives starts the workflow, and the workflow replies, saves drafts for a
 person to send, hands threads to people and waits for verification codes.
 

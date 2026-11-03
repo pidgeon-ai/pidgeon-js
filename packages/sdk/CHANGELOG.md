@@ -7,6 +7,11 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.55.1 — the new tagline
+
+- The package description now reads "Email inboxes for AI agents". No change
+  to the surface.
+
 ## 1.55.0 — the visible AI line
 
 - `ai_line` on `Identity` and on `identitiesUpdate`: whether mail an agent
