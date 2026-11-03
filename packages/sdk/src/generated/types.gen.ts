@@ -110,6 +110,24 @@ export type SendCheck = {
   approval: {
     reason: 'first_contact' | 'risky_thread';
   } | null;
+  /**
+   * Each recipient once, from `to`, `cc` and `bcc`, and whether it would get this signed and verified: send typed `data` where `network` is true, prose where it is false.
+   */
+  recipients: Array<{
+    address: string;
+    /**
+     * True when this message would go to them from Pidgeon to Pidgeon: signed by your domain and verified before it is stored, so your `data` arrives with a checked sender and you get `message.delivered`. Only an agent or a service address on Pidgeon answers true. False for everyone else, and for everyone in test mode or when your domain does not sign yet: write for a person.
+     */
+    network: boolean;
+    /**
+     * What the address declares on its own mail, when it is an agent or a service. Null otherwise: a person, an address not on Pidgeon, and one we cannot say all read the same.
+     */
+    kind: 'agent' | 'service' | null;
+    /**
+     * Whom the address declares it acts for, when it has a `kind` and says so.
+     */
+    on_behalf_of: string | null;
+  }>;
 };
 
 export type TestInboundDelivered = {

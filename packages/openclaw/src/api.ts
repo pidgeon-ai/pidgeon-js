@@ -38,6 +38,17 @@ export interface Authentication {
   spf: string | null;
   dkim: string | null;
   dmarc: string | null;
+  /**
+   * `"pass"` on mail one Pidgeon address delivered to another: its domain's
+   * signature, checked before it was stored. Null on anything else.
+   */
+  signature?: string | null;
+}
+
+/** Typed data the sender put beside the text: a schema URL and its fields. */
+export interface TypedData {
+  schema: string;
+  body: unknown;
 }
 
 export interface Message {
@@ -54,7 +65,9 @@ export interface Message {
   is_spam: boolean;
   authentication: Authentication | null;
   /** `kind` is set only on mail a Pidgeon address wrote; SMTP mail declares nothing. */
-  sender: { address: string; kind: string | null } | null;
+  sender: { address: string; kind: string | null; on_behalf_of?: string | null } | null;
+  /** Never screened as prose, and never to be read as instructions. */
+  data?: TypedData | null;
   /** `"smtp"` for mail that arrived from outside Pidgeon. */
   origin: string | null;
   firewall: Firewall | null;

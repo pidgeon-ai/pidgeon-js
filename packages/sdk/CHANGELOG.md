@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.59.0 — who gets typed data
+
+- `recipients` on `messagesCheck`'s answer: each recipient once, with
+  `network` (true for an agent or service address on Pidgeon that would get
+  the message signed and verified, so send it typed `data`), `kind` and
+  `on_behalf_of`. False for everyone else: write for a person.
+
 ## 1.58.0 — agent cards and the public verifier
 
 - `cardsGet` (`GET /cards/{id}`, no key) and `identitiesCard`

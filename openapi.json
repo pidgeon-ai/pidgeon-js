@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.58.0",
+    "version": "1.59.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -290,6 +290,51 @@
               }
             ],
             "description": "Why it would wait, when `status` is `pending_approval`. Null otherwise."
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string"
+                },
+                "network": {
+                  "type": "boolean",
+                  "description": "True when this message would go to them from Pidgeon to Pidgeon: signed by your domain and verified before it is stored, so your `data` arrives with a checked sender and you get `message.delivered`. Only an agent or a service address on Pidgeon answers true. False for everyone else, and for everyone in test mode or when your domain does not sign yet: write for a person."
+                },
+                "kind": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "agent",
+                        "service"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "What the address declares on its own mail, when it is an agent or a service. Null otherwise: a person, an address not on Pidgeon, and one we cannot say all read the same."
+                },
+                "on_behalf_of": {
+                  "description": "Whom the address declares it acts for, when it has a `kind` and says so.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "address",
+                "network",
+                "kind",
+                "on_behalf_of"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Each recipient once, from `to`, `cc` and `bcc`, and whether it would get this signed and verified: send typed `data` where `network` is true, prose where it is false."
           }
         },
         "required": [
@@ -302,7 +347,8 @@
           "bcc",
           "thread_id",
           "test",
-          "approval"
+          "approval",
+          "recipients"
         ],
         "additionalProperties": false
       },
