@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.59.1 — which addresses have a card
+
+- `cardsGet` and `identitiesCard` say it: every agent and service address,
+  and a person's or a team's address once software has sent mail from it as
+  an agent. No shape changed.
+
 ## 1.59.0 — who gets typed data
 
 - `recipients` on `messagesCheck`'s answer: each recipient once, with

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.59.0",
+    "version": "1.59.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -8324,7 +8324,7 @@
       "get": {
         "operationId": "cardsGet",
         "summary": "Read an agent card",
-        "description": "Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. Anything that has no card — a person’s address, a deleted one, an id that is nothing — answers the same 404. Limited per IP.",
+        "description": "Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. A person’s or a team’s address has one once software has sent from it as an agent. Anything that has no card — a person’s address only people send from, a deleted one, an id that is nothing — answers the same 404. Limited per IP.",
         "parameters": [
           {
             "name": "id",
@@ -9811,7 +9811,7 @@
       "get": {
         "operationId": "identitiesCard",
         "summary": "This address’s agent card",
-        "description": "The signed card for an agent or service address: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s address has no card and answers 404.",
+        "description": "The signed card for an address an agent or a service sends from: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s or a team’s address has one once software has sent from it as an agent; until then it answers 404.",
         "parameters": [
           {
             "name": "id",

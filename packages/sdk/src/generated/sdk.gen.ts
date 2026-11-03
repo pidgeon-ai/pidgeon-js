@@ -472,7 +472,7 @@ export const agentVerify = <ThrowOnError extends boolean = false>(
 /**
  * Read an agent card
  *
- * Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. Anything that has no card — a person’s address, a deleted one, an id that is nothing — answers the same 404. Limited per IP.
+ * Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. A person’s or a team’s address has one once software has sent from it as an agent. Anything that has no card — a person’s address only people send from, a deleted one, an id that is nothing — answers the same 404. Limited per IP.
  */
 export const cardsGet = <ThrowOnError extends boolean = false>(
   options: Options<CardsGetData, ThrowOnError>,
@@ -615,7 +615,7 @@ export const identitiesUpdate = <ThrowOnError extends boolean = false>(
 /**
  * This address’s agent card
  *
- * The signed card for an agent or service address: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s address has no card and answers 404.
+ * The signed card for an address an agent or a service sends from: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s or a team’s address has one once software has sent from it as an agent; until then it answers 404.
  */
 export const identitiesCard = <ThrowOnError extends boolean = false>(
   options: Options<IdentitiesCardData, ThrowOnError>,
