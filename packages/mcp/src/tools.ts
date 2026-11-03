@@ -494,6 +494,30 @@ export const TOOLS: ToolDefinition[] = [
     },
   },
   /*
+   * The public verifier (#534), for mail that arrived anywhere: a forwarded
+   * message, an inbox that is not on Pidgeon. Pidgeon's own inbound mail is
+   * already checked on arrival, so this is for the copy an agent was handed.
+   */
+  {
+    name: 'verify_sender',
+    title: 'Check who sent a message',
+    description:
+      'Checks a raw message, or its headers, and answers whether an AI agent sent it, on ' +
+      'whose behalf, and whether the signatures on it hold: the signed agent declaration ' +
+      '(`Agent-of`) and the `Post-Envelope`, from Pidgeon or any other signer using the same ' +
+      'formats. Act on `verdict`: `verified` is safe to treat as mail from the signing ' +
+      'domain, `caution` lists `warnings` to check first, `failed` means something was ' +
+      'forged or changed, and `unsigned` means there is nothing to check. Pass `recipient` ' +
+      '(the address it reached you at) to catch a signed message replayed to you.',
+    endpoint: 'POST /verify',
+    // A POST because it takes a message; it writes nothing and mails nobody.
+    annotations: READ,
+    inputSchema: {
+      message: z.string(),
+      recipient: z.string().optional(),
+    },
+  },
+  /*
    * ---------------------------------------------------------------------
    * The desk: reading one message, answering it, and saying who has it.
    *

@@ -83,6 +83,9 @@ import type {
   CalendarUpdateEventErrors,
   CalendarUpdateEventResponses,
   CalendarUpdateResponses,
+  CardsGetData,
+  CardsGetErrors,
+  CardsGetResponses,
   ContactsBlockData,
   ContactsBlockErrors,
   ContactsBlockResponses,
@@ -182,6 +185,9 @@ import type {
   IdentitiesAccessGetData,
   IdentitiesAccessGetErrors,
   IdentitiesAccessGetResponses,
+  IdentitiesCardData,
+  IdentitiesCardErrors,
+  IdentitiesCardResponses,
   IdentitiesCreateData,
   IdentitiesCreateErrors,
   IdentitiesCreateResponses,
@@ -356,6 +362,9 @@ import type {
   ThreadsUpdateData,
   ThreadsUpdateErrors,
   ThreadsUpdateResponses,
+  VerifySenderData,
+  VerifySenderErrors,
+  VerifySenderResponses,
   WebhooksCreateData,
   WebhooksCreateErrors,
   WebhooksCreateResponses,
@@ -453,6 +462,36 @@ export const agentVerify = <ThrowOnError extends boolean = false>(
 ): RequestResult<AgentVerifyResponses, AgentVerifyErrors, ThrowOnError> =>
   (options.client ?? client).post<AgentVerifyResponses, AgentVerifyErrors, ThrowOnError>({
     url: '/agent/verify',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Read an agent card
+ *
+ * Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. Anything that has no card — a person’s address, a deleted one, an id that is nothing — answers the same 404. Limited per IP.
+ */
+export const cardsGet = <ThrowOnError extends boolean = false>(
+  options: Options<CardsGetData, ThrowOnError>,
+): RequestResult<CardsGetResponses, CardsGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<CardsGetResponses, CardsGetErrors, ThrowOnError>({
+    url: '/cards/{id}',
+    ...options,
+  });
+
+/**
+ * Check who sent a message
+ *
+ * Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Nothing sent is stored. Limited per IP; a key may be sent and is not required.
+ */
+export const verifySender = <ThrowOnError extends boolean = false>(
+  options: Options<VerifySenderData, ThrowOnError>,
+): RequestResult<VerifySenderResponses, VerifySenderErrors, ThrowOnError> =>
+  (options.client ?? client).post<VerifySenderResponses, VerifySenderErrors, ThrowOnError>({
+    url: '/verify',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -572,6 +611,20 @@ export const identitiesUpdate = <ThrowOnError extends boolean = false>(
       },
     },
   );
+
+/**
+ * This address’s agent card
+ *
+ * The signed card for an agent or service address: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s address has no card and answers 404.
+ */
+export const identitiesCard = <ThrowOnError extends boolean = false>(
+  options: Options<IdentitiesCardData, ThrowOnError>,
+): RequestResult<IdentitiesCardResponses, IdentitiesCardErrors, ThrowOnError> =>
+  (options.client ?? client).get<IdentitiesCardResponses, IdentitiesCardErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/identities/{id}/card',
+    ...options,
+  });
 
 /**
  * Revoke access

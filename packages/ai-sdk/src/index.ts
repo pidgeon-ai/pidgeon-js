@@ -51,6 +51,7 @@ import {
   threadsLabelsDelete,
   threadsList,
   threadsUpdate,
+  verifySender,
 } from '@pidgeon-ai/sdk';
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
@@ -138,7 +139,8 @@ export type PidgeonToolName =
   | 'find_free_time'
   | 'find_contact'
   | 'update_contact'
-  | 'block_contact';
+  | 'block_contact'
+  | 'verify_sender';
 
 export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   get_setup: agentSetup,
@@ -151,6 +153,7 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   search_messages: messagesSearch,
   send_message: messagesSend,
   check_message: messagesCheck,
+  verify_sender: verifySender,
   get_message: messagesGet,
   await_message: messagesAwait,
   reply_to_message: messagesReply,

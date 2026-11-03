@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.57.0",
+    "version": "1.58.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -398,6 +398,426 @@
           "sign_in_url",
           "api_key",
           "api_key_id"
+        ],
+        "additionalProperties": false
+      },
+      "AgentCard": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "agent_card"
+          },
+          "url": {
+            "type": "string",
+            "description": "The card’s permanent URL."
+          },
+          "jws": {
+            "type": "string",
+            "description": "Compact JWS, EdDSA, `typ: agent-card+jwt`. Check it against the keys at `<iss>/.well-known/post.json`."
+          },
+          "card": {
+            "type": "object",
+            "properties": {
+              "iss": {
+                "type": "string",
+                "description": "`https://post.<domain>`: the domain that signed it."
+              },
+              "sub": {
+                "type": "string",
+                "description": "The address’s id. Never reassigned, unlike the address."
+              },
+              "iat": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "exp": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "A day after `iat`. Refetch after it."
+              },
+              "v": {
+                "type": "string",
+                "const": "post0"
+              },
+              "address": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "agent",
+                  "service"
+                ]
+              },
+              "on_behalf_of": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "object",
+                "properties": {
+                  "domain": {
+                    "type": "string"
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "verified"
+                ],
+                "additionalProperties": false
+              },
+              "created_at": {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "post",
+                        "dkim"
+                      ]
+                    },
+                    "domain": {
+                      "type": "string"
+                    },
+                    "kid": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "domain"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "What signs this address’s mail."
+              },
+              "reputation": {
+                "type": "object",
+                "properties": {
+                  "standing": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "established",
+                      "restricted"
+                    ]
+                  },
+                  "since": {
+                    "type": "string",
+                    "description": "The month the address was made, `YYYY-MM`."
+                  }
+                },
+                "required": [
+                  "standing",
+                  "since"
+                ],
+                "additionalProperties": false
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "iss",
+              "sub",
+              "iat",
+              "exp",
+              "v",
+              "address",
+              "kind",
+              "created_at",
+              "keys",
+              "reputation",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "object",
+          "url",
+          "jws",
+          "card"
+        ],
+        "additionalProperties": false
+      },
+      "SenderVerification": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "sender_verification"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "caution",
+              "failed",
+              "unsigned"
+            ],
+            "description": "`verified`: a signature holds and nothing is wrong. `caution`: it holds, with `warnings`. `failed`: a signature does not verify, or the body changed. `unsigned`: nothing to check."
+          },
+          "advice": {
+            "type": "string",
+            "description": "One sentence to act on."
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "agent",
+                          "service"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "on_behalf_of": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "address",
+                  "kind",
+                  "on_behalf_of"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null unless a signature covers it."
+          },
+          "is_agent": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "domain": {
+                    "type": "string"
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "verified"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ai_disclosure": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "signed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "enum": [
+              "intact",
+              "changed",
+              "not_checked"
+            ]
+          },
+          "signatures": {
+            "type": "object",
+            "properties": {
+              "declaration": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "none"
+                    ]
+                  },
+                  "domain": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "selector": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "result",
+                  "domain",
+                  "selector"
+                ],
+                "additionalProperties": false
+              },
+              "envelope": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "unverifiable",
+                      "none"
+                    ]
+                  },
+                  "domain": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "result",
+                  "domain",
+                  "kid",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "declaration",
+              "envelope"
+            ],
+            "additionalProperties": false
+          },
+          "card": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "standing": {
+                    "type": "string"
+                  },
+                  "since": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "standing",
+                  "since"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The sender’s agent card, when we issue it."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "unsigned_claims",
+                    "extra_claims",
+                    "lookalike_domain",
+                    "display_name_mismatch",
+                    "not_addressed_to_you",
+                    "old_signature",
+                    "envelope_unverifiable"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "object",
+          "verdict",
+          "advice",
+          "sender",
+          "is_agent",
+          "operator",
+          "ai_disclosure",
+          "signed_at",
+          "body",
+          "signatures",
+          "card",
+          "warnings"
         ],
         "additionalProperties": false
       },
@@ -7854,6 +8274,264 @@
         ]
       }
     },
+    "/cards/{id}": {
+      "get": {
+        "operationId": "cardsGet",
+        "summary": "Read an agent card",
+        "description": "Public, with no key. An agent or service address’s identity, signed by the domain that vouches for it: `jws` is a compact JWS (EdDSA) to check against the keys at `<iss>/.well-known/post.json`, and `card` is its payload, decoded for reading. Good for a day (`exp`). The URL is permanent, and every agent message names it in its signed `Agent-attribution`. Anything that has no card — a person’s address, a deleted one, an id that is nothing — answers the same 404. Limited per IP.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The card.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentCard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "cards"
+        ]
+      }
+    },
+    "/verify": {
+      "post": {
+        "operationId": "verifySender",
+        "summary": "Check who sent a message",
+        "description": "Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Nothing sent is stored. Limited per IP; a key may be sent and is not required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 524288
+                  },
+                  "recipient": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The verdict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SenderVerification"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "verify"
+        ]
+      }
+    },
     "/agent/connect": {
       "post": {
         "operationId": "agentConnect",
@@ -9069,6 +9747,126 @@
           },
           "504": {
             "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "identities"
+        ]
+      }
+    },
+    "/identities/{id}/card": {
+      "get": {
+        "operationId": "identitiesCard",
+        "summary": "This address’s agent card",
+        "description": "The signed card for an agent or service address: who it is, for whom, which keys sign its mail, and a coarse standing. The same document anyone can read without a key at `GET /cards/{id}`. A person’s address has no card and answers 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The card.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentCard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
             "content": {
               "application/json": {
                 "schema": {
@@ -28283,6 +29081,12 @@
   "tags": [
     {
       "name": "agent"
+    },
+    {
+      "name": "cards"
+    },
+    {
+      "name": "verify"
     },
     {
       "name": "identities"

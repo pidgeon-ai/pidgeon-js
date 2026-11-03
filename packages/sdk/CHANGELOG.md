@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.58.0 — agent cards and the public verifier
+
+- `cardsGet` (`GET /cards/{id}`, no key) and `identitiesCard`
+  (`GET /identities/{id}/card`): an agent or service address's signed agent
+  card. `jws` is a compact JWS (EdDSA) to check against
+  `<iss>/.well-known/post.json`; `card` is its payload, decoded.
+- `verifySender` (`POST /verify`, no key): send a raw message or its headers,
+  get back whether an AI agent sent it, on whose behalf, and whether its
+  signatures hold, as a `verdict` to act on.
+
 ## 1.57.0 — free time
 
 - `calendarFreeTime`: when several addresses are all free in a window, at

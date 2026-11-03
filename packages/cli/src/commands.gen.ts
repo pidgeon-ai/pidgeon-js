@@ -954,6 +954,22 @@ export const COMMANDS: Command[] = [
     ]
   },
   {
+    "group": "cards",
+    "name": "get",
+    "operationId": "cardsGet",
+    "method": "GET",
+    "path": "/cards/{id}",
+    "summary": "Read an agent card",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
     "group": "contacts",
     "name": "block",
     "operationId": "contactsBlock",
@@ -1998,6 +2014,22 @@ export const COMMANDS: Command[] = [
     "method": "GET",
     "path": "/identities/{id}/access",
     "summary": "Who can reach this address",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "identities",
+    "name": "card",
+    "operationId": "identitiesCard",
+    "method": "GET",
+    "path": "/identities/{id}/card",
+    "summary": "This address’s agent card",
     "flags": [
       {
         "name": "id",
@@ -4380,6 +4412,28 @@ export const COMMANDS: Command[] = [
       },
       {
         "name": "reason",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      }
+    ]
+  },
+  {
+    "group": "verify",
+    "name": "sender",
+    "operationId": "verifySender",
+    "method": "POST",
+    "path": "/verify",
+    "summary": "Check who sent a message",
+    "flags": [
+      {
+        "name": "message",
+        "kind": "string",
+        "required": true,
+        "where": "body"
+      },
+      {
+        "name": "recipient",
         "kind": "string",
         "required": false,
         "where": "body"

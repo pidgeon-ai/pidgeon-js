@@ -141,6 +141,122 @@ export type AgentVerified = {
   api_key_id: string;
 };
 
+export type AgentCard = {
+  object: 'agent_card';
+  /**
+   * The card’s permanent URL.
+   */
+  url: string;
+  /**
+   * Compact JWS, EdDSA, `typ: agent-card+jwt`. Check it against the keys at `<iss>/.well-known/post.json`.
+   */
+  jws: string;
+  card: {
+    /**
+     * `https://post.<domain>`: the domain that signed it.
+     */
+    iss: string;
+    /**
+     * The address’s id. Never reassigned, unlike the address.
+     */
+    sub: string;
+    iat: number;
+    /**
+     * A day after `iat`. Refetch after it.
+     */
+    exp: number;
+    v: 'post0';
+    address: string;
+    kind: 'agent' | 'service';
+    on_behalf_of?: string;
+    operator?: {
+      domain: string;
+      verified: boolean;
+    };
+    /**
+     * ISO-8601, UTC.
+     */
+    created_at: string;
+    /**
+     * What signs this address’s mail.
+     */
+    keys: Array<{
+      type: 'post' | 'dkim';
+      domain: string;
+      kid?: string;
+      selector?: string;
+    }>;
+    reputation: {
+      standing: 'new' | 'established' | 'restricted';
+      /**
+       * The month the address was made, `YYYY-MM`.
+       */
+      since: string;
+    };
+    url: string;
+  };
+};
+
+export type SenderVerification = {
+  object: 'sender_verification';
+  /**
+   * `verified`: a signature holds and nothing is wrong. `caution`: it holds, with `warnings`. `failed`: a signature does not verify, or the body changed. `unsigned`: nothing to check.
+   */
+  verdict: 'verified' | 'caution' | 'failed' | 'unsigned';
+  /**
+   * One sentence to act on.
+   */
+  advice: string;
+  /**
+   * Null unless a signature covers it.
+   */
+  sender: {
+    address: string;
+    kind: 'person' | 'agent' | 'service' | null;
+    on_behalf_of: string | null;
+  } | null;
+  is_agent: boolean | null;
+  operator: {
+    domain: string;
+    verified: boolean;
+  } | null;
+  ai_disclosure: string | null;
+  signed_at: string | null;
+  body: 'intact' | 'changed' | 'not_checked';
+  signatures: {
+    declaration: {
+      result: 'pass' | 'fail' | 'none';
+      domain: string | null;
+      selector: string | null;
+    };
+    envelope: {
+      result: 'pass' | 'fail' | 'unverifiable' | 'none';
+      domain: string | null;
+      kid: string | null;
+      reason: string | null;
+    };
+  };
+  /**
+   * The sender’s agent card, when we issue it.
+   */
+  card: {
+    url: string;
+    standing: string;
+    since: string;
+  } | null;
+  warnings: Array<{
+    code:
+      | 'unsigned_claims'
+      | 'extra_claims'
+      | 'lookalike_domain'
+      | 'display_name_mismatch'
+      | 'not_addressed_to_you'
+      | 'old_signature'
+      | 'envelope_unverifiable';
+    message: string;
+  }>;
+};
+
 export type AgentSetup = {
   /**
    * True when every step is done for the address below. A test key is never ready: its mail stays inside Pidgeon.
@@ -2769,6 +2885,121 @@ export type AgentVerifyResponses = {
 
 export type AgentVerifyResponse = AgentVerifyResponses[keyof AgentVerifyResponses];
 
+export type CardsGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/cards/{id}';
+};
+
+export type CardsGetErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type CardsGetError = CardsGetErrors[keyof CardsGetErrors];
+
+export type CardsGetResponses = {
+  /**
+   * The card.
+   */
+  200: {
+    data: AgentCard;
+  };
+};
+
+export type CardsGetResponse = CardsGetResponses[keyof CardsGetResponses];
+
+export type VerifySenderData = {
+  body: {
+    message: string;
+    recipient?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/verify';
+};
+
+export type VerifySenderErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type VerifySenderError = VerifySenderErrors[keyof VerifySenderErrors];
+
+export type VerifySenderResponses = {
+  /**
+   * The verdict.
+   */
+  200: {
+    data: SenderVerification;
+  };
+};
+
+export type VerifySenderResponse = VerifySenderResponses[keyof VerifySenderResponses];
+
 export type AgentConnectData = {
   body: {
     code: string;
@@ -3313,6 +3544,63 @@ export type IdentitiesUpdateResponses = {
 };
 
 export type IdentitiesUpdateResponse = IdentitiesUpdateResponses[keyof IdentitiesUpdateResponses];
+
+export type IdentitiesCardData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/identities/{id}/card';
+};
+
+export type IdentitiesCardErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type IdentitiesCardError = IdentitiesCardErrors[keyof IdentitiesCardErrors];
+
+export type IdentitiesCardResponses = {
+  /**
+   * The card.
+   */
+  200: {
+    data: AgentCard;
+  };
+};
+
+export type IdentitiesCardResponse = IdentitiesCardResponses[keyof IdentitiesCardResponses];
 
 export type IdentitiesAccessDeleteData = {
   body?: never;

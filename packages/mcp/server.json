@@ -35,13 +35,13 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "0.25.0",
+  "version": "0.26.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "0.25.0",
+      "version": "0.26.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
