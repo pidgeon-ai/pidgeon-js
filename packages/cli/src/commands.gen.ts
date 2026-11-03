@@ -494,6 +494,76 @@ export const COMMANDS: Command[] = [
   },
   {
     "group": "calendar",
+    "name": "freeTime",
+    "operationId": "calendarFreeTime",
+    "method": "GET",
+    "path": "/calendar/free-time",
+    "summary": "When several addresses are all free",
+    "flags": [
+      {
+        "name": "identity_ids",
+        "kind": "string",
+        "required": true,
+        "where": "query",
+        "describe": "The addresses that must all be free, comma-separated ids. Up to 10."
+      },
+      {
+        "name": "after",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Default now."
+      },
+      {
+        "name": "before",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Default a week after `after`; 31 days after it at most."
+      },
+      {
+        "name": "duration_minutes",
+        "kind": "number",
+        "required": false,
+        "where": "query",
+        "describe": "The shortest slot worth returning. Default 30."
+      },
+      {
+        "name": "day_start",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Only from this wall time each day, like `09:00`."
+      },
+      {
+        "name": "day_end",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Only until this wall time each day, like `17:30`."
+      },
+      {
+        "name": "timezone",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "The zone `day_start`, `day_end` and the local times are in. Default the first address’s calendar zone."
+      },
+      {
+        "name": "skip_weekends",
+        "kind": "string",
+        "choices": [
+          "true",
+          "false"
+        ],
+        "required": false,
+        "where": "query",
+        "describe": "Leave out Saturdays and Sundays in that zone."
+      }
+    ]
+  },
+  {
+    "group": "calendar",
     "name": "get",
     "operationId": "calendarGet",
     "method": "GET",
@@ -880,6 +950,247 @@ export const COMMANDS: Command[] = [
         "kind": "boolean",
         "required": false,
         "where": "body"
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "block",
+    "operationId": "contactsBlock",
+    "method": "POST",
+    "path": "/contacts/{id}/block",
+    "summary": "Block a contact",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "create",
+    "operationId": "contactsCreate",
+    "method": "POST",
+    "path": "/contacts",
+    "summary": "Add a contact",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "The address whose contact this is."
+      },
+      {
+        "name": "email",
+        "kind": "string",
+        "required": true,
+        "where": "body"
+      },
+      {
+        "name": "name",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
+        "name": "kind",
+        "kind": "string",
+        "choices": [
+          "human",
+          "agent"
+        ],
+        "required": false,
+        "where": "body",
+        "describe": "A person, or another agent."
+      },
+      {
+        "name": "notes",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Anything worth remembering about them. Up to 5,000 characters."
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "delete",
+    "operationId": "contactsDelete",
+    "method": "DELETE",
+    "path": "/contacts/{id}",
+    "summary": "Forget a contact",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "get",
+    "operationId": "contactsGet",
+    "method": "GET",
+    "path": "/contacts/{id}",
+    "summary": "One contact",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "list",
+    "operationId": "contactsList",
+    "method": "GET",
+    "path": "/contacts",
+    "summary": "Find contacts",
+    "flags": [
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Only the contacts of this address."
+      },
+      {
+        "name": "search",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "Part of a name or an address: `priya`, `@acme.com`."
+      },
+      {
+        "name": "limit",
+        "kind": "number",
+        "required": false,
+        "where": "query"
+      },
+      {
+        "name": "cursor",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "From a previous page’s `next_cursor`. Opaque — do not parse it."
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "unblock",
+    "operationId": "contactsUnblock",
+    "method": "DELETE",
+    "path": "/contacts/{id}/block",
+    "summary": "Unblock a contact",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "contacts",
+    "name": "update",
+    "operationId": "contactsUpdate",
+    "method": "PATCH",
+    "path": "/contacts/{id}",
+    "summary": "Change or mute a contact",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "email",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
+        "name": "name",
+        "kind": "string",
+        "required": false,
+        "where": "body"
+      },
+      {
+        "name": "kind",
+        "kind": "string",
+        "choices": [
+          "human",
+          "agent"
+        ],
+        "required": false,
+        "where": "body",
+        "describe": "A person, or another agent."
+      },
+      {
+        "name": "notes",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Anything worth remembering about them. Up to 5,000 characters."
+      },
+      {
+        "name": "snoozed_until",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Until when their new mail arrives snoozed, ISO 8601, a year ahead at most. `null` unmutes."
       }
     ]
   },

@@ -124,6 +124,19 @@ const DISCARD: ToolAnnotations = {
   openWorldHint: false,
 };
 
+/**
+ * Files a sender's future mail away: a rule a person can see on Rules and
+ * remove there. Nothing is lost and nobody outside is told, so not
+ * destructive; but no tool here takes it back, which is why it is not
+ * `FILE`. Blocking twice is the same rule.
+ */
+const BLOCK: ToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 /*
  * Deliberately not every endpoint.
  *
@@ -816,7 +829,9 @@ export const TOOLS: ToolDefinition[] = [
     name: 'update_thread',
     title: 'Hand a conversation to a person',
     description:
-      'Who owns a conversation and where it has got to. `owner_type: "human"` with `status: ' +
+      'Who owns a conversation and where it has got to. `status: "resolved"` is Done in the ' +
+      'inbox and `"open"` takes it out of Done; `"human_review"` puts it in Needs you. ' +
+      '`owner_type: "human"` with `status: ' +
       '"human_review"` hands it to a person: the people who can answer as the address are ' +
       'notified, or only `assignee_id` when you name one. Say why in `reason` — it is in ' +
       'their notification. `"agent"` claims a conversation nobody has stepped into. A person ' +
@@ -1170,6 +1185,32 @@ export const TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: 'find_free_time',
+    title: 'When everybody is free',
+    description:
+      'When every address in `identity_ids` (comma-separated address ids, up to 10) is free ' +
+      'between `after` and `before` (ISO 8601; default the next 7 days, 31 at most), in ' +
+      'stretches at least `duration_minutes` long (default 30). For working hours pass ' +
+      '`day_start` and `day_end` (`09:00`, `17:30`) and `skip_weekends: "true"`; they are read ' +
+      'in `timezone`, or the first address’s calendar zone. Each slot has `start`/`end` in UTC ' +
+      'and `local_start`/`local_end` in that zone — use the local ones when you tell a person. ' +
+      'Busy means a timed event not cancelled or declined; tentative is busy, all-day events ' +
+      'are not. It only covers these addresses’ own calendars, not anyone outside. It books ' +
+      'nothing: propose a slot, then `create_calendar_event`.',
+    endpoint: 'GET /calendar/free-time',
+    annotations: READ,
+    inputSchema: {
+      identity_ids: z.string(),
+      after: z.string().optional(),
+      before: z.string().optional(),
+      duration_minutes: z.number().int().min(5).max(1440).optional(),
+      day_start: z.string().optional(),
+      day_end: z.string().optional(),
+      timezone: z.string().optional(),
+      skip_weekends: z.enum(['true', 'false']).optional(),
+    },
+  },
+  {
     name: 'get_calendar_event',
     title: 'Read one calendar event',
     description:
@@ -1298,5 +1339,66 @@ export const TOOLS: ToolDefinition[] = [
       comment: z.string().optional(),
       idempotency_key: IDEMPOTENCY_KEY_INPUT,
     },
+  },
+  /*
+   * ---------------------------------------------------------------------
+   * Contacts: who each address corresponds with, noted from the mail
+   * (3 November). Three of the seven endpoints. Adding one by hand is rare,
+   * since mail adds them; forgetting one and unblocking are a person's
+   * calls, made on Contacts and Rules where they can see what they undo.
+   * ---------------------------------------------------------------------
+   */
+  {
+    name: 'find_contact',
+    title: 'Find someone to write to',
+    description:
+      'Turns a name into an address: “email Priya” → `search: "priya"`. Matches part of a ' +
+      'name or an address (`@acme.com` for everyone there), most recent first. Each contact ' +
+      'belongs to one of your addresses — `inbox` is the one they correspond with, and the ' +
+      'one to write from — so the same person can appear once per address; pass ' +
+      '`identity_id` for one. Only people your addresses have exchanged mail with, or that ' +
+      'somebody added, are here: no match means you do not know them yet, not that they do ' +
+      'not exist. `notes` is what was written about them; `blocked` and `snoozed_until` say ' +
+      'whether their mail is reaching the inbox. With `has_more`, pass `next_cursor` as `cursor`.',
+    endpoint: 'GET /contacts',
+    annotations: READ,
+    inputSchema: {
+      search: z.string().max(200).optional(),
+      identity_id: z.string().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+      cursor: z.string().optional(),
+    },
+  },
+  {
+    name: 'update_contact',
+    title: 'Keep notes on a contact, or mute them',
+    description:
+      'Changes one contact by its `id` from `find_contact`: the fields you pass, leaving the ' +
+      'rest. `notes` is for what is worth remembering next time (“prefers mornings”, “our ' +
+      'contact at Acme for invoices”) and replaces what was there, so read it first and ' +
+      'write the whole note. `kind: "agent"` marks an automated sender. `snoozed_until` ' +
+      '(ISO 8601, a year ahead at most) mutes them: their new mail arrives snoozed and comes ' +
+      'back to the inbox then; `null` unmutes. Nobody is told.',
+    endpoint: 'PATCH /contacts/{id}',
+    annotations: FILE,
+    inputSchema: {
+      id: z.string(),
+      name: z.string().max(200).nullish(),
+      kind: z.enum(['human', 'agent']).optional(),
+      notes: z.string().max(5000).nullish(),
+      snoozed_until: z.string().nullish(),
+    },
+  },
+  {
+    name: 'block_contact',
+    title: 'Send a contact’s mail to spam',
+    description:
+      'From now on, mail from this contact to the address they are a contact of goes to spam, ' +
+      'by the contact’s `id`. Their mail to your other addresses is unchanged, and what ' +
+      'already arrived stays where it is (move it with `update_message`). For a sender who ' +
+      'is spamming or abusive, or when you were asked to. A person undoes it, on Contacts or Rules.',
+    endpoint: 'POST /contacts/{id}/block',
+    annotations: BLOCK,
+    inputSchema: { id: z.string() },
   },
 ];

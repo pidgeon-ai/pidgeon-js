@@ -56,6 +56,9 @@ import type {
   CalendarDeleteEventData,
   CalendarDeleteEventErrors,
   CalendarDeleteEventResponses,
+  CalendarFreeTimeData,
+  CalendarFreeTimeErrors,
+  CalendarFreeTimeResponses,
   CalendarGetAgendaData,
   CalendarGetAgendaErrors,
   CalendarGetAgendaResponses,
@@ -80,6 +83,27 @@ import type {
   CalendarUpdateEventErrors,
   CalendarUpdateEventResponses,
   CalendarUpdateResponses,
+  ContactsBlockData,
+  ContactsBlockErrors,
+  ContactsBlockResponses,
+  ContactsCreateData,
+  ContactsCreateErrors,
+  ContactsCreateResponses,
+  ContactsDeleteData,
+  ContactsDeleteErrors,
+  ContactsDeleteResponses,
+  ContactsGetData,
+  ContactsGetErrors,
+  ContactsGetResponses,
+  ContactsListData,
+  ContactsListErrors,
+  ContactsListResponses,
+  ContactsUnblockData,
+  ContactsUnblockErrors,
+  ContactsUnblockResponses,
+  ContactsUpdateData,
+  ContactsUpdateErrors,
+  ContactsUpdateResponses,
   DomainsCreateData,
   DomainsCreateErrors,
   DomainsCreateResponses,
@@ -911,6 +935,110 @@ export const labelsUpdate = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Find contacts
+ *
+ * The people and agents your addresses correspond with, most recent first: noted from the mail as it comes and goes, and editable. A contact belongs to one address, so the same person on two addresses is two contacts. `search` matches part of a name or an address. Only the addresses this key reads are listed; naming one it cannot read lists nothing. Pages through `next_cursor`.
+ */
+export const contactsList = <ThrowOnError extends boolean = false>(
+  options?: Options<ContactsListData, ThrowOnError>,
+): RequestResult<ContactsListResponses, ContactsListErrors, ThrowOnError> =>
+  (options?.client ?? client).get<ContactsListResponses, ContactsListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts',
+    ...options,
+  });
+
+/**
+ * Add a contact
+ *
+ * Somebody this address has not corresponded with yet. Needs `draft` on the address. One of the workspace’s own addresses is refused, and an address already a contact here is a 409.
+ */
+export const contactsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsCreateData, ThrowOnError>,
+): RequestResult<ContactsCreateResponses, ContactsCreateErrors, ThrowOnError> =>
+  (options.client ?? client).post<ContactsCreateResponses, ContactsCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Forget a contact
+ *
+ * The contact goes; the mail stays. Their next message notes them again, so this is not a block.
+ */
+export const contactsDelete = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsDeleteData, ThrowOnError>,
+): RequestResult<ContactsDeleteResponses, ContactsDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<ContactsDeleteResponses, ContactsDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts/{id}',
+    ...options,
+  });
+
+/**
+ * One contact
+ */
+export const contactsGet = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsGetData, ThrowOnError>,
+): RequestResult<ContactsGetResponses, ContactsGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<ContactsGetResponses, ContactsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts/{id}',
+    ...options,
+  });
+
+/**
+ * Change or mute a contact
+ *
+ * The fields you send, leaving the rest. `snoozed_until` mutes them: their new mail arrives snoozed until then and comes back to the inbox on its own. `null` unmutes. Needs `draft` on the address.
+ */
+export const contactsUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsUpdateData, ThrowOnError>,
+): RequestResult<ContactsUpdateResponses, ContactsUpdateErrors, ThrowOnError> =>
+  (options.client ?? client).patch<ContactsUpdateResponses, ContactsUpdateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts/{id}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Unblock a contact
+ *
+ * Removes the block this address has on them. A block from a wider rule, on their domain or the whole workspace, stays: `blocked` is then `rule`, and it is changed on Rules.
+ */
+export const contactsUnblock = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsUnblockData, ThrowOnError>,
+): RequestResult<ContactsUnblockResponses, ContactsUnblockErrors, ThrowOnError> =>
+  (options.client ?? client).delete<ContactsUnblockResponses, ContactsUnblockErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts/{id}/block',
+    ...options,
+  });
+
+/**
+ * Block a contact
+ *
+ * Their mail to this address goes to spam from now on: a sender rule on this address, which Rules lists. Spam rather than rejected, so a mistake is a folder away. Their mail to your other addresses is unchanged.
+ */
+export const contactsBlock = <ThrowOnError extends boolean = false>(
+  options: Options<ContactsBlockData, ThrowOnError>,
+): RequestResult<ContactsBlockResponses, ContactsBlockErrors, ThrowOnError> =>
+  (options.client ?? client).post<ContactsBlockResponses, ContactsBlockErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/contacts/{id}/block',
+    ...options,
   });
 
 /**
@@ -2080,6 +2208,20 @@ export const calendarGetAgenda = <ThrowOnError extends boolean = false>(
       ...options,
     },
   );
+
+/**
+ * When several addresses are all free
+ *
+ * The stretches in a window when every address in `identity_ids` is free, at least `duration_minutes` long. Busy is a timed event that is not cancelled and that the address has not declined; tentative counts as busy, all-day events do not. `day_start` and `day_end` limit it to working hours, read in `timezone` (the first address’s calendar zone by default), and each slot carries its wall times in that zone too. Needs `read` on every address. It books nothing.
+ */
+export const calendarFreeTime = <ThrowOnError extends boolean = false>(
+  options: Options<CalendarFreeTimeData, ThrowOnError>,
+): RequestResult<CalendarFreeTimeResponses, CalendarFreeTimeErrors, ThrowOnError> =>
+  (options.client ?? client).get<CalendarFreeTimeResponses, CalendarFreeTimeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/calendar/free-time',
+    ...options,
+  });
 
 /**
  * Take it off the calendar

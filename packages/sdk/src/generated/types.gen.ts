@@ -2412,6 +2412,82 @@ export type Label = {
   created_at: string;
 };
 
+export type Contact = {
+  id: string;
+  /**
+   * The address this is a contact of.
+   */
+  identity_id: string;
+  /**
+   * That address, as an email.
+   */
+  inbox: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  kind: 'human' | 'agent';
+  notes: string | null;
+  /**
+   * While muted: until when their new mail arrives snoozed. Null otherwise.
+   */
+  snoozed_until: string | null;
+  /**
+   * Null when their mail reaches the inbox. `contact`: blocked here, and unblocking undoes it. `rule`: a wider rule on the domain or the workspace blocks them.
+   */
+  blocked: 'contact' | 'rule' | null;
+  /**
+   * The last mail between them and this address.
+   */
+  last_seen_at: string | null;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+};
+
+export type FreeTime = {
+  /**
+   * The zone `local_start` and `local_end` are in.
+   */
+  timezone: string;
+  duration_minutes: number;
+  /**
+   * Every stretch at least `duration_minutes` long when all of them are free, in order. Whole stretches, not cut into meetings.
+   */
+  slots: Array<{
+    /**
+     * ISO-8601, UTC.
+     */
+    start: string;
+    /**
+     * ISO-8601, UTC.
+     */
+    end: string;
+    /**
+     * `start` as a wall time in `timezone`, no offset.
+     */
+    local_start: string;
+    /**
+     * `end` as a wall time in `timezone`, no offset.
+     */
+    local_end: string;
+  }>;
+  /**
+   * What each address has on in the window, merged; no titles.
+   */
+  busy: Array<{
+    identity_id: string;
+    /**
+     * ISO-8601, UTC.
+     */
+    start: string;
+    /**
+     * ISO-8601, UTC.
+     */
+    end: string;
+  }>;
+};
+
 export type LabelRemoved = {
   thread_id: string;
   label_id: string;
@@ -4559,6 +4635,500 @@ export type LabelsUpdateResponses = {
 };
 
 export type LabelsUpdateResponse = LabelsUpdateResponses[keyof LabelsUpdateResponses];
+
+export type ContactsListData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Only the contacts of this address.
+     */
+    identity_id?: string;
+    /**
+     * Part of a name or an address: `priya`, `@acme.com`.
+     */
+    search?: string;
+    limit?: number;
+    /**
+     * From a previous page’s `next_cursor`. Opaque — do not parse it.
+     */
+    cursor?: string;
+  };
+  url: '/contacts';
+};
+
+export type ContactsListErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type ContactsListError = ContactsListErrors[keyof ContactsListErrors];
+
+export type ContactsListResponses = {
+  /**
+   * The contacts.
+   */
+  200: {
+    data: Array<Contact>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type ContactsListResponse = ContactsListResponses[keyof ContactsListResponses];
+
+export type ContactsCreateData = {
+  body: {
+    /**
+     * The address whose contact this is.
+     */
+    identity_id: string;
+    email: string;
+    name?: string | null;
+    /**
+     * A person, or another agent.
+     */
+    kind?: 'human' | 'agent';
+    /**
+     * Anything worth remembering about them. Up to 5,000 characters.
+     */
+    notes?: string | null;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/contacts';
+};
+
+export type ContactsCreateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type ContactsCreateError = ContactsCreateErrors[keyof ContactsCreateErrors];
+
+export type ContactsCreateResponses = {
+  /**
+   * The contact.
+   */
+  201: {
+    data: Contact;
+  };
+};
+
+export type ContactsCreateResponse = ContactsCreateResponses[keyof ContactsCreateResponses];
+
+export type ContactsDeleteData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/contacts/{id}';
+};
+
+export type ContactsDeleteErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type ContactsDeleteError = ContactsDeleteErrors[keyof ContactsDeleteErrors];
+
+export type ContactsDeleteResponses = {
+  /**
+   * Deleted.
+   */
+  200: {
+    data: Deleted;
+  };
+};
+
+export type ContactsDeleteResponse = ContactsDeleteResponses[keyof ContactsDeleteResponses];
+
+export type ContactsGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/contacts/{id}';
+};
+
+export type ContactsGetErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type ContactsGetError = ContactsGetErrors[keyof ContactsGetErrors];
+
+export type ContactsGetResponses = {
+  /**
+   * The contact.
+   */
+  200: {
+    data: Contact;
+  };
+};
+
+export type ContactsGetResponse = ContactsGetResponses[keyof ContactsGetResponses];
+
+export type ContactsUpdateData = {
+  body: {
+    email?: string;
+    name?: string | null;
+    /**
+     * A person, or another agent.
+     */
+    kind?: 'human' | 'agent';
+    /**
+     * Anything worth remembering about them. Up to 5,000 characters.
+     */
+    notes?: string | null;
+    /**
+     * Until when their new mail arrives snoozed, ISO 8601, a year ahead at most. `null` unmutes.
+     */
+    snoozed_until?: string | null;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/contacts/{id}';
+};
+
+export type ContactsUpdateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type ContactsUpdateError = ContactsUpdateErrors[keyof ContactsUpdateErrors];
+
+export type ContactsUpdateResponses = {
+  /**
+   * The contact.
+   */
+  200: {
+    data: Contact;
+  };
+};
+
+export type ContactsUpdateResponse = ContactsUpdateResponses[keyof ContactsUpdateResponses];
+
+export type ContactsUnblockData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/contacts/{id}/block';
+};
+
+export type ContactsUnblockErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type ContactsUnblockError = ContactsUnblockErrors[keyof ContactsUnblockErrors];
+
+export type ContactsUnblockResponses = {
+  /**
+   * The contact.
+   */
+  200: {
+    data: Contact;
+  };
+};
+
+export type ContactsUnblockResponse = ContactsUnblockResponses[keyof ContactsUnblockResponses];
+
+export type ContactsBlockData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/contacts/{id}/block';
+};
+
+export type ContactsBlockErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type ContactsBlockError = ContactsBlockErrors[keyof ContactsBlockErrors];
+
+export type ContactsBlockResponses = {
+  /**
+   * The contact.
+   */
+  200: {
+    data: Contact;
+  };
+};
+
+export type ContactsBlockResponse = ContactsBlockResponses[keyof ContactsBlockResponses];
 
 export type ThreadsLabelsDeleteData = {
   body?: never;
@@ -9645,6 +10215,94 @@ export type CalendarGetAgendaResponses = {
 
 export type CalendarGetAgendaResponse =
   CalendarGetAgendaResponses[keyof CalendarGetAgendaResponses];
+
+export type CalendarFreeTimeData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * The addresses that must all be free, comma-separated ids. Up to 10.
+     */
+    identity_ids: string;
+    /**
+     * Default now.
+     */
+    after?: string;
+    /**
+     * Default a week after `after`; 31 days after it at most.
+     */
+    before?: string;
+    /**
+     * The shortest slot worth returning. Default 30.
+     */
+    duration_minutes?: number;
+    /**
+     * Only from this wall time each day, like `09:00`.
+     */
+    day_start?: string;
+    /**
+     * Only until this wall time each day, like `17:30`.
+     */
+    day_end?: string;
+    /**
+     * The zone `day_start`, `day_end` and the local times are in. Default the first address’s calendar zone.
+     */
+    timezone?: string;
+    /**
+     * Leave out Saturdays and Sundays in that zone.
+     */
+    skip_weekends?: 'true' | 'false';
+  };
+  url: '/calendar/free-time';
+};
+
+export type CalendarFreeTimeErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type CalendarFreeTimeError = CalendarFreeTimeErrors[keyof CalendarFreeTimeErrors];
+
+export type CalendarFreeTimeResponses = {
+  /**
+   * The free time.
+   */
+  200: {
+    data: FreeTime;
+  };
+};
+
+export type CalendarFreeTimeResponse = CalendarFreeTimeResponses[keyof CalendarFreeTimeResponses];
 
 export type CalendarDeleteEventData = {
   body?: never;

@@ -34,6 +34,10 @@ import {
   draftsUpdate,
   messagesForward,
   messagesRespondToInvitation,
+  calendarFreeTime,
+  contactsList,
+  contactsUpdate,
+  contactsBlock,
   messagesSearch,
   messagesSend,
   messagesCheck,
@@ -130,7 +134,11 @@ export type PidgeonToolName =
   | 'create_calendar_event'
   | 'update_calendar_event'
   | 'delete_calendar_event'
-  | 'respond_to_invitation';
+  | 'respond_to_invitation'
+  | 'find_free_time'
+  | 'find_contact'
+  | 'update_contact'
+  | 'block_contact';
 
 export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   get_setup: agentSetup,
@@ -179,6 +187,10 @@ export const OPERATIONS: Record<PidgeonToolName, Operation> = {
   update_calendar_event: calendarUpdateEvent,
   delete_calendar_event: calendarDeleteEvent,
   respond_to_invitation: messagesRespondToInvitation,
+  find_free_time: calendarFreeTime,
+  find_contact: contactsList,
+  update_contact: contactsUpdate,
+  block_contact: contactsBlock,
 };
 
 export type PidgeonTools = Record<PidgeonToolName, Tool<Record<string, unknown>, unknown>>;

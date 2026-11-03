@@ -7,6 +7,24 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.57.0 — free time
+
+- `calendarFreeTime`: when several addresses are all free in a window, at
+  least `duration_minutes` long, optionally only between `day_start` and
+  `day_end` in a zone and on weekdays. Each slot comes with its wall times
+  in that zone, and each address's busy blocks without titles.
+- `contactsList` takes `cursor` and pages through `next_cursor`, like every
+  other list.
+
+## 1.56.0 — contacts
+
+- `contactsList`, `contactsCreate`, `contactsGet`, `contactsUpdate`,
+  `contactsDelete`, `contactsBlock` and `contactsUnblock`: the people and
+  agents an address corresponds with, noted from the mail. Find one by part
+  of a name or an address, keep notes on them, mute them until a date
+  (`snoozed_until`), or send their mail to spam. A contact belongs to one
+  address, and a key reaches only the contacts of addresses it holds.
+
 ## 1.55.1 — the new tagline
 
 - The package description now reads "Email inboxes for AI agents". No change
