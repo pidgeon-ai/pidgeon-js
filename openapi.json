@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.61.0",
+    "version": "1.62.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -680,12 +680,18 @@
                     "type": "string"
                   },
                   "verified": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True only when the domain’s owner proved it."
+                  },
+                  "shared": {
+                    "type": "boolean",
+                    "description": "True for pidgeon.email and a company’s name on it: a shared domain anyone can get an address on, so never `verified`."
                   }
                 },
                 "required": [
                   "domain",
-                  "verified"
+                  "verified",
+                  "shared"
                 ],
                 "additionalProperties": false
               },
@@ -841,7 +847,12 @@
                 "type": "object",
                 "properties": {
                   "url": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The card’s page, for a person."
+                  },
+                  "api_url": {
+                    "type": "string",
+                    "description": "The card as JSON, with its signed JWS."
                   },
                   "standing": {
                     "type": "string"
@@ -910,6 +921,7 @@
                 },
                 "required": [
                   "url",
+                  "api_url",
                   "standing",
                   "since",
                   "log"

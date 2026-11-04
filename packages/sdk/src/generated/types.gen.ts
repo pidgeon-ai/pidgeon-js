@@ -236,7 +236,14 @@ export type SenderVerification = {
   is_agent: boolean | null;
   operator: {
     domain: string;
+    /**
+     * True only when the domain’s owner proved it.
+     */
     verified: boolean;
+    /**
+     * True for pidgeon.email and a company’s name on it: a shared domain anyone can get an address on, so never `verified`.
+     */
+    shared: boolean;
   } | null;
   ai_disclosure: string | null;
   signed_at: string | null;
@@ -267,7 +274,14 @@ export type SenderVerification = {
    * The sender’s agent card, when we issue it.
    */
   card: {
+    /**
+     * The card’s page, for a person.
+     */
     url: string;
+    /**
+     * The card as JSON, with its signed JWS.
+     */
+    api_url: string;
     standing: string;
     since: string;
     /**

@@ -7,6 +7,15 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.62.0 — the shared domain, said plainly
+
+- `operator.shared` on `verifySender`'s answer: true for `pidgeon.email` and
+  a company's name on it (`acme.pidgeon.email`), which anyone can get an
+  address on. `operator.verified` is false there, and true only for a domain
+  its owner proved.
+- `card.url` is now the card's page, for a person; `card.api_url` is the
+  card as JSON with its signed JWS, which `card.url` was before.
+
 ## 1.61.0 — the card log
 
 - `logHead`, `logCheckpoint`, `logEntries`, `logProof` and
