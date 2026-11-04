@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.61.0 — the card log
+
+- `logHead`, `logCheckpoint`, `logEntries`, `logProof` and
+  `logConsistency`: the public card log, every agent card issued, changed or
+  revoked, with signed checkpoints and RFC 9162 proofs. No key needed.
+- `logMonitorsList`, `logMonitorsCreate` and `logMonitorsDelete`: watch the
+  log for a name or a domain, look-alikes included.
+- `card_log.matched`, a new event type a webhook can subscribe to.
+- `card.log` on `verifySender`'s answer: the card's inclusion proof.
+
 ## 1.60.0 — checking a signed request
 
 - `verifySender` takes `request` instead of `message`: an HTTP request an

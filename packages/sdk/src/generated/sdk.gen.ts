@@ -254,6 +254,30 @@ import type {
   LabelsUpdateData,
   LabelsUpdateErrors,
   LabelsUpdateResponses,
+  LogCheckpointData,
+  LogCheckpointErrors,
+  LogCheckpointResponses,
+  LogConsistencyData,
+  LogConsistencyErrors,
+  LogConsistencyResponses,
+  LogEntriesData,
+  LogEntriesErrors,
+  LogEntriesResponses,
+  LogHeadData,
+  LogHeadErrors,
+  LogHeadResponses,
+  LogMonitorsCreateData,
+  LogMonitorsCreateErrors,
+  LogMonitorsCreateResponses,
+  LogMonitorsDeleteData,
+  LogMonitorsDeleteErrors,
+  LogMonitorsDeleteResponses,
+  LogMonitorsListData,
+  LogMonitorsListErrors,
+  LogMonitorsListResponses,
+  LogProofData,
+  LogProofErrors,
+  LogProofResponses,
   MailboxesChangesData,
   MailboxesChangesErrors,
   MailboxesChangesResponses,
@@ -497,6 +521,123 @@ export const verifySender = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Read the card log’s signed head
+ *
+ * Public, with no key. The card log holds every agent card Pidgeon has issued, changed or revoked, in an append-only Merkle tree (RFC 9162). `checkpoint` is its signed head, a C2SP checkpoint: check it against `verifier_key`, which never changes, and pin that. Cached for ten seconds. Limited per IP.
+ */
+export const logHead = <ThrowOnError extends boolean = false>(
+  options?: Options<LogHeadData, ThrowOnError>,
+): RequestResult<LogHeadResponses, LogHeadErrors, ThrowOnError> =>
+  (options?.client ?? client).get<LogHeadResponses, LogHeadErrors, ThrowOnError>({
+    url: '/log/head',
+    ...options,
+  });
+
+/**
+ * Read the card log’s checkpoint as text
+ *
+ * Public, with no key. The same signed checkpoint as `GET /log/head`, as `text/plain`, for a witness or monitor built for C2SP tiled logs.
+ */
+export const logCheckpoint = <ThrowOnError extends boolean = false>(
+  options?: Options<LogCheckpointData, ThrowOnError>,
+): RequestResult<LogCheckpointResponses, LogCheckpointErrors, ThrowOnError> =>
+  (options?.client ?? client).get<LogCheckpointResponses, LogCheckpointErrors, ThrowOnError>({
+    url: '/log/checkpoint',
+    ...options,
+  });
+
+/**
+ * List card log entries
+ *
+ * Public, with no key. Entries from `start` up to `end`, at most 100. An entry is one card subject’s claims at the moment they changed: `issued`, `updated` or `revoked`. `data` is its exact bytes, canonical JSON; a leaf hash is SHA-256 of 0x00 and `data`. Entries never change.
+ */
+export const logEntries = <ThrowOnError extends boolean = false>(
+  options?: Options<LogEntriesData, ThrowOnError>,
+): RequestResult<LogEntriesResponses, LogEntriesErrors, ThrowOnError> =>
+  (options?.client ?? client).get<LogEntriesResponses, LogEntriesErrors, ThrowOnError>({
+    url: '/log/entries',
+    ...options,
+  });
+
+/**
+ * Prove a card is in the card log
+ *
+ * Public, with no key. The inclusion proof (RFC 9162 §2.1.3) for a card’s latest entry, by its `sub`, against the current head; or for an entry `index` against the head at `tree_size`. 404 when it is not in the log: a card appears within five minutes.
+ */
+export const logProof = <ThrowOnError extends boolean = false>(
+  options?: Options<LogProofData, ThrowOnError>,
+): RequestResult<LogProofResponses, LogProofErrors, ThrowOnError> =>
+  (options?.client ?? client).get<LogProofResponses, LogProofErrors, ThrowOnError>({
+    url: '/log/proof',
+    ...options,
+  });
+
+/**
+ * Prove the card log only grew
+ *
+ * Public, with no key. The consistency proof (RFC 9162 §2.1.4) that the tree of `first` entries is a prefix of the tree of `second`: what a monitor asks each time the head moves, so nothing it saw was rewritten.
+ */
+export const logConsistency = <ThrowOnError extends boolean = false>(
+  options: Options<LogConsistencyData, ThrowOnError>,
+): RequestResult<LogConsistencyResponses, LogConsistencyErrors, ThrowOnError> =>
+  (options.client ?? client).get<LogConsistencyResponses, LogConsistencyErrors, ThrowOnError>({
+    url: '/log/consistency',
+    ...options,
+  });
+
+/**
+ * List card log monitors
+ *
+ * The names and domains this account watches the card log for. An owner, or an admin key over every address.
+ */
+export const logMonitorsList = <ThrowOnError extends boolean = false>(
+  options?: Options<LogMonitorsListData, ThrowOnError>,
+): RequestResult<LogMonitorsListResponses, LogMonitorsListErrors, ThrowOnError> =>
+  (options?.client ?? client).get<LogMonitorsListResponses, LogMonitorsListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/log/monitors',
+    ...options,
+  });
+
+/**
+ * Watch the card log for a name
+ *
+ * Every new card log entry whose address, `on_behalf_of` or operator domain claims `term` — look-alikes included, such as a Greek Μ in “Meta” — emits a `card_log.matched` event to the account’s webhooks and, unless `email` is false, emails its owners. It watches from now on. An owner, or an admin key over every address; 50 at most.
+ */
+export const logMonitorsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<LogMonitorsCreateData, ThrowOnError>,
+): RequestResult<LogMonitorsCreateResponses, LogMonitorsCreateErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    LogMonitorsCreateResponses,
+    LogMonitorsCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/log/monitors',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Stop watching
+ */
+export const logMonitorsDelete = <ThrowOnError extends boolean = false>(
+  options: Options<LogMonitorsDeleteData, ThrowOnError>,
+): RequestResult<LogMonitorsDeleteResponses, LogMonitorsDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<
+    LogMonitorsDeleteResponses,
+    LogMonitorsDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/log/monitors/{id}',
+    ...options,
   });
 
 /**

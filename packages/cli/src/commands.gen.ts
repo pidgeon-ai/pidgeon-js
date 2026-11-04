@@ -2883,6 +2883,168 @@ export const COMMANDS: Command[] = [
     ]
   },
   {
+    "group": "log",
+    "name": "checkpoint",
+    "operationId": "logCheckpoint",
+    "method": "GET",
+    "path": "/log/checkpoint",
+    "summary": "Read the card log’s checkpoint as text",
+    "flags": []
+  },
+  {
+    "group": "log",
+    "name": "consistency",
+    "operationId": "logConsistency",
+    "method": "GET",
+    "path": "/log/consistency",
+    "summary": "Prove the card log only grew",
+    "flags": [
+      {
+        "name": "first",
+        "kind": "number",
+        "required": true,
+        "where": "query",
+        "describe": "The smaller tree size."
+      },
+      {
+        "name": "second",
+        "kind": "number",
+        "required": true,
+        "where": "query",
+        "describe": "The larger tree size."
+      }
+    ]
+  },
+  {
+    "group": "log",
+    "name": "entries",
+    "operationId": "logEntries",
+    "method": "GET",
+    "path": "/log/entries",
+    "summary": "List card log entries",
+    "flags": [
+      {
+        "name": "start",
+        "kind": "number",
+        "required": false,
+        "where": "query",
+        "describe": "The first entry’s index."
+      },
+      {
+        "name": "end",
+        "kind": "number",
+        "required": false,
+        "where": "query",
+        "describe": "One past the last entry’s index. At most 100 are returned."
+      }
+    ]
+  },
+  {
+    "group": "log",
+    "name": "head",
+    "operationId": "logHead",
+    "method": "GET",
+    "path": "/log/head",
+    "summary": "Read the card log’s signed head",
+    "flags": []
+  },
+  {
+    "group": "log",
+    "name": "monitorsCreate",
+    "operationId": "logMonitorsCreate",
+    "method": "POST",
+    "path": "/log/monitors",
+    "summary": "Watch the card log for a name",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "term",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "A name or a domain to watch for, such as `meta` or `acme.com`. Look-alikes match too."
+      },
+      {
+        "name": "email",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "Email the workspace’s owners on a match, beside the `card_log.matched` event."
+      }
+    ]
+  },
+  {
+    "group": "log",
+    "name": "monitorsDelete",
+    "operationId": "logMonitorsDelete",
+    "method": "DELETE",
+    "path": "/log/monitors/{id}",
+    "summary": "Stop watching",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "log",
+    "name": "monitorsList",
+    "operationId": "logMonitorsList",
+    "method": "GET",
+    "path": "/log/monitors",
+    "summary": "List card log monitors",
+    "flags": []
+  },
+  {
+    "group": "log",
+    "name": "proof",
+    "operationId": "logProof",
+    "method": "GET",
+    "path": "/log/proof",
+    "summary": "Prove a card is in the card log",
+    "flags": [
+      {
+        "name": "sub",
+        "kind": "string",
+        "required": false,
+        "where": "query",
+        "describe": "A card’s `sub`: its latest entry is proved."
+      },
+      {
+        "name": "index",
+        "kind": "number",
+        "required": false,
+        "where": "query",
+        "describe": "An entry’s index, instead of `sub`."
+      },
+      {
+        "name": "tree_size",
+        "kind": "number",
+        "required": false,
+        "where": "query",
+        "describe": "Prove against the checkpoint at this size, instead of the current one."
+      }
+    ]
+  },
+  {
     "group": "mailboxes",
     "name": "changes",
     "operationId": "mailboxesChanges",

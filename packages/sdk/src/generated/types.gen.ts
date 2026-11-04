@@ -270,6 +270,39 @@ export type SenderVerification = {
     url: string;
     standing: string;
     since: string;
+    /**
+     * The card’s latest entry in the public card log and its inclusion proof. Null until the log’s next pass (at most five minutes) has seen it.
+     */
+    log: {
+      /**
+       * The entry’s index in the card log.
+       */
+      index: number;
+      /**
+       * The size of the tree the proof is against.
+       */
+      tree_size: number;
+      /**
+       * SHA-256 of 0x00 and `data`, base64.
+       */
+      leaf_hash: string;
+      /**
+       * The audit path, RFC 9162 §2.1.3, base64.
+       */
+      proof: Array<string>;
+      /**
+       * The entry’s exact bytes: canonical JSON (RFC 8785).
+       */
+      data: string;
+      /**
+       * The signed tree head the proof is against: a C2SP checkpoint (signed note).
+       */
+      checkpoint: string;
+      /**
+       * The log’s key, `<origin>+<key id>+<base64 key>`, to check `checkpoint`.
+       */
+      verifier_key: string;
+    } | null;
   } | null;
   warnings: Array<{
     code:
@@ -282,6 +315,198 @@ export type SenderVerification = {
       | 'envelope_unverifiable';
     message: string;
   }>;
+};
+
+export type CardLogHead = {
+  object: 'card_log_head';
+  /**
+   * The log’s name: the checkpoint’s first line and its key’s name.
+   */
+  origin: string;
+  /**
+   * How many entries the log has.
+   */
+  size: number;
+  /**
+   * The RFC 9162 Merkle root at `size`, base64.
+   */
+  root_hash: string;
+  /**
+   * The signed tree head, a C2SP checkpoint (signed note, Ed25519). The authority: the fields beside it are read from it.
+   */
+  checkpoint: string;
+  /**
+   * The log’s key as a signed-note verifier key, `<origin>+<key id>+<base64 key>`. Pin it.
+   */
+  verifier_key: string;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+};
+
+export type CardLogEntry = {
+  object: 'card_log_entry';
+  index: number;
+  /**
+   * The exact bytes the leaf hashes: canonical JSON (RFC 8785).
+   */
+  data: string;
+  /**
+   * SHA-256 of 0x00 and `data`, base64.
+   */
+  leaf_hash: string;
+  /**
+   * `data`, parsed, for reading.
+   */
+  entry: {
+    v: 'post0-log';
+    event: 'issued' | 'updated' | 'revoked';
+    time: string;
+    /**
+     * The card’s `sub`: every entry about one address shares it.
+     */
+    sub: string;
+    address: string;
+    /**
+     * The index of this subject’s previous entry.
+     */
+    prev?: number;
+    iss?: string;
+    kind?: 'agent' | 'service';
+    on_behalf_of?: string;
+    operator?: {
+      domain: string;
+      verified: boolean;
+    };
+    keys?: Array<{
+      type: 'post' | 'dkim';
+      domain: string;
+      kid?: string;
+      /**
+       * For `post`: the Ed25519 public key, base64url.
+       */
+      pub?: string;
+      selector?: string;
+    }>;
+  };
+};
+
+export type CardLogInclusion = {
+  object: 'card_log_inclusion';
+  index: number;
+  tree_size: number;
+  leaf_hash: string;
+  /**
+   * The audit path, RFC 9162 §2.1.3, base64.
+   */
+  proof: Array<string>;
+  entry: {
+    object: 'card_log_entry';
+    index: number;
+    /**
+     * The exact bytes the leaf hashes: canonical JSON (RFC 8785).
+     */
+    data: string;
+    /**
+     * SHA-256 of 0x00 and `data`, base64.
+     */
+    leaf_hash: string;
+    /**
+     * `data`, parsed, for reading.
+     */
+    entry: {
+      v: 'post0-log';
+      event: 'issued' | 'updated' | 'revoked';
+      time: string;
+      /**
+       * The card’s `sub`: every entry about one address shares it.
+       */
+      sub: string;
+      address: string;
+      /**
+       * The index of this subject’s previous entry.
+       */
+      prev?: number;
+      iss?: string;
+      kind?: 'agent' | 'service';
+      on_behalf_of?: string;
+      operator?: {
+        domain: string;
+        verified: boolean;
+      };
+      keys?: Array<{
+        type: 'post' | 'dkim';
+        domain: string;
+        kid?: string;
+        /**
+         * For `post`: the Ed25519 public key, base64url.
+         */
+        pub?: string;
+        selector?: string;
+      }>;
+    };
+  };
+  /**
+   * The signed head at `tree_size`.
+   */
+  head: {
+    object: 'card_log_head';
+    /**
+     * The log’s name: the checkpoint’s first line and its key’s name.
+     */
+    origin: string;
+    /**
+     * How many entries the log has.
+     */
+    size: number;
+    /**
+     * The RFC 9162 Merkle root at `size`, base64.
+     */
+    root_hash: string;
+    /**
+     * The signed tree head, a C2SP checkpoint (signed note, Ed25519). The authority: the fields beside it are read from it.
+     */
+    checkpoint: string;
+    /**
+     * The log’s key as a signed-note verifier key, `<origin>+<key id>+<base64 key>`. Pin it.
+     */
+    verifier_key: string;
+    /**
+     * ISO-8601, UTC.
+     */
+    created_at: string;
+  };
+};
+
+export type CardLogConsistency = {
+  object: 'card_log_consistency';
+  first: number;
+  second: number;
+  /**
+   * RFC 9162 §2.1.4, base64.
+   */
+  proof: Array<string>;
+};
+
+export type CardLogMonitor = {
+  id: string;
+  /**
+   * The name or domain watched for.
+   */
+  term: string;
+  /**
+   * Whether a match is emailed to the workspace’s owners.
+   */
+  email: boolean;
+  /**
+   * The first log entry it has not matched yet.
+   */
+  next_index: number;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
 };
 
 export type AgentSetup = {
@@ -3049,6 +3274,518 @@ export type VerifySenderResponses = {
 };
 
 export type VerifySenderResponse = VerifySenderResponses[keyof VerifySenderResponses];
+
+export type LogHeadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/log/head';
+};
+
+export type LogHeadErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogHeadError = LogHeadErrors[keyof LogHeadErrors];
+
+export type LogHeadResponses = {
+  /**
+   * The head.
+   */
+  200: {
+    data: CardLogHead;
+  };
+};
+
+export type LogHeadResponse = LogHeadResponses[keyof LogHeadResponses];
+
+export type LogCheckpointData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/log/checkpoint';
+};
+
+export type LogCheckpointErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogCheckpointError = LogCheckpointErrors[keyof LogCheckpointErrors];
+
+export type LogCheckpointResponses = {
+  /**
+   * The checkpoint: a signed note.
+   */
+  200: string;
+};
+
+export type LogCheckpointResponse = LogCheckpointResponses[keyof LogCheckpointResponses];
+
+export type LogEntriesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * The first entry’s index.
+     */
+    start?: number;
+    /**
+     * One past the last entry’s index. At most 100 are returned.
+     */
+    end?: number;
+  };
+  url: '/log/entries';
+};
+
+export type LogEntriesErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogEntriesError = LogEntriesErrors[keyof LogEntriesErrors];
+
+export type LogEntriesResponses = {
+  /**
+   * A page of entries.
+   */
+  200: {
+    data: Array<CardLogEntry>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type LogEntriesResponse = LogEntriesResponses[keyof LogEntriesResponses];
+
+export type LogProofData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * A card’s `sub`: its latest entry is proved.
+     */
+    sub?: string;
+    /**
+     * An entry’s index, instead of `sub`.
+     */
+    index?: number;
+    /**
+     * Prove against the checkpoint at this size, instead of the current one.
+     */
+    tree_size?: number;
+  };
+  url: '/log/proof';
+};
+
+export type LogProofErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogProofError = LogProofErrors[keyof LogProofErrors];
+
+export type LogProofResponses = {
+  /**
+   * The proof.
+   */
+  200: {
+    data: CardLogInclusion;
+  };
+};
+
+export type LogProofResponse = LogProofResponses[keyof LogProofResponses];
+
+export type LogConsistencyData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * The smaller tree size.
+     */
+    first: number;
+    /**
+     * The larger tree size.
+     */
+    second: number;
+  };
+  url: '/log/consistency';
+};
+
+export type LogConsistencyErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogConsistencyError = LogConsistencyErrors[keyof LogConsistencyErrors];
+
+export type LogConsistencyResponses = {
+  /**
+   * The proof.
+   */
+  200: {
+    data: CardLogConsistency;
+  };
+};
+
+export type LogConsistencyResponse = LogConsistencyResponses[keyof LogConsistencyResponses];
+
+export type LogMonitorsListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/log/monitors';
+};
+
+export type LogMonitorsListErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type LogMonitorsListError = LogMonitorsListErrors[keyof LogMonitorsListErrors];
+
+export type LogMonitorsListResponses = {
+  /**
+   * The monitors.
+   */
+  200: {
+    data: Array<CardLogMonitor>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type LogMonitorsListResponse = LogMonitorsListResponses[keyof LogMonitorsListResponses];
+
+export type LogMonitorsCreateData = {
+  body: {
+    /**
+     * A name or a domain to watch for, such as `meta` or `acme.com`. Look-alikes match too.
+     */
+    term: string;
+    /**
+     * Email the workspace’s owners on a match, beside the `card_log.matched` event.
+     */
+    email?: boolean;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/log/monitors';
+};
+
+export type LogMonitorsCreateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type LogMonitorsCreateError = LogMonitorsCreateErrors[keyof LogMonitorsCreateErrors];
+
+export type LogMonitorsCreateResponses = {
+  /**
+   * The monitor.
+   */
+  201: {
+    data: CardLogMonitor;
+  };
+};
+
+export type LogMonitorsCreateResponse =
+  LogMonitorsCreateResponses[keyof LogMonitorsCreateResponses];
+
+export type LogMonitorsDeleteData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/log/monitors/{id}';
+};
+
+export type LogMonitorsDeleteErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type LogMonitorsDeleteError = LogMonitorsDeleteErrors[keyof LogMonitorsDeleteErrors];
+
+export type LogMonitorsDeleteResponses = {
+  /**
+   * Deleted.
+   */
+  200: {
+    data: Deleted;
+  };
+};
+
+export type LogMonitorsDeleteResponse =
+  LogMonitorsDeleteResponses[keyof LogMonitorsDeleteResponses];
 
 export type AgentConnectData = {
   body: {
@@ -9422,6 +10159,7 @@ export type WebhooksCreateData = {
       | 'domain.verified'
       | 'domain.dns_changed'
       | 'referral.rewarded'
+      | 'card_log.matched'
     >;
   };
   headers?: {

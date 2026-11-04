@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.60.0",
+    "version": "1.61.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -848,12 +848,71 @@
                   },
                   "since": {
                     "type": "string"
+                  },
+                  "log": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The entry’s index in the card log."
+                          },
+                          "tree_size": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The size of the tree the proof is against."
+                          },
+                          "leaf_hash": {
+                            "type": "string",
+                            "description": "SHA-256 of 0x00 and `data`, base64."
+                          },
+                          "proof": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The audit path, RFC 9162 §2.1.3, base64."
+                          },
+                          "data": {
+                            "type": "string",
+                            "description": "The entry’s exact bytes: canonical JSON (RFC 8785)."
+                          },
+                          "checkpoint": {
+                            "type": "string",
+                            "description": "The signed tree head the proof is against: a C2SP checkpoint (signed note)."
+                          },
+                          "verifier_key": {
+                            "type": "string",
+                            "description": "The log’s key, `<origin>+<key id>+<base64 key>`, to check `checkpoint`."
+                          }
+                        },
+                        "required": [
+                          "index",
+                          "tree_size",
+                          "leaf_hash",
+                          "proof",
+                          "data",
+                          "checkpoint",
+                          "verifier_key"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The card’s latest entry in the public card log and its inclusion proof. Null until the log’s next pass (at most five minutes) has seen it."
                   }
                 },
                 "required": [
                   "url",
                   "standing",
-                  "since"
+                  "since",
+                  "log"
                 ],
                 "additionalProperties": false
               },
@@ -905,6 +964,471 @@
           "signatures",
           "card",
           "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "CardLogHead": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "card_log_head"
+          },
+          "origin": {
+            "type": "string",
+            "description": "The log’s name: the checkpoint’s first line and its key’s name."
+          },
+          "size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "How many entries the log has."
+          },
+          "root_hash": {
+            "type": "string",
+            "description": "The RFC 9162 Merkle root at `size`, base64."
+          },
+          "checkpoint": {
+            "type": "string",
+            "description": "The signed tree head, a C2SP checkpoint (signed note, Ed25519). The authority: the fields beside it are read from it."
+          },
+          "verifier_key": {
+            "type": "string",
+            "description": "The log’s key as a signed-note verifier key, `<origin>+<key id>+<base64 key>`. Pin it."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO-8601, UTC."
+          }
+        },
+        "required": [
+          "object",
+          "origin",
+          "size",
+          "root_hash",
+          "checkpoint",
+          "verifier_key",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "CardLogEntry": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "card_log_entry"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "data": {
+            "type": "string",
+            "description": "The exact bytes the leaf hashes: canonical JSON (RFC 8785)."
+          },
+          "leaf_hash": {
+            "type": "string",
+            "description": "SHA-256 of 0x00 and `data`, base64."
+          },
+          "entry": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string",
+                "const": "post0-log"
+              },
+              "event": {
+                "type": "string",
+                "enum": [
+                  "issued",
+                  "updated",
+                  "revoked"
+                ]
+              },
+              "time": {
+                "type": "string"
+              },
+              "sub": {
+                "type": "string",
+                "description": "The card’s `sub`: every entry about one address shares it."
+              },
+              "address": {
+                "type": "string"
+              },
+              "prev": {
+                "description": "The index of this subject’s previous entry.",
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "iss": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "agent",
+                  "service"
+                ]
+              },
+              "on_behalf_of": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "object",
+                "properties": {
+                  "domain": {
+                    "type": "string"
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "verified"
+                ],
+                "additionalProperties": false
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "post",
+                        "dkim"
+                      ]
+                    },
+                    "domain": {
+                      "type": "string"
+                    },
+                    "kid": {
+                      "type": "string"
+                    },
+                    "pub": {
+                      "description": "For `post`: the Ed25519 public key, base64url.",
+                      "type": "string"
+                    },
+                    "selector": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "domain"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "v",
+              "event",
+              "time",
+              "sub",
+              "address"
+            ],
+            "additionalProperties": false,
+            "description": "`data`, parsed, for reading."
+          }
+        },
+        "required": [
+          "object",
+          "index",
+          "data",
+          "leaf_hash",
+          "entry"
+        ],
+        "additionalProperties": false
+      },
+      "CardLogInclusion": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "card_log_inclusion"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "tree_size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "leaf_hash": {
+            "type": "string"
+          },
+          "proof": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The audit path, RFC 9162 §2.1.3, base64."
+          },
+          "entry": {
+            "type": "object",
+            "properties": {
+              "object": {
+                "type": "string",
+                "const": "card_log_entry"
+              },
+              "index": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "data": {
+                "type": "string",
+                "description": "The exact bytes the leaf hashes: canonical JSON (RFC 8785)."
+              },
+              "leaf_hash": {
+                "type": "string",
+                "description": "SHA-256 of 0x00 and `data`, base64."
+              },
+              "entry": {
+                "type": "object",
+                "properties": {
+                  "v": {
+                    "type": "string",
+                    "const": "post0-log"
+                  },
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "issued",
+                      "updated",
+                      "revoked"
+                    ]
+                  },
+                  "time": {
+                    "type": "string"
+                  },
+                  "sub": {
+                    "type": "string",
+                    "description": "The card’s `sub`: every entry about one address shares it."
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "prev": {
+                    "description": "The index of this subject’s previous entry.",
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "iss": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "agent",
+                      "service"
+                    ]
+                  },
+                  "on_behalf_of": {
+                    "type": "string"
+                  },
+                  "operator": {
+                    "type": "object",
+                    "properties": {
+                      "domain": {
+                        "type": "string"
+                      },
+                      "verified": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "domain",
+                      "verified"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "post",
+                            "dkim"
+                          ]
+                        },
+                        "domain": {
+                          "type": "string"
+                        },
+                        "kid": {
+                          "type": "string"
+                        },
+                        "pub": {
+                          "description": "For `post`: the Ed25519 public key, base64url.",
+                          "type": "string"
+                        },
+                        "selector": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "domain"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "v",
+                  "event",
+                  "time",
+                  "sub",
+                  "address"
+                ],
+                "additionalProperties": false,
+                "description": "`data`, parsed, for reading."
+              }
+            },
+            "required": [
+              "object",
+              "index",
+              "data",
+              "leaf_hash",
+              "entry"
+            ],
+            "additionalProperties": false
+          },
+          "head": {
+            "type": "object",
+            "properties": {
+              "object": {
+                "type": "string",
+                "const": "card_log_head"
+              },
+              "origin": {
+                "type": "string",
+                "description": "The log’s name: the checkpoint’s first line and its key’s name."
+              },
+              "size": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "How many entries the log has."
+              },
+              "root_hash": {
+                "type": "string",
+                "description": "The RFC 9162 Merkle root at `size`, base64."
+              },
+              "checkpoint": {
+                "type": "string",
+                "description": "The signed tree head, a C2SP checkpoint (signed note, Ed25519). The authority: the fields beside it are read from it."
+              },
+              "verifier_key": {
+                "type": "string",
+                "description": "The log’s key as a signed-note verifier key, `<origin>+<key id>+<base64 key>`. Pin it."
+              },
+              "created_at": {
+                "type": "string",
+                "description": "ISO-8601, UTC."
+              }
+            },
+            "required": [
+              "object",
+              "origin",
+              "size",
+              "root_hash",
+              "checkpoint",
+              "verifier_key",
+              "created_at"
+            ],
+            "additionalProperties": false,
+            "description": "The signed head at `tree_size`."
+          }
+        },
+        "required": [
+          "object",
+          "index",
+          "tree_size",
+          "leaf_hash",
+          "proof",
+          "entry",
+          "head"
+        ],
+        "additionalProperties": false
+      },
+      "CardLogConsistency": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "card_log_consistency"
+          },
+          "first": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "second": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "proof": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "RFC 9162 §2.1.4, base64."
+          }
+        },
+        "required": [
+          "object",
+          "first",
+          "second",
+          "proof"
+        ],
+        "additionalProperties": false
+      },
+      "CardLogMonitor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string",
+            "description": "The name or domain watched for."
+          },
+          "email": {
+            "type": "boolean",
+            "description": "Whether a match is emailed to the workspace’s owners."
+          },
+          "next_index": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "The first log entry it has not matched yet."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO-8601, UTC."
+          }
+        },
+        "required": [
+          "id",
+          "term",
+          "email",
+          "next_index",
+          "created_at"
         ],
         "additionalProperties": false
       },
@@ -8652,6 +9176,1075 @@
         "security": [],
         "tags": [
           "verify"
+        ]
+      }
+    },
+    "/log/head": {
+      "get": {
+        "operationId": "logHead",
+        "summary": "Read the card log’s signed head",
+        "description": "Public, with no key. The card log holds every agent card Pidgeon has issued, changed or revoked, in an append-only Merkle tree (RFC 9162). `checkpoint` is its signed head, a C2SP checkpoint: check it against `verifier_key`, which never changes, and pin that. Cached for ten seconds. Limited per IP.",
+        "responses": {
+          "200": {
+            "description": "The head.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CardLogHead"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "log"
+        ]
+      }
+    },
+    "/log/checkpoint": {
+      "get": {
+        "operationId": "logCheckpoint",
+        "summary": "Read the card log’s checkpoint as text",
+        "description": "Public, with no key. The same signed checkpoint as `GET /log/head`, as `text/plain`, for a witness or monitor built for C2SP tiled logs.",
+        "responses": {
+          "200": {
+            "description": "The checkpoint: a signed note.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "log"
+        ]
+      }
+    },
+    "/log/entries": {
+      "get": {
+        "operationId": "logEntries",
+        "summary": "List card log entries",
+        "description": "Public, with no key. Entries from `start` up to `end`, at most 100. An entry is one card subject’s claims at the moment they changed: `issued`, `updated` or `revoked`. `data` is its exact bytes, canonical JSON; a leaf hash is SHA-256 of 0x00 and `data`. Entries never change.",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "The first entry’s index.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "One past the last entry’s index. At most 100 are returned.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CardLogEntry"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to continue. Null on the last page."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "log"
+        ]
+      }
+    },
+    "/log/proof": {
+      "get": {
+        "operationId": "logProof",
+        "summary": "Prove a card is in the card log",
+        "description": "Public, with no key. The inclusion proof (RFC 9162 §2.1.3) for a card’s latest entry, by its `sub`, against the current head; or for an entry `index` against the head at `tree_size`. 404 when it is not in the log: a card appears within five minutes.",
+        "parameters": [
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A card’s `sub`: its latest entry is proved.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "An entry’s index, instead of `sub`.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "tree_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Prove against the checkpoint at this size, instead of the current one.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The proof.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CardLogInclusion"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "log"
+        ]
+      }
+    },
+    "/log/consistency": {
+      "get": {
+        "operationId": "logConsistency",
+        "summary": "Prove the card log only grew",
+        "description": "Public, with no key. The consistency proof (RFC 9162 §2.1.4) that the tree of `first` entries is a prefix of the tree of `second`: what a monitor asks each time the head moves, so nothing it saw was rewritten.",
+        "parameters": [
+          {
+            "name": "first",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "The smaller tree size."
+            }
+          },
+          {
+            "name": "second",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "The larger tree size."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The proof.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CardLogConsistency"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "tags": [
+          "log"
+        ]
+      }
+    },
+    "/log/monitors": {
+      "get": {
+        "operationId": "logMonitorsList",
+        "summary": "List card log monitors",
+        "description": "The names and domains this account watches the card log for. An owner, or an admin key over every address.",
+        "responses": {
+          "200": {
+            "description": "The monitors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CardLogMonitor"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to continue. Null on the last page."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "has_more",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "log"
+        ]
+      },
+      "post": {
+        "operationId": "logMonitorsCreate",
+        "summary": "Watch the card log for a name",
+        "description": "Every new card log entry whose address, `on_behalf_of` or operator domain claims `term` — look-alikes included, such as a Greek Μ in “Meta” — emits a `card_log.matched` event to the account’s webhooks and, unless `email` is false, emails its owners. It watches from now on. An owner, or an admin key over every address; 50 at most.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "term": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100,
+                    "description": "A name or a domain to watch for, such as `meta` or `acme.com`. Look-alikes match too."
+                  },
+                  "email": {
+                    "default": true,
+                    "description": "Email the workspace’s owners on a match, beside the `card_log.matched` event.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "term"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The monitor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CardLogMonitor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "log"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "description": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs."
+          }
+        ]
+      }
+    },
+    "/log/monitors/{id}": {
+      "delete": {
+        "operationId": "logMonitorsDelete",
+        "summary": "Stop watching",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "description": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deleted"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "log"
         ]
       }
     },
@@ -23138,7 +24731,8 @@
                         "identity.transferred",
                         "domain.verified",
                         "domain.dns_changed",
-                        "referral.rewarded"
+                        "referral.rewarded",
+                        "card_log.matched"
                       ]
                     }
                   }
@@ -29210,6 +30804,9 @@
     },
     {
       "name": "verify"
+    },
+    {
+      "name": "log"
     },
     {
       "name": "identities"
