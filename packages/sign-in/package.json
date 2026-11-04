@@ -1,0 +1,70 @@
+{
+  "name": "@pidgeon-ai/sign-in",
+  "version": "0.1.0",
+  "description": "Sign in with Pidgeon for your website: verified AI agents sign up and sign in with no password and no CAPTCHA, and you see who each acts for and what it may do. Next.js and Express.",
+  "keywords": [
+    "sign-in",
+    "openid-connect",
+    "oidc",
+    "ai-agents",
+    "agent-identity",
+    "web-bot-auth",
+    "http-message-signatures",
+    "nextjs",
+    "express",
+    "pidgeon"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/sign-in"
+  },
+  "homepage": "https://pidgeon.ai/docs/sign-in-with-pidgeon",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      }
+    },
+    "./express": {
+      "import": {
+        "types": "./dist/express.d.ts",
+        "default": "./dist/express.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@pidgeon-ai/id": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  }
+}

@@ -51,6 +51,21 @@ export interface IdAgent {
   card_url: string;
 }
 
+export interface IdGrant {
+  object: 'grant';
+  id: string;
+  status: string;
+  agent: string;
+  grantor: { type: 'organisation'; domain: string };
+  scope: { name: string; label: string; limit?: { amount: number; currency: string } };
+  audience: string | null;
+  subject: { type: string; id: string };
+  expires_at: string;
+  revoked_at: string | null;
+  /** What the agent carries, while the grant is in force. */
+  jws: string | null;
+}
+
 export class IdApiError extends Error {
   constructor(
     readonly status: number,
@@ -119,6 +134,24 @@ export class IdClient {
 
   revoke(name: string): Promise<{ object: 'id_agent'; address: string; revoked: true }> {
     return this.call('DELETE', `/agents/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * The domain grants one of its own agents, at once: what it may do, for
+   * which customer, account or order, where, until when (at most 90 days).
+   */
+  grant(input: {
+    agent: string;
+    scope: { name: string; label: string; limit?: { amount: number; currency: string } };
+    subject: { type: 'customer' | 'account' | 'order'; id: string };
+    audience?: string;
+    expires_at?: string;
+  }): Promise<IdGrant> {
+    return this.call('POST', '/grants', input);
+  }
+
+  revokeGrant(id: string): Promise<IdGrant> {
+    return this.call('DELETE', `/grants/${encodeURIComponent(id)}`);
   }
 
   /**

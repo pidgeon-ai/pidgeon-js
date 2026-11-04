@@ -15,7 +15,8 @@ import { type Identity, verifyBytes } from './keys';
  *   Pidgeon).
  * - Covered: `@method`, `@authority`, `@path`, `@query` when there is one,
  *   `signature-agent`, `from` (the agent's address, the header RFC 9110
- *   gives a robot's operator), and `content-digest` when there is a body.
+ *   gives a robot's operator), `post-grant` when it carries grants, and
+ *   `content-digest` when there is a body.
  *   So a signature holds for this request only, not for any request to
  *   the host.
  * - Valid for five minutes. Cloudflare suggests a minute; an agent behind a
@@ -41,6 +42,12 @@ export interface SignRequestInput {
   label?: string;
   /** The tag. Pidgeon's issuance API uses its own, so an agent's signature is never an operator's. */
   tag?: string;
+  /**
+   * Grants the agent was given (compact JWS): sent as `Post-Grant`,
+   * comma-separated, and covered like `From`, so the receiver sees what it
+   * may do. A grant holds only for the agent it names, whoever forwards it.
+   */
+  grants?: string[];
   seconds?: number;
 }
 
@@ -82,6 +89,9 @@ export async function signRequest(
   const added: Record<string, string> = {
     'signature-agent': quote(`https://post.${identity.domain}`),
     ...(agent ? { from: agent } : {}),
+    ...(input.grants?.length
+      ? { 'post-grant': input.grants.map((jws) => jws.replace(/\s+/g, '')).join(', ') }
+      : {}),
   };
   const body = input.body === undefined || input.body === null ? null : bytesOf(input.body);
   if (body && body.length > 0) added['content-digest'] = contentDigest(body);
@@ -93,6 +103,7 @@ export async function signRequest(
     ...(url.search ? ([['@query', url.search]] as [string, string][]) : []),
     ['signature-agent', added['signature-agent']!],
     ...(added.from ? ([['from', added.from]] as [string, string][]) : []),
+    ...(added['post-grant'] ? ([['post-grant', added['post-grant']]] as [string, string][]) : []),
     ...(added['content-digest']
       ? ([['content-digest', added['content-digest']]] as [string, string][])
       : []),
@@ -124,7 +135,10 @@ type Fetch = typeof globalThis.fetch;
  * new StreamableHTTPClientTransport(new URL(server), { fetch: signedFetch(identity, { agent }) })
  * ```
  */
-export function signedFetch(identity: Identity, options: { agent: string; fetch?: Fetch }): Fetch {
+export function signedFetch(
+  identity: Identity,
+  options: { agent: string; fetch?: Fetch; grants?: string[] },
+): Fetch {
   const base = options.fetch ?? globalThis.fetch;
   return async (resource, init) => {
     const request = new Request(resource, init);
@@ -139,6 +153,7 @@ export function signedFetch(identity: Identity, options: { agent: string; fetch?
       headers,
       body,
       agent: options.agent,
+      grants: options.grants,
     });
     const signedHeaders = new Headers(request.headers);
     for (const [name, value] of Object.entries(signature)) signedHeaders.set(name, value);
@@ -162,7 +177,16 @@ export interface VerifyRequestInput {
 }
 
 export type RequestCheck =
-  | { ok: true; keyid: string; agent: string | null; from: string | null; created: number }
+  | {
+      ok: true;
+      keyid: string;
+      agent: string | null;
+      from: string | null;
+      created: number;
+      /** What the signature covers, by name: a receiver insists on the ones it needs. */
+      components: string[];
+      nonce: string | null;
+    }
   | { ok: false; reason: string };
 
 /**
@@ -270,7 +294,16 @@ export async function verifyRequest(
   const from = components.some((component) => component.name === 'from')
     ? (headers.get('from')?.trim().toLowerCase() ?? null)
     : null;
-  return { ok: true, keyid, agent, from, created };
+  const nonce = /;nonce="([^"]+)"/.exec(params)?.[1] ?? null;
+  return {
+    ok: true,
+    keyid,
+    agent,
+    from,
+    created,
+    components: components.map((component) => component.name),
+    nonce,
+  };
 }
 
 function splitTopLevel(value: string): string[] {

@@ -41,11 +41,19 @@ export interface SignEmailInput {
   data?: { schema: string; body: unknown } | null;
   attachments?: { contentType: string; filename: string; content: Uint8Array }[];
   createdAt?: Date;
+  /**
+   * Grants the agent was given (compact JWS), to show the recipient what it
+   * may do. Each becomes a `Post-Grant` field. A grant holds only beside a
+   * signature from the agent it names, which this envelope is.
+   */
+  grants?: string[];
 }
 
 export interface SignedEmail {
   /** The header to add: `Post-Envelope`. */
   headers: { 'Post-Envelope': string };
+  /** One `Post-Grant` field per grant, in order: add each as its own header line. */
+  grantHeaders: [string, string][];
   /** The exact bytes signed, for a test or a log. */
   message: Uint8Array;
 }
@@ -105,5 +113,9 @@ export function signEmail(identity: Identity, input: SignEmailInput): SignedEmai
       ].join('; '),
     },
     message: bytes,
+    grantHeaders: (input.grants ?? []).map((jws) => [
+      'Post-Grant',
+      (jws.replace(/\s+/g, '').match(/.{1,76}/g) ?? []).join(' '),
+    ]),
   };
 }

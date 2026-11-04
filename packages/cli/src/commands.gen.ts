@@ -1924,6 +1924,236 @@ export const COMMANDS: Command[] = [
     ]
   },
   {
+    "group": "grants",
+    "name": "create",
+    "operationId": "grantsCreate",
+    "method": "POST",
+    "path": "/grants",
+    "summary": "Ask for a grant",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "The agent’s address."
+      },
+      {
+        "name": "template",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "A template’s `name` or `id`."
+      },
+      {
+        "name": "grantor",
+        "kind": "json",
+        "required": true,
+        "where": "body",
+        "describe": "`{ email }` asks that person on a consent page, and the answer carries `consent_url` to send them to. `{ organisation: true }` grants at once as this account’s verified domain, and needs a key with admin on the account."
+      },
+      {
+        "name": "subject_id",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "The customer, account or order it is for, in the recipient’s own terms."
+      },
+      {
+        "name": "expires_at",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "When it ends. The template’s `max_days` from now when omitted, and at most that."
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "get",
+    "operationId": "grantsGet",
+    "method": "GET",
+    "path": "/grants/{id}",
+    "summary": "Read a grant",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "list",
+    "operationId": "grantsList",
+    "method": "GET",
+    "path": "/grants",
+    "summary": "List an address’s grants",
+    "flags": [
+      {
+        "name": "identity_id",
+        "kind": "string",
+        "required": true,
+        "where": "query"
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "revoke",
+    "operationId": "grantsRevoke",
+    "method": "DELETE",
+    "path": "/grants/{id}",
+    "summary": "Revoke a grant",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "status",
+    "operationId": "grantsStatus",
+    "method": "GET",
+    "path": "/grants/{id}/status",
+    "summary": "Whether a grant still holds",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "templatesCreate",
+    "operationId": "grantsTemplatesCreate",
+    "method": "POST",
+    "path": "/grant-templates",
+    "summary": "Define a grant template",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "name",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "The scope’s stable name, for software: `bookings.change`."
+      },
+      {
+        "name": "label",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "What the agent may do, as the consent screen says it after \"wants to\": `manage your bookings`."
+      },
+      {
+        "name": "audience",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The domain the agent will act with. A grant reaching anywhere else does not hold."
+      },
+      {
+        "name": "audience_name",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "How people call it: `Delta`."
+      },
+      {
+        "name": "subject_type",
+        "kind": "string",
+        "choices": [
+          "customer",
+          "account",
+          "order"
+        ],
+        "required": true,
+        "where": "body",
+        "describe": "What a grant is for: a customer, an account or an order."
+      },
+      {
+        "name": "limit",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "A ceiling the grant states, such as \"refunds up to $100\"."
+      },
+      {
+        "name": "max_days",
+        "kind": "number",
+        "required": false,
+        "where": "body",
+        "describe": "The longest a grant from this template may last. 90 when omitted."
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "templatesDelete",
+    "operationId": "grantsTemplatesDelete",
+    "method": "DELETE",
+    "path": "/grant-templates/{id}",
+    "summary": "Retire a grant template",
+    "flags": [
+      {
+        "name": "id",
+        "kind": "string",
+        "required": true,
+        "where": "path"
+      },
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      }
+    ]
+  },
+  {
+    "group": "grants",
+    "name": "templatesList",
+    "operationId": "grantsTemplatesList",
+    "method": "GET",
+    "path": "/grant-templates",
+    "summary": "List grant templates",
+    "flags": []
+  },
+  {
     "group": "identities",
     "name": "accessCreate",
     "operationId": "identitiesAccessCreate",
@@ -3375,6 +3605,12 @@ export const COMMANDS: Command[] = [
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
       },
       {
+        "name": "grant_ids",
+        "kind": "list",
+        "required": false,
+        "where": "body"
+      },
+      {
         "name": "send_at",
         "kind": "string",
         "required": false,
@@ -3939,6 +4175,12 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20."
+      },
+      {
+        "name": "grant_ids",
+        "kind": "list",
+        "required": false,
+        "where": "body"
       },
       {
         "name": "send_at",
@@ -4607,6 +4849,20 @@ export const COMMANDS: Command[] = [
         "kind": "string",
         "required": false,
         "where": "body"
+      },
+      {
+        "name": "grants",
+        "kind": "list",
+        "required": false,
+        "where": "body",
+        "describe": "Grants sent beside the message or request rather than in a `Post-Grant` header, such as an MCP call’s `_meta[\"ai.pidgeon.post/grant\"]`: compact JWS."
+      },
+      {
+        "name": "subject",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "The customer, account or order you are about to act on. A grant for another one answers `wrong_subject`."
       }
     ]
   },

@@ -513,7 +513,11 @@ export const TOOLS: ToolDefinition[] = [
       'forged or changed, and `unsigned` means there is nothing to check. Pass `recipient` ' +
       '(the address it reached you at) to catch a signed message replayed to you. For an ' +
       'HTTP request an agent signed (HTTP Message Signatures, Web Bot Auth, which is also how ' +
-      'an MCP call over HTTP is signed), send `request` instead: its method, URL, headers and body.',
+      'an MCP call over HTTP is signed), send `request` instead: its method, URL, headers and body. ' +
+      '`grants` says what the sender may do: each grant it carried (`Post-Grant`), or that you ' +
+      'pass in `grants` (from a call’s `_meta["ai.pidgeon.post/grant"]`), checked against ' +
+      'the sender a signature verified. Act on each one’s `valid`; pass `subject` (the ' +
+      'customer, account or order you are about to act on) to have it checked too.',
     endpoint: 'POST /verify',
     // A POST because it takes a message; it writes nothing and mails nobody.
     annotations: READ,
@@ -528,6 +532,8 @@ export const TOOLS: ToolDefinition[] = [
         })
         .optional(),
       recipient: z.string().optional(),
+      grants: z.array(z.string()).optional(),
+      subject: z.string().optional(),
     },
   },
   /*

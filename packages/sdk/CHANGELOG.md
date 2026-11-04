@@ -7,6 +7,17 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.63.0 — grants
+
+- `grantsTemplatesList`, `grantsTemplatesCreate`, `grantsTemplatesDelete`:
+  what an account's agents may ask a person for.
+- `grantsCreate` asks a person (the answer carries `consent_url`) or grants
+  as the organisation; `grantsList`, `grantsGet`, `grantsRevoke`; and the
+  public `grantsStatus`.
+- `messagesSend` takes `grant_ids`, carried as `Post-Grant`.
+- `verifySender` takes `grants` and `subject`, and its answer gains
+  `grants`: each one valid or not, with why.
+
 ## 1.62.0 — the shared domain, said plainly
 
 - `operator.shared` on `verifySender`'s answer: true for `pidgeon.email` and

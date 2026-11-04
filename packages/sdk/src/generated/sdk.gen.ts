@@ -176,6 +176,30 @@ import type {
   ExportMailData,
   ExportMailErrors,
   ExportMailResponses,
+  GrantsCreateData,
+  GrantsCreateErrors,
+  GrantsCreateResponses,
+  GrantsGetData,
+  GrantsGetErrors,
+  GrantsGetResponses,
+  GrantsListData,
+  GrantsListErrors,
+  GrantsListResponses,
+  GrantsRevokeData,
+  GrantsRevokeErrors,
+  GrantsRevokeResponses,
+  GrantsStatusData,
+  GrantsStatusErrors,
+  GrantsStatusResponses,
+  GrantsTemplatesCreateData,
+  GrantsTemplatesCreateErrors,
+  GrantsTemplatesCreateResponses,
+  GrantsTemplatesDeleteData,
+  GrantsTemplatesDeleteErrors,
+  GrantsTemplatesDeleteResponses,
+  GrantsTemplatesListData,
+  GrantsTemplatesListErrors,
+  GrantsTemplatesListResponses,
   IdentitiesAccessCreateData,
   IdentitiesAccessCreateErrors,
   IdentitiesAccessCreateResponses,
@@ -509,7 +533,7 @@ export const cardsGet = <ThrowOnError extends boolean = false>(
 /**
  * Check who sent a message
  *
- * Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Or send `request` instead of `message`: an HTTP request an agent signed with HTTP Message Signatures (RFC 9421) in Web Bot Auth’s profile, which is also how an MCP call over HTTP is signed; the key is found by its `keyid` among domains proved with `pidgeon id`, or in the directory its `Signature-Agent` names. Nothing sent is stored. Limited per IP; a key may be sent and is not required.
+ * Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Or send `request` instead of `message`: an HTTP request an agent signed with HTTP Message Signatures (RFC 9421) in Web Bot Auth’s profile, which is also how an MCP call over HTTP is signed; the key is found by its `keyid` among domains proved with `pidgeon id`, or in the directory its `Signature-Agent` names. `grants` says what the sender may do: each grant it carried in `Post-Grant`, or that you send in `grants`, checked against the sender a signature verified — act on each one’s `valid`, and pass `subject` to have it checked against the customer, account or order you are about to act on. Nothing sent is stored. Limited per IP; a key may be sent and is not required.
  */
 export const verifySender = <ThrowOnError extends boolean = false>(
   options: Options<VerifySenderData, ThrowOnError>,
@@ -637,6 +661,19 @@ export const logMonitorsDelete = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/log/monitors/{id}',
+    ...options,
+  });
+
+/**
+ * Whether a grant still holds
+ *
+ * Public, with no key: the URL every grant names as its `status`, for a recipient that checks a grant’s signature offline. `active`, `revoked` or `expired`. Cached thirty seconds, so a revocation shows within the minute. `POST /verify` reads the grant itself and needs none of this. A grant never given answers 404.
+ */
+export const grantsStatus = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsStatusData, ThrowOnError>,
+): RequestResult<GrantsStatusResponses, GrantsStatusErrors, ThrowOnError> =>
+  (options.client ?? client).get<GrantsStatusResponses, GrantsStatusErrors, ThrowOnError>({
+    url: '/grants/{id}/status',
     ...options,
   });
 
@@ -1129,6 +1166,124 @@ export const labelsUpdate = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * List grant templates
+ *
+ * What this account’s agents may ask a person for: a scope (`name`, and the `label` the consent screen says), where (`audience`), for what (`subject_type`), a ceiling and a longest term. Any key reads them.
+ */
+export const grantsTemplatesList = <ThrowOnError extends boolean = false>(
+  options?: Options<GrantsTemplatesListData, ThrowOnError>,
+): RequestResult<GrantsTemplatesListResponses, GrantsTemplatesListErrors, ThrowOnError> =>
+  (options?.client ?? client).get<
+    GrantsTemplatesListResponses,
+    GrantsTemplatesListErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grant-templates',
+    ...options,
+  });
+
+/**
+ * Define a grant template
+ *
+ * Needs a key with admin on the whole account: a template is the account speaking to everybody its agents ask. A grant copies its template’s words when it is asked for, so a template is never edited, only retired.
+ */
+export const grantsTemplatesCreate = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsTemplatesCreateData, ThrowOnError>,
+): RequestResult<GrantsTemplatesCreateResponses, GrantsTemplatesCreateErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    GrantsTemplatesCreateResponses,
+    GrantsTemplatesCreateErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grant-templates',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Retire a grant template
+ *
+ * No new grant can be asked for from it. Every grant already given is unchanged.
+ */
+export const grantsTemplatesDelete = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsTemplatesDeleteData, ThrowOnError>,
+): RequestResult<GrantsTemplatesDeleteResponses, GrantsTemplatesDeleteErrors, ThrowOnError> =>
+  (options.client ?? client).delete<
+    GrantsTemplatesDeleteResponses,
+    GrantsTemplatesDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grant-templates/{id}',
+    ...options,
+  });
+
+/**
+ * List an address’s grants
+ *
+ * Every grant asked for or given to one address, newest first.
+ */
+export const grantsList = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsListData, ThrowOnError>,
+): RequestResult<GrantsListResponses, GrantsListErrors, ThrowOnError> =>
+  (options.client ?? client).get<GrantsListResponses, GrantsListErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grants',
+    ...options,
+  });
+
+/**
+ * Ask for a grant
+ *
+ * A grant says what an agent may do, for whom, until when, signed by us and checkable by anyone at `POST /verify`. With `grantor: { email }`, the person is asked: the answer is `pending` and carries `consent_url`, the page to send them to, where they allow it from a link we email them or signed in as that address. Nothing is signed until they do. With `grantor: { organisation: true }` the account grants at once, as its verified domain, which needs a live key with admin on the account. Either way it needs `send` on the address. Carry an active grant with `grant_ids` on `POST /messages`.
+ */
+export const grantsCreate = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsCreateData, ThrowOnError>,
+): RequestResult<GrantsCreateResponses, GrantsCreateErrors, ThrowOnError> =>
+  (options.client ?? client).post<GrantsCreateResponses, GrantsCreateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grants',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Revoke a grant
+ *
+ * For good, at once: the next `POST /verify` says `revoked`. A pending one stops its consent link working. Needs `send` on the address.
+ */
+export const grantsRevoke = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsRevokeData, ThrowOnError>,
+): RequestResult<GrantsRevokeResponses, GrantsRevokeErrors, ThrowOnError> =>
+  (options.client ?? client).delete<GrantsRevokeResponses, GrantsRevokeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grants/{id}',
+    ...options,
+  });
+
+/**
+ * Read a grant
+ *
+ * Its status and, while active, `jws`: the signed grant the agent carries.
+ */
+export const grantsGet = <ThrowOnError extends boolean = false>(
+  options: Options<GrantsGetData, ThrowOnError>,
+): RequestResult<GrantsGetResponses, GrantsGetErrors, ThrowOnError> =>
+  (options.client ?? client).get<GrantsGetResponses, GrantsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/grants/{id}',
+    ...options,
   });
 
 /**

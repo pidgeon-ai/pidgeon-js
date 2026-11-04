@@ -318,6 +318,74 @@ export type SenderVerification = {
       verifier_key: string;
     } | null;
   } | null;
+  /**
+   * What the sender may do: each grant it carried (`Post-Grant`) or that was sent in `grants`, checked against the sender a signature verified. Act on `valid`. Empty when there were none.
+   */
+  grants: Array<{
+    /**
+     * True when the grant is ours, signed, in force, held by the sender a signature verified, and for here and this subject.
+     */
+    valid: boolean;
+    /**
+     * Why it does not hold: the first thing wrong. Null when `valid`.
+     */
+    reason:
+      | 'malformed'
+      | 'unknown_issuer'
+      | 'bad_signature'
+      | 'not_found'
+      | 'revoked'
+      | 'expired'
+      | 'sender_unverified'
+      | 'wrong_agent'
+      | 'wrong_audience'
+      | 'wrong_subject'
+      | null;
+    /**
+     * Null unless the signature holds.
+     */
+    id: string | null;
+    agent: string | null;
+    grantor:
+      | {
+          type: 'person';
+          email: string;
+        }
+      | {
+          type: 'organisation';
+          domain: string;
+        }
+      | null;
+    scope: {
+      /**
+       * Stable, for software: `bookings.change`.
+       */
+      name: string;
+      /**
+       * For people: "manage your bookings".
+       */
+      label: string;
+      limit?: {
+        /**
+         * Minor units: 10000 is $100.00.
+         */
+        amount: number;
+        /**
+         * ISO 4217.
+         */
+        currency: string;
+      };
+    } | null;
+    /**
+     * The domain it is for acting with. Null: anywhere.
+     */
+    audience: string | null;
+    subject: {
+      type: 'customer' | 'account' | 'order';
+      id: string;
+    } | null;
+    expires_at: string | null;
+  }>;
   warnings: Array<{
     code:
       | 'unsigned_claims'
@@ -521,6 +589,108 @@ export type CardLogMonitor = {
    * ISO-8601, UTC.
    */
   created_at: string;
+};
+
+export type GrantTemplate = {
+  object: 'grant_template';
+  id: string;
+  name: string;
+  label: string;
+  audience: string | null;
+  audience_name: string | null;
+  subject_type: 'customer' | 'account' | 'order';
+  limit: {
+    /**
+     * Minor units: 10000 is $100.00.
+     */
+    amount: number;
+    /**
+     * ISO 4217.
+     */
+    currency: string;
+  } | null;
+  max_days: number;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+};
+
+export type Grant = {
+  object: 'grant';
+  id: string;
+  /**
+   * `pending` until the grantor answers on the consent page.
+   */
+  status: 'pending' | 'active' | 'denied' | 'revoked' | 'expired';
+  /**
+   * The agent’s address, the card’s `sub`.
+   */
+  identity_id: string | null;
+  agent: string;
+  grantor:
+    | {
+        type: 'person';
+        email: string;
+      }
+    | {
+        type: 'organisation';
+        domain: string;
+      };
+  scope: {
+    /**
+     * Stable, for software: `bookings.change`.
+     */
+    name: string;
+    /**
+     * For people: "manage your bookings".
+     */
+    label: string;
+    limit?: {
+      /**
+       * Minor units: 10000 is $100.00.
+       */
+      amount: number;
+      /**
+       * ISO 4217.
+       */
+      currency: string;
+    };
+  };
+  audience: string | null;
+  subject: {
+    type: 'customer' | 'account' | 'order';
+    id: string;
+  };
+  /**
+   * ISO-8601, UTC.
+   */
+  expires_at: string;
+  /**
+   * ISO-8601, UTC.
+   */
+  created_at: string;
+  decided_at: string | null;
+  revoked_at: string | null;
+  /**
+   * The signed grant (compact JWS, EdDSA, `typ: agent-grant+jwt`) while it is active: what the agent carries in `Post-Grant`.
+   */
+  jws: string | null;
+  /**
+   * Send the grantor here. Only on the answer that asked for it; it is not shown again.
+   */
+  consent_url?: string;
+};
+
+export type GrantState = {
+  object: 'grant_status';
+  id: string;
+  status: 'active' | 'revoked' | 'expired';
+  /**
+   * ISO-8601, UTC.
+   */
+  expires_at: string;
+  revoked_at: string | null;
 };
 
 export type AgentSetup = {
@@ -3235,6 +3405,14 @@ export type VerifySenderData = {
       body?: string;
     };
     recipient?: string;
+    /**
+     * Grants sent beside the message or request rather than in a `Post-Grant` header, such as an MCP call’s `_meta["ai.pidgeon.post/grant"]`: compact JWS.
+     */
+    grants?: Array<string>;
+    /**
+     * The customer, account or order you are about to act on. A grant for another one answers `wrong_subject`.
+     */
+    subject?: string;
   };
   path?: never;
   query?: never;
@@ -3800,6 +3978,63 @@ export type LogMonitorsDeleteResponses = {
 
 export type LogMonitorsDeleteResponse =
   LogMonitorsDeleteResponses[keyof LogMonitorsDeleteResponses];
+
+export type GrantsStatusData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/grants/{id}/status';
+};
+
+export type GrantsStatusErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type GrantsStatusError = GrantsStatusErrors[keyof GrantsStatusErrors];
+
+export type GrantsStatusResponses = {
+  /**
+   * Its status.
+   */
+  200: {
+    data: GrantState;
+  };
+};
+
+export type GrantsStatusResponse = GrantsStatusResponses[keyof GrantsStatusResponses];
 
 export type AgentConnectData = {
   body: {
@@ -5725,6 +5960,519 @@ export type LabelsUpdateResponses = {
 
 export type LabelsUpdateResponse = LabelsUpdateResponses[keyof LabelsUpdateResponses];
 
+export type GrantsTemplatesListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/grant-templates';
+};
+
+export type GrantsTemplatesListErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type GrantsTemplatesListError = GrantsTemplatesListErrors[keyof GrantsTemplatesListErrors];
+
+export type GrantsTemplatesListResponses = {
+  /**
+   * The templates.
+   */
+  200: {
+    data: Array<GrantTemplate>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type GrantsTemplatesListResponse =
+  GrantsTemplatesListResponses[keyof GrantsTemplatesListResponses];
+
+export type GrantsTemplatesCreateData = {
+  body: {
+    /**
+     * The scope’s stable name, for software: `bookings.change`.
+     */
+    name: string;
+    /**
+     * What the agent may do, as the consent screen says it after "wants to": `manage your bookings`.
+     */
+    label: string;
+    /**
+     * The domain the agent will act with. A grant reaching anywhere else does not hold.
+     */
+    audience?: string;
+    /**
+     * How people call it: `Delta`.
+     */
+    audience_name?: string;
+    /**
+     * What a grant is for: a customer, an account or an order.
+     */
+    subject_type: 'customer' | 'account' | 'order';
+    /**
+     * A ceiling the grant states, such as "refunds up to $100".
+     */
+    limit?: {
+      /**
+       * Minor units: 10000 is $100.00.
+       */
+      amount: number;
+      /**
+       * ISO 4217: `USD`.
+       */
+      currency: string;
+    };
+    /**
+     * The longest a grant from this template may last. 90 when omitted.
+     */
+    max_days?: number;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/grant-templates';
+};
+
+export type GrantsTemplatesCreateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type GrantsTemplatesCreateError =
+  GrantsTemplatesCreateErrors[keyof GrantsTemplatesCreateErrors];
+
+export type GrantsTemplatesCreateResponses = {
+  /**
+   * The template.
+   */
+  201: {
+    data: GrantTemplate;
+  };
+};
+
+export type GrantsTemplatesCreateResponse =
+  GrantsTemplatesCreateResponses[keyof GrantsTemplatesCreateResponses];
+
+export type GrantsTemplatesDeleteData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/grant-templates/{id}';
+};
+
+export type GrantsTemplatesDeleteErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type GrantsTemplatesDeleteError =
+  GrantsTemplatesDeleteErrors[keyof GrantsTemplatesDeleteErrors];
+
+export type GrantsTemplatesDeleteResponses = {
+  /**
+   * Retired.
+   */
+  200: {
+    data: Deleted;
+  };
+};
+
+export type GrantsTemplatesDeleteResponse =
+  GrantsTemplatesDeleteResponses[keyof GrantsTemplatesDeleteResponses];
+
+export type GrantsListData = {
+  body?: never;
+  path?: never;
+  query: {
+    identity_id: string;
+  };
+  url: '/grants';
+};
+
+export type GrantsListErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type GrantsListError = GrantsListErrors[keyof GrantsListErrors];
+
+export type GrantsListResponses = {
+  /**
+   * The grants.
+   */
+  200: {
+    data: Array<Grant>;
+    has_more: boolean;
+    /**
+     * Pass as `cursor` to continue. Null on the last page.
+     */
+    next_cursor: string | null;
+  };
+};
+
+export type GrantsListResponse = GrantsListResponses[keyof GrantsListResponses];
+
+export type GrantsCreateData = {
+  body: {
+    /**
+     * The agent’s address.
+     */
+    identity_id: string;
+    /**
+     * A template’s `name` or `id`.
+     */
+    template: string;
+    /**
+     * `{ email }` asks that person on a consent page, and the answer carries `consent_url` to send them to. `{ organisation: true }` grants at once as this account’s verified domain, and needs a key with admin on the account.
+     */
+    grantor:
+      | {
+          email: string;
+        }
+      | {
+          organisation: true;
+        };
+    /**
+     * The customer, account or order it is for, in the recipient’s own terms.
+     */
+    subject_id: string;
+    /**
+     * When it ends. The template’s `max_days` from now when omitted, and at most that.
+     */
+    expires_at?: string;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/grants';
+};
+
+export type GrantsCreateErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type GrantsCreateError = GrantsCreateErrors[keyof GrantsCreateErrors];
+
+export type GrantsCreateResponses = {
+  /**
+   * The grant.
+   */
+  201: {
+    data: Grant;
+  };
+};
+
+export type GrantsCreateResponse = GrantsCreateResponses[keyof GrantsCreateResponses];
+
+export type GrantsRevokeData = {
+  body?: never;
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/grants/{id}';
+};
+
+export type GrantsRevokeErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type GrantsRevokeError = GrantsRevokeErrors[keyof GrantsRevokeErrors];
+
+export type GrantsRevokeResponses = {
+  /**
+   * The grant, revoked.
+   */
+  200: {
+    data: Grant;
+  };
+};
+
+export type GrantsRevokeResponse = GrantsRevokeResponses[keyof GrantsRevokeResponses];
+
+export type GrantsGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: '/grants/{id}';
+};
+
+export type GrantsGetErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * It conflicts with what is there: it already exists, or the `etag` you sent is not the current one.
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+};
+
+export type GrantsGetError = GrantsGetErrors[keyof GrantsGetErrors];
+
+export type GrantsGetResponses = {
+  /**
+   * The grant.
+   */
+  200: {
+    data: Grant;
+  };
+};
+
+export type GrantsGetResponse = GrantsGetResponses[keyof GrantsGetResponses];
+
 export type ContactsListData = {
   body?: never;
   path?: never;
@@ -6543,6 +7291,7 @@ export type MessagesSendData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    grant_ids?: Array<string>;
     send_at?: string;
     /**
      * The message being answered. Keeps the conversation together in the recipient’s client too.
@@ -6663,6 +7412,7 @@ export type MessagesCheckData = {
      * Ids from `POST /attachments`, uploaded before the message that carries them. Up to 20.
      */
     attachment_ids?: Array<string>;
+    grant_ids?: Array<string>;
     send_at?: string;
     /**
      * The message being answered. Keeps the conversation together in the recipient’s client too.

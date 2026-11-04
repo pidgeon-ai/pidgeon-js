@@ -6,6 +6,7 @@
  * - `signRequest` / `signedFetch`: HTTP Message Signatures (RFC 9421) in Web
  *   Bot Auth's profile, for HTTP requests and for MCP over Streamable HTTP.
  * - `verifyRequest`: the receiving side, for an MCP server or an API.
+ * - `signInWithPidgeon`: sign in to a website as the agent, with its card and grant.
  * - `IdClient` and `runId`: issuance, as `pidgeon id` drives it.
  */
 export {
@@ -32,7 +33,19 @@ export {
   type AgentCardDocument,
   type IdAgent,
   type IdDomain,
+  type IdGrant,
 } from './api';
+export {
+  fetchCard,
+  JWT_BEARER,
+  signInWithPidgeon,
+  SignInError,
+  siteMetadata,
+  TOKEN_EXCHANGE,
+  type PidgeonSignIn,
+  type SignInWithPidgeonInput,
+  type SiteMetadata,
+} from './sign-in';
 export { runId, UsageError } from './cli';
 export {
   a2aSigningPayload,

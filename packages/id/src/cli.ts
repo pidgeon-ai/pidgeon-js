@@ -1,4 +1,5 @@
 import { DEFAULT_ID_URL, IdApiError, IdClient, type IdDomain } from './api';
+import { SignInError, signInWithPidgeon } from './sign-in';
 import {
   generateIdentity,
   identityDir,
@@ -14,6 +15,8 @@ import {
  *   pidgeon id init acme.com        key made here, domain proved over DNS
  *   pidgeon id issue support-agent  card live at post.acme.com
  *   pidgeon id list | revoke <name> | rotate | check
+ *   pidgeon id grant <name> …       what an agent may do, for whom, until when
+ *   pidgeon id sign-in <site> --as <name>   Sign in with Pidgeon, as the agent
  *
  * Also `npx @pidgeon-ai/id <command>`, which is this without the `id`.
  * Cards renew themselves: each is signed for a day when it is read, for as
@@ -37,6 +40,11 @@ const HELP = `pidgeon id — a signed identity for your agents, on your own doma
   list                   Agents on the domain
   revoke <name>          Withdraw an agent's card now
   rotate                 Replace the domain's key; the old one verifies for another day
+  grant <name>           Grant <name> what it may do, as the domain
+                           --scope bookings.change --label "manage bookings"
+                           --subject customer:42  --audience delta.com  --days 30
+  revoke-grant <id>      Take a grant back now
+  sign-in <site>         Sign in to a site as an agent   --as <name>  --grant <jws>
 
   --domain <domain>      Which domain, when this machine holds more than one
   --json                 Print the API's answer as JSON
@@ -228,6 +236,74 @@ export async function runId(
         await saveIdentity(next, dir);
         if (json) return JSON.stringify(state, null, 2);
         return `${current.domain} signs with ${next.kid} now. ${current.kid} still verifies for a day.`;
+      }
+
+      case 'grant': {
+        const name = rest[0]?.trim().toLowerCase();
+        const scope = flags.get('scope');
+        const label = flags.get('label');
+        const subject = flags.get('subject');
+        if (!name || typeof scope !== 'string' || typeof label !== 'string') {
+          throw new UsageError(
+            'Name the agent and the scope: `pidgeon id grant support-agent --scope bookings.change --label "manage bookings" --subject customer:42`.',
+          );
+        }
+        const [type, ...idParts] = typeof subject === 'string' ? subject.split(':') : [];
+        if (!type || idParts.length === 0 || !['customer', 'account', 'order'].includes(type)) {
+          throw new UsageError('--subject is customer:<id>, account:<id> or order:<id>.');
+        }
+        const days = flags.get('days');
+        const audience = flags.get('audience');
+        const grant = await client(await which()).grant({
+          agent: name,
+          scope: { name: scope, label },
+          subject: { type: type as 'customer' | 'account' | 'order', id: idParts.join(':') },
+          ...(typeof audience === 'string' ? { audience } : {}),
+          ...(typeof days === 'string'
+            ? { expires_at: new Date(Date.now() + Number(days) * 86_400_000).toISOString() }
+            : {}),
+        });
+        if (json) return JSON.stringify(grant, null, 2);
+        return [
+          `${grant.agent} may ${grant.scope.label} for ${grant.subject.type} ${grant.subject.id}${grant.audience ? ` at ${grant.audience}` : ''}, until ${grant.expires_at}.`,
+          `Grant ${grant.id}. The agent carries it as Post-Grant; --json prints the JWS.`,
+        ].join('\n');
+      }
+
+      case 'revoke-grant': {
+        const grantId = rest[0]?.trim();
+        if (!grantId) throw new UsageError('Name the grant: `pidgeon id revoke-grant <id>`.');
+        const revoked = await client(await which()).revokeGrant(grantId);
+        if (json) return JSON.stringify(revoked, null, 2);
+        return `Grant ${revoked.id} is revoked. The next check of it fails.`;
+      }
+
+      case 'sign-in': {
+        const site = rest[0];
+        const name = flags.get('as');
+        if (!site || typeof name !== 'string') {
+          throw new UsageError(
+            'Name the site and the agent: `pidgeon id sign-in https://site.example/api/auth/pidgeon/token --as support-agent`.',
+          );
+        }
+        const identity = await which();
+        // `issue` answers a live agent's card as it is, so this is also how the agent reads its card.
+        const card = await client(identity).issue({ name: name.trim().toLowerCase() });
+        const grant = flags.get('grant');
+        try {
+          const signedIn = await signInWithPidgeon(identity, {
+            agent: card.card.address,
+            site,
+            card: card.jws,
+            ...(typeof grant === 'string' ? { grant } : {}),
+            ...(options.fetch ? { fetch: options.fetch } : {}),
+          });
+          if (json) return JSON.stringify(signedIn.site, null, 2);
+          return `Signed in to ${new URL(site).host} as ${card.card.address}.\n${JSON.stringify(signedIn.site, null, 2)}`;
+        } catch (error) {
+          if (error instanceof SignInError) throw new Error(`${error.step}: ${error.message}`);
+          throw error;
+        }
       }
 
       default:
