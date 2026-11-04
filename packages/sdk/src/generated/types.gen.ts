@@ -253,6 +253,15 @@ export type SenderVerification = {
       kid: string | null;
       reason: string | null;
     };
+    /**
+     * An HTTP request’s signature (RFC 9421, Web Bot Auth), when `request` was sent. `none` for a message.
+     */
+    request: {
+      result: 'pass' | 'fail' | 'unverifiable' | 'none';
+      domain: string | null;
+      keyid: string | null;
+      reason: string | null;
+    };
   };
   /**
    * The sender’s agent card, when we issue it.
@@ -2962,7 +2971,30 @@ export type CardsGetResponse = CardsGetResponses[keyof CardsGetResponses];
 
 export type VerifySenderData = {
   body: {
-    message: string;
+    /**
+     * The raw message, or its headers. Send this or `request`.
+     */
+    message?: string;
+    /**
+     * An HTTP request an agent signed (HTTP Message Signatures, Web Bot Auth), as received. Send this or `message`.
+     */
+    request?: {
+      method: string;
+      /**
+       * The URL the request was sent to.
+       */
+      url: string;
+      /**
+       * The request’s headers as received, `Signature-Input` and `Signature` among them.
+       */
+      headers: {
+        [key: string]: string;
+      };
+      /**
+       * The body as UTF-8, to check against a covered `Content-Digest`.
+       */
+      body?: string;
+    };
     recipient?: string;
   };
   path?: never;

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.59.1",
+    "version": "1.60.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -786,11 +786,52 @@
                   "reason"
                 ],
                 "additionalProperties": false
+              },
+              "request": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "string",
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "unverifiable",
+                      "none"
+                    ]
+                  },
+                  "domain": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "keyid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "result",
+                  "domain",
+                  "keyid",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "description": "An HTTP request’s signature (RFC 9421, Web Bot Auth), when `request` was sent. `none` for a message."
               }
             },
             "required": [
               "declaration",
-              "envelope"
+              "envelope",
+              "request"
             ],
             "additionalProperties": false
           },
@@ -8445,7 +8486,7 @@
       "post": {
         "operationId": "verifySender",
         "summary": "Check who sent a message",
-        "description": "Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Nothing sent is stored. Limited per IP; a key may be sent and is not required.",
+        "description": "Public, with no key. Send a raw message, or its headers alone; the answer says whether an AI agent sent it, on whose behalf, and whether its signatures hold — the signed agent declaration (`Agent-of` under an aligned DKIM signature) and the `Post-Envelope` — for Pidgeon’s mail and any other signer using the same formats. Act on `verdict`. Pass `recipient`, the address it reached you at, to catch a signed message replayed to you. Or send `request` instead of `message`: an HTTP request an agent signed with HTTP Message Signatures (RFC 9421) in Web Bot Auth’s profile, which is also how an MCP call over HTTP is signed; the key is found by its `keyid` among domains proved with `pidgeon id`, or in the directory its `Signature-Agent` names. Nothing sent is stored. Limited per IP; a key may be sent and is not required.",
         "requestBody": {
           "required": true,
           "content": {
@@ -8454,9 +8495,48 @@
                 "type": "object",
                 "properties": {
                   "message": {
+                    "description": "The raw message, or its headers. Send this or `request`.",
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 524288
+                  },
+                  "request": {
+                    "description": "An HTTP request an agent signed (HTTP Message Signatures, Web Bot Auth), as received. Send this or `message`.",
+                    "type": "object",
+                    "properties": {
+                      "method": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 16
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 8192,
+                        "format": "uri",
+                        "description": "The URL the request was sent to."
+                      },
+                      "headers": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": "string",
+                          "maxLength": 16384
+                        },
+                        "description": "The request’s headers as received, `Signature-Input` and `Signature` among them."
+                      },
+                      "body": {
+                        "description": "The body as UTF-8, to check against a covered `Content-Digest`.",
+                        "type": "string",
+                        "maxLength": 524288
+                      }
+                    },
+                    "required": [
+                      "method",
+                      "url",
+                      "headers"
+                    ]
                   },
                   "recipient": {
                     "type": "string",
@@ -8464,10 +8544,7 @@
                     "format": "email",
                     "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   }
-                },
-                "required": [
-                  "message"
-                ]
+                }
               }
             }
           }

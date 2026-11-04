@@ -66,6 +66,7 @@ your agent sign itself up: [pidgeon.ai/skill.md](https://pidgeon.ai/skill.md).
 | --- | --- | --- |
 | [`@pidgeon-ai/sdk`](packages/sdk) | `npm install @pidgeon-ai/sdk` | The TypeScript client, one function per operation |
 | [`@pidgeon-ai/cli`](packages/cli) | `npm install -g @pidgeon-ai/cli` | Every endpoint as a command |
+| [`@pidgeon-ai/id`](packages/id) | `npx @pidgeon-ai/id init acme.com` | A signed identity for agents on your own domain, no account, and the library they sign email and HTTP requests with |
 | [`@pidgeon-ai/mcp`](packages/mcp) | `npx -y @pidgeon-ai/mcp init` | The MCP server, run on your machine |
 | [`@pidgeon-ai/ai-sdk`](packages/ai-sdk) | `npm install @pidgeon-ai/ai-sdk ai zod` | The same tools, for the Vercel AI SDK |
 | [`@pidgeon-ai/openclaw`](packages/openclaw) | `openclaw plugins install @pidgeon-ai/openclaw` | Email as an OpenClaw channel: mail starts a conversation, the reply goes in the thread |

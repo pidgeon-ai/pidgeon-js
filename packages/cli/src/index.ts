@@ -1,6 +1,8 @@
 import { client, createConfig } from '@pidgeon-ai/sdk';
 import * as sdk from '@pidgeon-ai/sdk';
 
+import { runId, UsageError as IdUsageError } from '@pidgeon-ai/id';
+
 import { COMMANDS, type Command, type Flag } from './commands.gen.js';
 
 /**
@@ -142,6 +144,9 @@ export function help(command?: Command): string {
       '',
       'An API key goes in PIDGEON_API_KEY. `pidgeon <group> <command> --help`',
       'describes one command; --verbose prints what was sent, on stderr.',
+      '',
+      '`pidgeon id` gives agents on your own domain a signed identity, with no',
+      'account and no key: `pidgeon id help`.',
     ].join('\n');
   }
 
@@ -212,6 +217,20 @@ export async function run(
   const [group, name, ...rest] = argv.filter((token) => token !== '--verbose');
 
   if (!group || group === '--help' || group === 'help') return help();
+
+  /*
+   * `pidgeon id` is not an API operation: it signs with the operator's own
+   * key, not PIDGEON_API_KEY, and talks to the issuance API (`@pidgeon-ai/id`,
+   * which is also `npx @pidgeon-ai/id`).
+   */
+  if (group === 'id') {
+    try {
+      return await runId(argv.slice(1), env, { stderr: options.stderr });
+    } catch (error) {
+      if (error instanceof IdUsageError) throw new UsageError(error.message);
+      throw error;
+    }
+  }
 
   const command = find(group, name);
 

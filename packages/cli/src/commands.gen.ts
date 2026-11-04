@@ -4429,8 +4429,16 @@ export const COMMANDS: Command[] = [
       {
         "name": "message",
         "kind": "string",
-        "required": true,
-        "where": "body"
+        "required": false,
+        "where": "body",
+        "describe": "The raw message, or its headers. Send this or `request`."
+      },
+      {
+        "name": "request",
+        "kind": "json",
+        "required": false,
+        "where": "body",
+        "describe": "An HTTP request an agent signed (HTTP Message Signatures, Web Bot Auth), as received. Send this or `message`."
       },
       {
         "name": "recipient",

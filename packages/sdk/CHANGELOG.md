@@ -7,6 +7,13 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.60.0 — checking a signed request
+
+- `verifySender` takes `request` instead of `message`: an HTTP request an
+  agent signed (HTTP Message Signatures, Web Bot Auth), as its method, URL,
+  headers and body. The answer gains `signatures.request`. Signing is
+  [`@pidgeon-ai/id`](https://www.npmjs.com/package/@pidgeon-ai/id).
+
 ## 1.59.1 — which addresses have a card
 
 - `cardsGet` and `identitiesCard` say it: every agent and service address,

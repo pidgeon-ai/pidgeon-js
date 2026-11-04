@@ -10,7 +10,7 @@ import { defineConfig } from 'tsup';
  * The SDK is bundled rather than external. It is generated and has no
  * dependencies of its own, and a globally installed binary that needs a
  * peer resolved at the user's cwd is a binary that breaks in half the
- * places it is run.
+ * places it is run. `@pidgeon-ai/id`, behind `pidgeon id`, the same.
  */
 export default defineConfig({
   entry: ['src/index.ts', 'src/cli.ts', 'src/commands.gen.ts'],
@@ -18,7 +18,7 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  noExternal: ['@pidgeon-ai/sdk'],
+  noExternal: ['@pidgeon-ai/sdk', '@pidgeon-ai/id'],
   target: 'es2022',
   banner: { js: '#!/usr/bin/env node' },
 });

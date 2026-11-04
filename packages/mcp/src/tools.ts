@@ -511,12 +511,22 @@ export const TOOLS: ToolDefinition[] = [
       'formats. Act on `verdict`: `verified` is safe to treat as mail from the signing ' +
       'domain, `caution` lists `warnings` to check first, `failed` means something was ' +
       'forged or changed, and `unsigned` means there is nothing to check. Pass `recipient` ' +
-      '(the address it reached you at) to catch a signed message replayed to you.',
+      '(the address it reached you at) to catch a signed message replayed to you. For an ' +
+      'HTTP request an agent signed (HTTP Message Signatures, Web Bot Auth, which is also how ' +
+      'an MCP call over HTTP is signed), send `request` instead: its method, URL, headers and body.',
     endpoint: 'POST /verify',
     // A POST because it takes a message; it writes nothing and mails nobody.
     annotations: READ,
     inputSchema: {
-      message: z.string(),
+      message: z.string().optional(),
+      request: z
+        .object({
+          method: z.string(),
+          url: z.string(),
+          headers: z.record(z.string(), z.string()),
+          body: z.string().optional(),
+        })
+        .optional(),
       recipient: z.string().optional(),
     },
   },
