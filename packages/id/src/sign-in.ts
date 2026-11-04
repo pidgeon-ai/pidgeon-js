@@ -1,5 +1,7 @@
+import { randomBytes } from 'node:crypto';
+
 import { signRequest } from './http';
-import type { Identity } from './keys';
+import { b64url, generateIdentity, type Identity } from './keys';
 
 /**
  * Sign in with Pidgeon, from the agent's side: no browser, no password, no
@@ -15,7 +17,17 @@ import type { Identity } from './keys';
  *
  * The site says where both are: `GET` on its token endpoint answers its
  * issuer and `client_id` (`@pidgeon-ai/sign-in` serves it).
+ *
+ * An agent whose address is in a Pidgeon account holds no signing key of its
+ * own: we sign its mail. It signs in with `signInWithApiKey` instead, sending
+ * an API key that can send as the address. That key goes only to the issuer
+ * the agent names, never to one a site names, and the ID token is bound to a
+ * key made for this one sign-in, shown to Pidgeon with a DPoP proof
+ * (RFC 9449).
  */
+
+/** Pidgeon's issuer, the only one an API key is sent to unless the agent says otherwise. */
+export const PIDGEON_ISSUER = 'https://post.pidgeon.email';
 
 export const TOKEN_EXCHANGE = 'urn:ietf:params:oauth:grant-type:token-exchange';
 export const JWT_BEARER = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
@@ -34,6 +46,12 @@ export interface SignInWithPidgeonInput {
   card?: string;
   /** Where a domain's protocol host answers. Default `https://post.<domain>`; a laptop's differs. */
   postHost?: (domain: string) => string;
+  /**
+   * Ask for the access token as a JWT that says the agent acts for its
+   * grantor (RFC 8693 §4.1: `sub` the grantor, `act` the agent), for an API
+   * to read. Needs `grant`.
+   */
+  delegation?: boolean;
   fetch?: Fetch;
 }
 
@@ -108,17 +126,99 @@ export async function fetchCard(
   return body.jws;
 }
 
-/** Signs in to `site` as `agent`, in the two steps above. */
-export async function signInWithPidgeon(
+/** Signs in to `site` as `agent`, with its own key, in the two steps above. */
+export function signInWithPidgeon(
   identity: Identity,
   input: SignInWithPidgeonInput,
+): Promise<PidgeonSignIn> {
+  return signIn(identity, input, async ({ tokenEndpoint, exchange, headers, agent }) =>
+    signRequest(identity, {
+      method: 'POST',
+      url: tokenEndpoint,
+      headers,
+      body: exchange,
+      agent,
+      grants: input.grant ? [input.grant] : undefined,
+    }),
+  );
+}
+
+export interface SignInWithApiKeyInput extends SignInWithPidgeonInput {
+  /** A key that can send as `agent`. */
+  apiKey: string;
+  /** The issuer the key may go to. Default `PIDGEON_ISSUER`; a site naming another is refused. */
+  issuer?: string;
+}
+
+/**
+ * Signs in to `site` as an address in a Pidgeon account, with an API key
+ * that can send as it. The key is sent to `issuer` and nowhere else.
+ */
+export function signInWithApiKey(input: SignInWithApiKeyInput): Promise<PidgeonSignIn> {
+  const agent = input.agent.trim().toLowerCase();
+  const domain = agent.split('@')[1] ?? '';
+  // A key for this sign-in only. It never leaves this process.
+  const ephemeral = generateIdentity(domain);
+  const issuer = (input.issuer ?? PIDGEON_ISSUER).replace(/\/$/, '');
+
+  return signIn(ephemeral, input, async ({ tokenEndpoint, site }) => {
+    if (
+      site.issuer.replace(/\/$/, '') !== issuer ||
+      new URL(tokenEndpoint).origin !== new URL(issuer).origin
+    ) {
+      throw new SignInError(
+        'site',
+        0,
+        'unknown_issuer',
+        `${site.token_endpoint} signs in with ${site.issuer}, not ${issuer}, so your API key is not sent there.`,
+      );
+    }
+    return {
+      authorization: `Bearer ${input.apiKey}`,
+      dpop: dpopProof(ephemeral, 'POST', tokenEndpoint),
+      ...(input.grant ? { 'post-grant': input.grant.replace(/\s+/g, '') } : {}),
+    };
+  });
+}
+
+/** RFC 9449 §4.2: a proof that this request comes from whoever holds `identity`'s key. */
+export function dpopProof(identity: Identity, method: string, url: string): string {
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const target = new URL(url);
+  const header = encode({
+    typ: 'dpop+jwt',
+    alg: 'EdDSA',
+    jwk: { kty: 'OKP', crv: 'Ed25519', x: b64url(identity.publicKey) },
+  });
+  const payload = encode({
+    jti: randomBytes(16).toString('base64url'),
+    htm: method.toUpperCase(),
+    htu: `${target.origin}${target.pathname}`,
+    iat: Math.floor(Date.now() / 1000),
+  });
+  const signature = identity.sign(new TextEncoder().encode(`${header}.${payload}`));
+  return `${header}.${payload}.${b64url(signature)}`;
+}
+
+type Authenticate = (request: {
+  tokenEndpoint: string;
+  exchange: string;
+  headers: Record<string, string>;
+  agent: string;
+  site: SiteMetadata;
+}) => Promise<Record<string, string>>;
+
+async function signIn(
+  identity: Identity,
+  input: SignInWithPidgeonInput,
+  authenticate: Authenticate,
 ): Promise<PidgeonSignIn> {
   const fetcher = input.fetch ?? fetch;
   const agent = input.agent.trim().toLowerCase();
   const site = await siteMetadata(input.site, fetcher);
   const card = input.card ?? (await fetchCard(agent, fetcher, input.postHost));
 
-  // 1. Pidgeon: the card and the grant, for this site, signed with the agent's key.
+  // 1. Pidgeon: the card and the grant, for this site, from whoever can show they are the agent.
   const discovery = await json(
     await fetcher(`${site.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`),
   );
@@ -131,20 +231,14 @@ export async function signInWithPidgeon(
     subject_token: card,
     subject_token_type: TOKEN_TYPE_JWT,
     audience: site.client_id,
+    ...(input.delegation ? { requested_token_type: TOKEN_TYPE_JWT } : {}),
   });
   const headers = { 'content-type': 'application/x-www-form-urlencoded' };
   const issued = await fetcher(tokenEndpoint, {
     method: 'POST',
     headers: {
       ...headers,
-      ...(await signRequest(identity, {
-        method: 'POST',
-        url: tokenEndpoint,
-        headers,
-        body: exchange,
-        agent,
-        grants: input.grant ? [input.grant] : undefined,
-      })),
+      ...(await authenticate({ tokenEndpoint, exchange, headers, agent, site })),
     },
     body: exchange,
   });

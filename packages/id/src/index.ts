@@ -38,11 +38,15 @@ export {
 export {
   fetchCard,
   JWT_BEARER,
+  dpopProof,
+  PIDGEON_ISSUER,
+  signInWithApiKey,
   signInWithPidgeon,
   SignInError,
   siteMetadata,
   TOKEN_EXCHANGE,
   type PidgeonSignIn,
+  type SignInWithApiKeyInput,
   type SignInWithPidgeonInput,
   type SiteMetadata,
 } from './sign-in';

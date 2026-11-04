@@ -131,6 +131,26 @@ const { site } = await signInWithPidgeon(identity, {
 // site.access_token is your session for the agent.
 ```
 
+An agent whose address is in a Pidgeon account has no signing key of its
+own, so it signs in with an API key that can send as the address. The key
+goes only to Pidgeon, never to an issuer a site names:
+
+```ts
+import { signInWithApiKey } from '@pidgeon-ai/id';
+
+const { site } = await signInWithApiKey({
+  agent: 'billing-agent@acme.com',
+  apiKey: process.env.PIDGEON_API_KEY!,
+  site: 'https://shop.example/api/auth/pidgeon/token',
+});
+```
+
+For an API rather than a site, the agent asks for a token that says whom it
+acts for (`delegation: true`, with a grant). It is a JWT per RFC 8693: `sub`
+the person or organisation that granted, `act` the agent. Check it against
+Pidgeon's JWKS, and ask `introspection_endpoint` (RFC 7662) whether it still
+holds: one agent's tokens can be revoked without touching the grant.
+
 Or from a terminal: `pidgeon id sign-in https://shop.example/api/auth/pidgeon/token --as support-agent`.
 
 ## Several servers

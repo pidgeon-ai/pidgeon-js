@@ -56,7 +56,7 @@ export interface IdGrant {
   id: string;
   status: string;
   agent: string;
-  grantor: { type: 'organisation'; domain: string };
+  grantor: { type: 'organisation'; domain: string } | { type: 'person'; email: string };
   scope: { name: string; label: string; limit?: { amount: number; currency: string } };
   audience: string | null;
   subject: { type: string; id: string };
@@ -64,6 +64,8 @@ export interface IdGrant {
   revoked_at: string | null;
   /** What the agent carries, while the grant is in force. */
   jws: string | null;
+  /** Where the person asked answers, on the answer that asked them. */
+  consent_url?: string;
 }
 
 export class IdApiError extends Error {
@@ -146,8 +148,15 @@ export class IdClient {
     subject: { type: 'customer' | 'account' | 'order'; id: string };
     audience?: string;
     expires_at?: string;
+    /** Ask a person instead of granting as the domain: the answer has a `consent_url` for them. */
+    grantor?: { email: string };
   }): Promise<IdGrant> {
     return this.call('POST', '/grants', input);
+  }
+
+  /** Every token Sign in with Pidgeon issued `name`, taken back; its card and grants stand. */
+  revokeSignIns(name: string): Promise<{ object: 'id_agent'; address: string; revoked: number }> {
+    return this.call('DELETE', `/agents/${encodeURIComponent(name)}/sign-ins`);
   }
 
   revokeGrant(id: string): Promise<IdGrant> {

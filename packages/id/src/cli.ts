@@ -43,7 +43,9 @@ const HELP = `pidgeon id — a signed identity for your agents, on your own doma
   grant <name>           Grant <name> what it may do, as the domain
                            --scope bookings.change --label "manage bookings"
                            --subject customer:42  --audience delta.com  --days 30
+                           --grantor maria@example.com   ask a person instead
   revoke-grant <id>      Take a grant back now
+  revoke-sign-ins <name> End every token <name> signed in with; its card and grants stand
   sign-in <site>         Sign in to a site as an agent   --as <name>  --grant <jws>
 
   --domain <domain>      Which domain, when this machine holds more than one
@@ -254,16 +256,25 @@ export async function runId(
         }
         const days = flags.get('days');
         const audience = flags.get('audience');
+        const grantor = flags.get('grantor');
         const grant = await client(await which()).grant({
           agent: name,
           scope: { name: scope, label },
           subject: { type: type as 'customer' | 'account' | 'order', id: idParts.join(':') },
           ...(typeof audience === 'string' ? { audience } : {}),
+          ...(typeof grantor === 'string' ? { grantor: { email: grantor } } : {}),
           ...(typeof days === 'string'
             ? { expires_at: new Date(Date.now() + Number(days) * 86_400_000).toISOString() }
             : {}),
         });
         if (json) return JSON.stringify(grant, null, 2);
+        if (grant.consent_url) {
+          return [
+            `Asked ${typeof grantor === 'string' ? grantor : 'them'} to let ${grant.agent} ${grant.scope.label} for ${grant.subject.type} ${grant.subject.id}.`,
+            `Send them this link; nothing is allowed until they answer it: ${grant.consent_url}`,
+            `Grant ${grant.id}. \`pidgeon id revoke-grant ${grant.id}\` withdraws the request.`,
+          ].join('\n');
+        }
         return [
           `${grant.agent} may ${grant.scope.label} for ${grant.subject.type} ${grant.subject.id}${grant.audience ? ` at ${grant.audience}` : ''}, until ${grant.expires_at}.`,
           `Grant ${grant.id}. The agent carries it as Post-Grant; --json prints the JWS.`,
@@ -276,6 +287,15 @@ export async function runId(
         const revoked = await client(await which()).revokeGrant(grantId);
         if (json) return JSON.stringify(revoked, null, 2);
         return `Grant ${revoked.id} is revoked. The next check of it fails.`;
+      }
+
+      case 'revoke-sign-ins': {
+        const name = rest[0]?.trim().toLowerCase();
+        if (!name)
+          throw new UsageError('Name the agent: `pidgeon id revoke-sign-ins support-agent`.');
+        const done = await client(await which()).revokeSignIns(name);
+        if (json) return JSON.stringify(done, null, 2);
+        return `${done.address}: ${done.revoked} token${done.revoked === 1 ? '' : 's'} taken back. Its card and grants stand.`;
       }
 
       case 'sign-in': {
