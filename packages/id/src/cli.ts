@@ -1,4 +1,5 @@
 import { DEFAULT_ID_URL, IdApiError, IdClient, type IdDomain } from './api';
+import { signedFetch } from './http';
 import { SignInError, signInWithPidgeon } from './sign-in';
 import {
   generateIdentity,
@@ -17,6 +18,8 @@ import {
  *   pidgeon id list | revoke <name> | rotate | check
  *   pidgeon id grant <name> …       what an agent may do, for whom, until when
  *   pidgeon id sign-in <site> --as <name>   Sign in with Pidgeon, as the agent
+ *   pidgeon id verify < message.eml  ask the public verifier about a message
+ *   pidgeon id curl -I <url> --as <name>    a request signed as the agent
  *
  * Also `npx @pidgeon-ai/id <command>`, which is this without the `id`.
  * Cards renew themselves: each is signed for a day when it is read, for as
@@ -30,6 +33,8 @@ export interface IdRunOptions {
   stderr?: (line: string) => void;
   fetch?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  /** The message for `verify` when no file is named: standard input. */
+  stdin?: () => Promise<string>;
 }
 
 const HELP = `pidgeon id — a signed identity for your agents, on your own domain. No account.
@@ -47,6 +52,8 @@ const HELP = `pidgeon id — a signed identity for your agents, on your own doma
   revoke-grant <id>      Take a grant back now
   revoke-sign-ins <name> End every token <name> signed in with; its card and grants stand
   sign-in <site>         Sign in to a site as an agent   --as <name>  --grant <jws>
+  verify [<file>]        Check a message's signatures (a file, or standard input). No key
+  curl [-I] <url>        Send a request signed as an agent   --as <name>
 
   --domain <domain>      Which domain, when this machine holds more than one
   --json                 Print the API's answer as JSON
@@ -212,6 +219,79 @@ export async function runId(
         ].join('\n');
       }
 
+      case 'verify': {
+        // The public verifier, which needs no key: whoever received the mail asks.
+        const file = rest[0];
+        const message = file
+          ? await (await import('node:fs/promises')).readFile(file, 'utf8')
+          : await (options.stdin ?? readStdin)();
+        if (!message.trim()) {
+          throw new UsageError('Give it a message: `pidgeon id verify < message.eml`.');
+        }
+        const response = await (options.fetch ?? fetch)(
+          `${new URL(baseUrl(env)).origin}/api/v1/verify`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ message }),
+          },
+        );
+        const answer = (await response.json()) as {
+          data?: Verification;
+          error?: { message?: string };
+        };
+        if (!response.ok || !answer.data) {
+          throw new UsageError(
+            answer.error?.message ?? `The verifier answered ${response.status}.`,
+          );
+        }
+        if (json) return JSON.stringify(answer.data, null, 2);
+        return describeVerification(answer.data);
+      }
+
+      case 'curl': {
+        // `-I` as curl spells it: a HEAD request, and only the answer's head.
+        const head = rest[0] === '-I';
+        const target = (head ? rest[1] : rest[0])?.trim();
+        if (!target) throw new UsageError('Name a URL: `pidgeon id curl -I shop.example`.');
+        const url = /^https?:\/\//.test(target) ? target : `https://${target}`;
+        const identity = await which();
+        const named = flags.get('as');
+        let agent: string;
+        if (typeof named === 'string') {
+          agent = named.includes('@') ? named : `${named}@${identity.domain}`;
+        } else {
+          const agents = await client(identity).list();
+          if (agents.length !== 1) {
+            throw new UsageError('Say which agent signs, with --as <name>.');
+          }
+          agent = agents[0]!.address;
+        }
+
+        const sent: Record<string, string> = {};
+        const signed = signedFetch(identity, {
+          agent,
+          fetch: async (resource, init) => {
+            new Headers(init?.headers).forEach((value, name) => {
+              if (/^(signature|signature-input|signature-agent|from|content-digest)$/.test(name)) {
+                sent[name] = value;
+              }
+            });
+            return (options.fetch ?? fetch)(resource, init);
+          },
+        });
+        const response = await signed(url, { method: head ? 'HEAD' : 'GET' });
+        const lines = Object.entries(sent).map(
+          ([name, value]) => `> ${capitalise(name)}: ${value}`,
+        );
+        lines.push(`< ${response.status} ${response.statusText}`.trimEnd());
+        if (head) {
+          response.headers.forEach((value, name) => lines.push(`< ${capitalise(name)}: ${value}`));
+          return lines.join('\n');
+        }
+        return [...lines, '', await response.text()].join('\n');
+      }
+
       case 'list': {
         const agents = await client(await which()).list();
         if (json) return JSON.stringify(agents, null, 2);
@@ -335,4 +415,66 @@ export async function runId(
     }
     throw error;
   }
+}
+
+// --- verify and curl ----------------------------------------------------------
+
+interface Verification {
+  verdict: string;
+  advice: string;
+  sender: { address: string; on_behalf_of: string | null } | null;
+  is_agent: boolean | null;
+  body: 'intact' | 'changed' | 'not_checked';
+  signatures: {
+    declaration: { result: string; domain: string | null };
+    envelope: { result: string; domain: string | null };
+  };
+}
+
+/** The verifier's answer as the homepage shows it: a line a check, ✓ or ✗. */
+function describeVerification(v: Verification): string {
+  const signer = v.signatures.envelope.domain ?? v.signatures.declaration.domain;
+  const signed =
+    v.signatures.envelope.result === 'pass' || v.signatures.declaration.result === 'pass';
+  const broken =
+    v.signatures.envelope.result === 'fail' || v.signatures.declaration.result === 'fail';
+  const row = (ok: boolean | null, label: string, value: string) =>
+    `${ok === null ? '·' : ok ? '✓' : '✗'} ${label.padEnd(10)} ${value}`;
+  return [
+    row(
+      signed && !broken,
+      'signature',
+      signed && !broken
+        ? `valid, ${signer}`
+        : broken
+          ? `broken${signer ? `, ${signer}` : ''}`
+          : 'none',
+    ),
+    row(v.is_agent, 'agent', v.sender?.address ?? 'not declared'),
+    row(v.sender?.on_behalf_of ? true : null, 'acts for', v.sender?.on_behalf_of ?? 'not said'),
+    row(
+      v.body === 'not_checked' ? null : v.body === 'intact',
+      'body',
+      v.body === 'intact'
+        ? 'as it was sent'
+        : v.body === 'changed'
+          ? 'changed since'
+          : 'not checked',
+    ),
+    '',
+    v.advice,
+  ].join('\n');
+}
+
+function capitalise(name: string): string {
+  return name.replace(
+    /(^|-)([a-z])/g,
+    (_, dash: string, letter: string) => dash + letter.toUpperCase(),
+  );
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString('utf8');
 }

@@ -40,6 +40,21 @@ one request open until mail arrives, and prints it with `extracted.codes` and
 describes one command, with its endpoint and its flags. Documentation:
 [pidgeon.ai/docs/cli](https://pidgeon.ai/docs/cli).
 
+## Check who sent something
+
+`pidgeon id` needs no key. It checks a message, or signs a request as one of
+your agents:
+
+```sh
+pidgeon id verify message.eml
+pidgeon id curl -I https://shop.example --as sunny
+```
+
+`verify` asks the public verifier and says whether the signature holds, which
+agent sent it, who it acts for and whether the body changed. `curl` signs the
+request the way Web Bot Auth asks and prints what it sent. `pidgeon id --help`
+lists the rest, including `init` for your own domain.
+
 ## Flags
 
 - Repeat a list flag: `--to one@example.com --to two@example.com`.
