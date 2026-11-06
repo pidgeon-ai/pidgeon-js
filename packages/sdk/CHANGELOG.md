@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.67.2 — the button carries the symbol
+
+- No change to this package's surface. The Python package's
+  `sign_in_button_html` draws Sign in with Pidgeon's symbol, the Pidgeon
+  figure at the x-height before the label, as `@pidgeon-ai/sign-in` 0.1.2 does.
+
 ## 1.67.1 — an issuer the site names is never contacted
 
 - No change to this package's surface. The Python package's

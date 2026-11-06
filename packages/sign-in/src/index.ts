@@ -615,5 +615,16 @@ export function signInButtonHtml(
       /[&<>"]/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!,
     );
-  return `<a href="${escape(href)}" class="pidgeon-sign-in" style="display:inline-flex;align-items:center;gap:.5em;padding:.6em 1em;border:1px solid currentColor;border-radius:.5em;font:inherit;text-decoration:none;color:inherit">${escape(label)}</a>`;
+  return `<a href="${escape(href)}" class="pidgeon-sign-in" style="display:inline-flex;align-items:baseline;gap:.3em;padding:.6em 1em;border:1px solid currentColor;border-radius:.5em;font:inherit;text-decoration:none;color:inherit"><svg viewBox="31.3 18.4 163.1 137.6" width="0.647em" height="0.546em" aria-hidden="true" fill="none" style="flex:none;overflow:visible"><path d="${PIDGEON_FIGURE}" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(label)}</a>`;
 }
+
+/**
+ * Sign in with Pidgeon's symbol: the Pidgeon figure before the label, in the
+ * page's own ink (design-language decision 42, PDL §63; Patrick, 6 November:
+ * "this should be the symbol of SIWP"). The figure is `compactSpiralPath()`
+ * from `src/lib/brand/mark-path.ts`, written out because a package cannot
+ * import the app; `sign-in-button.test.ts` holds the two equal, and the
+ * Python twin (`pidgeon.sign_in`) carries the same string.
+ */
+export const PIDGEON_FIGURE =
+  'M177.7 141.3L182.0 128.2L184.1 114.8L184.1 101.5L182.0 88.5L178.0 76.2L172.1 64.8L164.7 54.7L155.9 46.1L146.0 39.0L135.2 33.7L124.0 30.2L112.6 28.6L101.2 28.8L90.3 30.8L79.9 34.4L70.5 39.5L62.1 45.9L55.0 53.4L49.3 61.8L45.1 70.8L42.5 80.2L41.4 89.7L41.8 99.0L43.6 107.9L46.8 116.3L51.1 123.8L56.5 130.4L62.7 136.0L69.6 140.3L76.9 143.4L84.4 145.3L91.9 145.9L99.2 145.3L106.1 143.6L112.5 140.9L118.2 137.3L123.0 132.9L127.0 128.0L130.0 122.6L132.0 117.0L133.1 111.4L133.2 105.9L132.4 100.6L130.8 95.7L128.5 91.3L125.6 87.5L122.3 84.4L118.7 82.0L114.8 80.3L111.0 79.4L107.2 79.1L103.6 79.6L100.3 80.5L97.5 82.0L95.1 83.9L93.2 86.0L91.8 88.3L91.0 90.6';
