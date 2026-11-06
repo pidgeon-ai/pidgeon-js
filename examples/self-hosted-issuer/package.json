@@ -1,0 +1,24 @@
+{
+  "name": "@pidgeon-ai/example-self-hosted-issuer",
+  "private": true,
+  "description": "Keycloak and the self-hosted Pidgeon issuer in Docker, and an agent that signs in to a website end to end. Not published.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "demo": "tsx demo.ts",
+    "site": "tsx site.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pidgeon-ai/id": "workspace:*",
+    "@pidgeon-ai/sign-in": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

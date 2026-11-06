@@ -3,3 +3,5 @@
 # that protocol to a real version on the way out.
 packages:
   - packages/*
+  # Runs the packages beside it, so it takes them from here, not npm.
+  - examples/self-hosted-issuer

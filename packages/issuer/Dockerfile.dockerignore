@@ -1,0 +1,10 @@
+# The issuer's image is built from the repository root; it needs only these.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!packages/id
+!packages/issuer
+!src/lib/post/wasm
+**/node_modules
+**/dist

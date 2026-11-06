@@ -1,0 +1,25 @@
+{
+  "domain": "acme.test",
+  "issuer": "http://localhost:8080",
+  "organisation": "Acme (example)",
+  "key": "/etc/pidgeon-issuer/keys/issuer/acme.test.json",
+  "directory": {
+    "keycloak": {
+      "url": "http://keycloak:8080",
+      "realm": "acme",
+      "client_id": "pidgeon-issuer",
+      "group": "agents"
+    }
+  },
+  "directory_cache_seconds": 5,
+  "grants": [
+    {
+      "group": "refunds",
+      "scope": { "name": "refunds.issue", "label": "issue refunds" },
+      "audience": "localhost",
+      "subject": { "type": "account", "id": "acme" },
+      "days": 30
+    }
+  ],
+  "clients": [{ "client_id": "client_shop", "host": "localhost" }]
+}

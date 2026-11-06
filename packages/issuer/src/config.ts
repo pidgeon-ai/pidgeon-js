@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 import { cachedDirectory, staticDirectory, type Directory, type DirectoryAgent } from './directory';
+import { keycloakDirectory } from './keycloak';
 import type { GrantRule, IssuerOptions, StaticClient } from './issuer';
 import { fileSigner, seedSigner, type RetiredKey } from './signer';
 
@@ -19,7 +20,20 @@ export interface IssuerFile {
   key?: string;
   /** Keys being withdrawn: published until `not_after`. */
   retired?: { key: string; not_after: string }[];
-  directory: { static: DirectoryAgent[] };
+  directory:
+    | { static: DirectoryAgent[] }
+    | {
+        keycloak: {
+          url: string;
+          realm: string;
+          /** The issuer's own client in that realm. */
+          client_id: string;
+          /** The environment variable holding its secret. Default `KEYCLOAK_CLIENT_SECRET`. */
+          client_secret_env?: string;
+          /** The group whose members are agents. Default `agents`. */
+          group?: string;
+        };
+      };
   grants?: GrantRule[];
   clients?: StaticClient[];
   client_metadata_hosts?: string[];
@@ -61,21 +75,41 @@ export async function loadConfig(
     organisation: file.organisation,
     signer,
     retired,
-    directory: cachedDirectory(directoryFrom(file, path), file.directory_cache_seconds ?? 60),
+    directory: cachedDirectory(directoryFrom(file, path, env), file.directory_cache_seconds ?? 60),
     grants: file.grants,
     clients: file.clients,
     clientMetadataHosts: file.client_metadata_hosts,
   };
 }
 
-function directoryFrom(file: IssuerFile, path: string): Directory {
-  if (Array.isArray(file.directory?.static)) {
-    for (const agent of file.directory.static) {
+function directoryFrom(
+  file: IssuerFile,
+  path: string,
+  env: Record<string, string | undefined>,
+): Directory {
+  const directory = file.directory ?? {};
+  if ('keycloak' in directory) {
+    const { keycloak } = directory;
+    const secretName = keycloak.client_secret_env ?? 'KEYCLOAK_CLIENT_SECRET';
+    const secret = env[secretName];
+    if (!secret)
+      throw new Error(`${path}: set ${secretName}, the issuer's Keycloak client secret.`);
+    return keycloakDirectory({
+      url: keycloak.url,
+      realm: keycloak.realm,
+      clientId: keycloak.client_id,
+      clientSecret: secret,
+      domain: file.domain,
+      group: keycloak.group,
+    });
+  }
+  if ('static' in directory && Array.isArray(directory.static)) {
+    for (const agent of directory.static) {
       if (!agent.address?.toLowerCase().endsWith(`@${file.domain.toLowerCase()}`)) {
         throw new Error(`${path}: ${agent.address} is not an address at ${file.domain}.`);
       }
     }
-    return staticDirectory(file.directory.static);
+    return staticDirectory(directory.static);
   }
-  throw new Error(`${path}: \`directory\` is { "static": [...] }.`);
+  throw new Error(`${path}: \`directory\` is { "keycloak": {...} } or { "static": [...] }.`);
 }

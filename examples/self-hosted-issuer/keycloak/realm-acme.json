@@ -1,0 +1,62 @@
+{
+  "realm": "acme",
+  "displayName": "Acme (example)",
+  "enabled": true,
+  "groups": [
+    {
+      "name": "agents",
+      "path": "/agents"
+    },
+    {
+      "name": "refunds",
+      "path": "/refunds"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "pidgeon-issuer",
+      "name": "Pidgeon issuer (reads the agents)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "example-issuer-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    },
+    {
+      "clientId": "support-agent",
+      "name": "Support agent",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-jwt",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "pidgeon.address": "support-agent@acme.test",
+        "pidgeon.kind": "agent",
+        "token.endpoint.auth.signing.alg": "EdDSA",
+        "use.jwks.string": "true"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-pidgeon-issuer",
+      "enabled": true,
+      "serviceAccountClientId": "pidgeon-issuer",
+      "clientRoles": {
+        "realm-management": ["view-clients", "view-users"]
+      }
+    },
+    {
+      "username": "service-account-support-agent",
+      "enabled": true,
+      "serviceAccountClientId": "support-agent",
+      "groups": ["/agents", "/refunds"]
+    }
+  ]
+}

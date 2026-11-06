@@ -37,8 +37,8 @@ with `pidgeon-issuer export <dir>` and serve it from any static host.
 2. **Each agent's key**, on the agent's machine: `pidgeon-issuer keygen
 acme.com --out ~/.config/pidgeon/id/acme.com.json`. Give the identity
    provider the `key` line it prints; the private half stays with the agent.
-3. **`issuer.json`**: copy `issuer.example.json`. `directory.static` lists
-   agents by hand. `grants` maps a group to what its agents may do, signed by
+3. **`issuer.json`**: copy `issuer.example.json`. `directory.keycloak` reads
+   the agents from Keycloak (below); `directory.static` lists them by hand. `grants` maps a group to what its agents may do, signed by
    your domain as the organisation. `clients` are the sites you let your
    agents sign in to.
 4. **DNS**: `pidgeon-issuer dns` prints the `_post` record and where
@@ -47,6 +47,31 @@ acme.com --out ~/.config/pidgeon/id/acme.com.json`. Give the identity
    `docker build -f packages/issuer/Dockerfile -t pidgeon-issuer .` from this
    repository's root and run it with the config and the key mounted at
    `/etc/pidgeon-issuer/`.
+
+## Keycloak
+
+An agent is a Keycloak client with a service account, in the `agents` group.
+Its key is the Ed25519 key Keycloak authenticates it with (Credentials →
+Signed JWT, EdDSA), so the agent holds one key for Keycloak and for sites; a
+client on a secret names its key in a `pidgeon.key` attribute instead.
+`pidgeon.address` (default `<clientId>@<domain>`) and `pidgeon.kind` say the
+rest, and its groups are what `grants` maps.
+
+```json
+"directory": {
+  "keycloak": {
+    "url": "https://sso.acme.internal",
+    "realm": "acme",
+    "client_id": "pidgeon-issuer",
+    "group": "agents"
+  }
+}
+```
+
+`pidgeon-issuer` is a client of its own with a service account holding
+`realm-management`'s `view-clients` and `view-users`, nothing that writes; its
+secret is `KEYCLOAK_CLIENT_SECRET`. `examples/self-hosted-issuer` runs all of
+it in Docker.
 
 ## Sign in to a site
 

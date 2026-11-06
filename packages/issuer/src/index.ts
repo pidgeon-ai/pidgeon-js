@@ -7,7 +7,8 @@
  * - `createIssuer`: the issuer as a Web `Request` handler.
  * - `serve`: the same on `node:http`; `pidgeon-issuer serve` runs it.
  * - `fileSigner` / `seedSigner`: the key; any `Signer` (a KMS, an HSM) fits.
- * - `staticDirectory`: agents listed in the config.
+ * - `keycloakDirectory`: Keycloak says who the agents are; `staticDirectory`
+ *   lists them in the config.
  */
 export {
   createIssuer,
@@ -21,6 +22,7 @@ export {
   type StaticClient,
 } from './issuer';
 export { cachedDirectory, staticDirectory, type Directory, type DirectoryAgent } from './directory';
+export { keycloakDirectory, type KeycloakOptions } from './keycloak';
 export { fileSigner, seedSigner, type RetiredKey, type Signer } from './signer';
 export { loadConfig, type IssuerFile } from './config';
 export { serve } from './server';

@@ -1,0 +1,43 @@
+# Keycloak and the self-hosted Pidgeon issuer, for a laptop. `pnpm demo`
+# starts them, gives the agent its key in Keycloak, and signs it in to a site.
+#
+#   Keycloak   http://localhost:8081   (admin / admin; realm "acme")
+#   Issuer     http://localhost:8080   (acme.test's issuer)
+#
+# Nothing here reaches Pidgeon. Not for production: Keycloak runs in dev
+# mode, and the issuer's client secret is written below.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.2
+    command: ['start-dev', '--import-realm']
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: 'true'
+    ports: ['8081:8080']
+    volumes:
+      - ./keycloak/realm-acme.json:/opt/keycloak/data/import/realm-acme.json:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  issuer:
+    build:
+      context: ../..
+      dockerfile: packages/issuer/Dockerfile
+    environment:
+      # The issuer's own Keycloak client (realm-acme.json). From a secret store in production.
+      KEYCLOAK_CLIENT_SECRET: example-issuer-secret
+    ports: ['8080:8080']
+    volumes:
+      - ./issuer/issuer.json:/etc/pidgeon-issuer/issuer.json:ro
+      - ./.keys/issuer:/etc/pidgeon-issuer/keys/issuer:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
