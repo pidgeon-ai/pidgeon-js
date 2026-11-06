@@ -7,6 +7,17 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.66.1 — a retried approval is the same approval
+
+- `signInsApprove` takes an `Idempotency-Key`: a retry with the same key
+  answers with the first callback instead of a second code.
+
+## 1.66.0 — approving a sign-in
+
+- `signInsApprove`: an agent approves an app's Sign in with Pidgeon with its
+  own key, and gets back the app's callback to open. The key must be able to
+  send as the address.
+
 ## 1.65.0 — reply_to
 
 - `messagesSend` and `messagesCheck` take `reply_to`: where replies go when

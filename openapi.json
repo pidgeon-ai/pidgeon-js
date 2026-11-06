@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.65.0",
+    "version": "1.66.1",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -349,6 +349,52 @@
           "test",
           "approval",
           "recipients"
+        ],
+        "additionalProperties": false
+      },
+      "SignInApproval": {
+        "type": "object",
+        "properties": {
+          "redirect_url": {
+            "type": "string",
+            "description": "The app’s callback, carrying a one-use code. Open it yourself, within a minute, in the session that started the sign-in; never hand it to anyone else."
+          },
+          "address": {
+            "type": "string",
+            "description": "The address that signed in."
+          },
+          "app": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "host": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean",
+                "description": "True when the app is identified by a URL it controls (a metadata document)."
+              }
+            },
+            "required": [
+              "name",
+              "host",
+              "verified"
+            ],
+            "additionalProperties": false,
+            "description": "The app the code is for. Approve only a sign-in your agent started."
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "When the code stops working."
+          }
+        },
+        "required": [
+          "redirect_url",
+          "address",
+          "app",
+          "expires_at"
         ],
         "additionalProperties": false
       },
@@ -18662,6 +18708,167 @@
         ]
       }
     },
+    "/sign-ins": {
+      "post": {
+        "operationId": "signInsApprove",
+        "summary": "Approve a sign-in as your address",
+        "description": "Sign in with Pidgeon, from the agent’s side. An app gave the agent an authorization URL; post it here with a key that can **send** as the address, and get back the app’s callback with a one-use code. Open `redirect_url` yourself, within a minute, in the session that started the sign-in: whoever opens it is the one signed in. Name the address in `address` when the URL does not (`login_hint`). The key goes to Pidgeon only, never to the app. A key that can only read, or that does not reach the address, is refused as a send would be.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000,
+                    "description": "Where we POST. HTTPS, and it has to answer within a few seconds."
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 320,
+                    "description": "A whole address — the local part and the domain in one. An alternative to the other two."
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The callback to open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SignInApproval"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. `error.field` names the input at fault when there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No API key, or one that is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited. `X-RateLimit-Reset` says when to retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on our side. Retry; if it keeps happening, tell us.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Something this needs is not answering right now. Retry in a moment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signIns"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "description": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs."
+          }
+        ]
+      }
+    },
     "/messages/search": {
       "get": {
         "operationId": "messagesSearch",
@@ -32618,6 +32825,9 @@
     },
     {
       "name": "messages"
+    },
+    {
+      "name": "signIns"
     },
     {
       "name": "export"

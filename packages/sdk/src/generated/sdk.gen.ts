@@ -389,6 +389,9 @@ import type {
   RoutingUpdateData,
   RoutingUpdateErrors,
   RoutingUpdateResponses,
+  SignInsApproveData,
+  SignInsApproveErrors,
+  SignInsApproveResponses,
   TestInboundData,
   TestInboundErrors,
   TestInboundResponses,
@@ -1487,6 +1490,24 @@ export const messagesCheck = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<MessagesCheckResponses, MessagesCheckErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/messages/check',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Approve a sign-in as your address
+ *
+ * Sign in with Pidgeon, from the agent’s side. An app gave the agent an authorization URL; post it here with a key that can **send** as the address, and get back the app’s callback with a one-use code. Open `redirect_url` yourself, within a minute, in the session that started the sign-in: whoever opens it is the one signed in. Name the address in `address` when the URL does not (`login_hint`). The key goes to Pidgeon only, never to the app. A key that can only read, or that does not reach the address, is refused as a send would be.
+ */
+export const signInsApprove = <ThrowOnError extends boolean = false>(
+  options: Options<SignInsApproveData, ThrowOnError>,
+): RequestResult<SignInsApproveResponses, SignInsApproveErrors, ThrowOnError> =>
+  (options.client ?? client).post<SignInsApproveResponses, SignInsApproveErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/sign-ins',
     ...options,
     headers: {
       'Content-Type': 'application/json',

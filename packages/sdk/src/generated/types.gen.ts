@@ -130,6 +130,32 @@ export type SendCheck = {
   }>;
 };
 
+export type SignInApproval = {
+  /**
+   * The app’s callback, carrying a one-use code. Open it yourself, within a minute, in the session that started the sign-in; never hand it to anyone else.
+   */
+  redirect_url: string;
+  /**
+   * The address that signed in.
+   */
+  address: string;
+  /**
+   * The app the code is for. Approve only a sign-in your agent started.
+   */
+  app: {
+    name: string;
+    host: string;
+    /**
+     * True when the app is identified by a URL it controls (a metadata document).
+     */
+    verified: boolean;
+  };
+  /**
+   * When the code stops working.
+   */
+  expires_at: string;
+};
+
 export type TestInboundDelivered = {
   /**
    * `delivered` in the normal case; `rejected` when a sender rule on the address refuses it, as it would refuse the real thing.
@@ -7513,6 +7539,80 @@ export type MessagesCheckResponses = {
 };
 
 export type MessagesCheckResponse = MessagesCheckResponses[keyof MessagesCheckResponses];
+
+export type SignInsApproveData = {
+  body: {
+    /**
+     * Where we POST. HTTPS, and it has to answer within a few seconds.
+     */
+    url: string;
+    /**
+     * A whole address — the local part and the domain in one. An alternative to the other two.
+     */
+    address?: string;
+  };
+  headers?: {
+    /**
+     * Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/sign-ins';
+};
+
+export type SignInsApproveErrors = {
+  /**
+   * The request is not valid. `error.field` names the input at fault when there is one.
+   */
+  400: Error;
+  /**
+   * No API key, or one that is not valid.
+   */
+  401: Error;
+  /**
+   * Refused. `error.code` says why: `forbidden` when this key may not do this or the account is on hold, `abuse_blocked` when a limit says no.
+   */
+  403: Error;
+  /**
+   * No such resource, or one this key cannot reach. The two answer the same, so treat a 404 as “not available to you” rather than “does not exist”.
+   */
+  404: Error;
+  /**
+   * Nothing was done by this call. `error.code` says which: `idempotency_in_progress` when the first request with this `Idempotency-Key` has not answered yet (wait `Retry-After` seconds and send it again), `idempotency_mismatch` when the key was used with a different request (use a new key).
+   */
+  409: Error;
+  /**
+   * Rate limited. `X-RateLimit-Reset` says when to retry.
+   */
+  429: Error;
+  /**
+   * Something went wrong on our side. Retry; if it keeps happening, tell us.
+   */
+  500: Error;
+  /**
+   * Something this needs is not answering right now. Retry in a moment.
+   */
+  503: Error;
+  /**
+   * Test mode only: `Pidgeon-Test-Fail: drop` dropped the answer (`test_dropped`). The request was done; retry it with the same `Idempotency-Key` to get the first answer.
+   */
+  504: Error;
+};
+
+export type SignInsApproveError = SignInsApproveErrors[keyof SignInsApproveErrors];
+
+export type SignInsApproveResponses = {
+  /**
+   * The callback to open.
+   */
+  201: {
+    data: SignInApproval;
+  };
+};
+
+export type SignInsApproveResponse = SignInsApproveResponses[keyof SignInsApproveResponses];
 
 export type MessagesSearchData = {
   body?: never;

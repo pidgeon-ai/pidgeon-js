@@ -4568,6 +4568,38 @@ export const COMMANDS: Command[] = [
     ]
   },
   {
+    "group": "signIns",
+    "name": "approve",
+    "operationId": "signInsApprove",
+    "method": "POST",
+    "path": "/sign-ins",
+    "summary": "Approve a sign-in as your address",
+    "flags": [
+      {
+        "name": "idempotency-key",
+        "kind": "string",
+        "required": false,
+        "where": "header",
+        "describe": "Any string unique to this attempt, reused on its retries. A repeat with the same key and the same request returns the first answer with `Idempotent-Replay: true` and does nothing — no second email. The same key with a different request is a `409`. Kept for 24 hours; a failure is not kept, so a retry after one runs.",
+        "header": "Idempotency-Key"
+      },
+      {
+        "name": "url",
+        "kind": "string",
+        "required": true,
+        "where": "body",
+        "describe": "Where we POST. HTTPS, and it has to answer within a few seconds."
+      },
+      {
+        "name": "address",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "A whole address — the local part and the domain in one. An alternative to the other two."
+      }
+    ]
+  },
+  {
     "group": "test",
     "name": "inbound",
     "operationId": "testInbound",
