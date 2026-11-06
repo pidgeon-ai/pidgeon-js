@@ -161,12 +161,16 @@ export async function verifyA2aCard(
 ): Promise<A2aCardCheck> {
   const payload = b64url(new TextEncoder().encode(a2aSigningPayload(card)));
   for (const entry of card.signatures ?? []) {
-    let header: { alg?: string; kid?: string; jku?: string };
+    let header: { alg?: string; kid?: string; jku?: string } | null;
     try {
       header = JSON.parse(new TextDecoder().decode(fromB64url(entry.protected)));
     } catch {
       continue;
     }
+    // A header that is JSON but not an object (`null`, a number) is a
+    // signature we cannot read: skipped like any other, never a throw that
+    // turns a refusal into a crash (found porting this to Python, 6 November).
+    if (!header || typeof header !== 'object') continue;
     if (header.alg !== 'EdDSA' || typeof header.kid !== 'string') continue;
     const publicKey = await key(header.kid, header.jku ?? null);
     if (!publicKey) continue;

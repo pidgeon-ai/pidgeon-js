@@ -161,11 +161,10 @@ export function signInWithApiKey(input: SignInWithApiKeyInput): Promise<PidgeonS
   const ephemeral = generateIdentity(domain);
   const issuer = (input.issuer ?? PIDGEON_ISSUER).replace(/\/$/, '');
 
-  return signIn(ephemeral, input, async ({ tokenEndpoint, site }) => {
-    if (
-      site.issuer.replace(/\/$/, '') !== issuer ||
-      new URL(tokenEndpoint).origin !== new URL(issuer).origin
-    ) {
+  // Before anything is fetched from it: an issuer the site names is not
+  // contacted at all unless it is ours (found porting this to Python, 6 November).
+  const admit = (site: SiteMetadata) => {
+    if (site.issuer.replace(/\/$/, '') !== issuer) {
       throw new SignInError(
         'site',
         0,
@@ -173,12 +172,31 @@ export function signInWithApiKey(input: SignInWithApiKeyInput): Promise<PidgeonS
         `${site.token_endpoint} signs in with ${site.issuer}, not ${issuer}, so your API key is not sent there.`,
       );
     }
-    return {
-      authorization: `Bearer ${input.apiKey}`,
-      dpop: dpopProof(ephemeral, 'POST', tokenEndpoint),
-      ...(input.grant ? { 'post-grant': input.grant.replace(/\s+/g, '') } : {}),
-    };
-  });
+  };
+
+  return signIn(
+    ephemeral,
+    input,
+    async ({ tokenEndpoint, site }) => {
+      if (
+        site.issuer.replace(/\/$/, '') !== issuer ||
+        new URL(tokenEndpoint).origin !== new URL(issuer).origin
+      ) {
+        throw new SignInError(
+          'site',
+          0,
+          'unknown_issuer',
+          `${site.token_endpoint} signs in with ${site.issuer}, not ${issuer}, so your API key is not sent there.`,
+        );
+      }
+      return {
+        authorization: `Bearer ${input.apiKey}`,
+        dpop: dpopProof(ephemeral, 'POST', tokenEndpoint),
+        ...(input.grant ? { 'post-grant': input.grant.replace(/\s+/g, '') } : {}),
+      };
+    },
+    admit,
+  );
 }
 
 /** RFC 9449 §4.2: a proof that this request comes from whoever holds `identity`'s key. */
@@ -212,10 +230,13 @@ async function signIn(
   identity: Identity,
   input: SignInWithPidgeonInput,
   authenticate: Authenticate,
+  /** Refuses a site before its issuer is contacted. */
+  admit?: (site: SiteMetadata) => void,
 ): Promise<PidgeonSignIn> {
   const fetcher = input.fetch ?? fetch;
   const agent = input.agent.trim().toLowerCase();
   const site = await siteMetadata(input.site, fetcher);
+  admit?.(site);
   const card = input.card ?? (await fetchCard(agent, fetcher, input.postHost));
 
   // 1. Pidgeon: the card and the grant, for this site, from whoever can show they are the agent.

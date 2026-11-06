@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.67.1 — an issuer the site names is never contacted
+
+- No change to this package's surface. The Python package's
+  `sign_in_with_api_key` refuses a site that names another issuer before
+  fetching anything from it, as `@pidgeon-ai/id` 0.1.1 does.
+
 ## 1.67.0 — one set of capabilities, two languages
 
 - `streamEvents` reconnects from its cursor when a connection is cut
