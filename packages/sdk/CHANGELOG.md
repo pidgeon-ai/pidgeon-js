@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.67.4 — the button's figure is as tall as the S
+
+- No change to this package's surface. The Python package's
+  `sign_in_button_html` draws the figure at Inter's cap height, top level
+  with the capital S, as `@pidgeon-ai/sign-in` 0.2.1 does.
+
 ## 1.67.3 — a site lists the issuers it trusts
 
 - No change to this package's surface. The Python package's `PidgeonSignIn`

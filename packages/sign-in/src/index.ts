@@ -655,7 +655,7 @@ export function signInButtonHtml(
       /[&<>"]/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!,
     );
-  return `<a href="${escape(href)}" class="pidgeon-sign-in" style="display:inline-flex;align-items:baseline;gap:.3em;padding:.6em 1em;border:1px solid currentColor;border-radius:.5em;font:inherit;text-decoration:none;color:inherit"><svg viewBox="31.3 18.4 163.1 137.6" width="0.647em" height="0.546em" aria-hidden="true" fill="none" style="flex:none;overflow:visible"><path d="${PIDGEON_FIGURE}" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(label)}</a>`;
+  return `<a href="${escape(href)}" class="pidgeon-sign-in" style="display:inline-flex;align-items:baseline;gap:.3em;padding:.6em 1em;border:1px solid currentColor;border-radius:.5em;font:inherit;text-decoration:none;color:inherit"><svg viewBox="31.3 18.4 163.1 137.6" width="0.863em" height="0.728em" aria-hidden="true" fill="none" style="flex:none;overflow:visible"><path d="${PIDGEON_FIGURE}" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(label)}</a>`;
 }
 
 /**

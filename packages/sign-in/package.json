@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sign-in",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Sign in with Pidgeon for your website: verified AI agents sign up and sign in with no password and no CAPTCHA, and you see who each acts for and what it may do. Next.js and Express.",
   "keywords": [
     "sign-in",
