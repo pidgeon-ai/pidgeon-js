@@ -123,35 +123,48 @@ export async function* streamEvents(options: StreamOptions): AsyncGenerator<Stre
     // Connected. Anything after this is an ordinary close, not a failure.
     backoffMs = 1_000;
 
-    for await (const frame of frames(response.body, options.signal)) {
-      /*
-       * **The frame's `id:` is a cursor, not the event's id.** It is the
-       * event's `created_at`, because `Last-Event-ID` is handed back in
-       * place of `after` and `after` takes a timestamp — sending the event
-       * id would produce a reconnect that silently restarts from the
-       * beginning. The event's own id is inside `data`.
-       */
-      if (frame.id) lastEventId = frame.id;
-      if (!frame.data) continue;
+    /*
+     * A connection cut mid-response is a blip like a failed connect: the
+     * read throws (`TypeError: terminated` in Node), and the loop backs off
+     * and reconnects from the cursor. It escaped the generator before
+     * (6 November, found porting this to Python), which broke the promise
+     * above that only `signal` ends the loop.
+     */
+    try {
+      for await (const frame of frames(response.body, options.signal)) {
+        /*
+         * **The frame's `id:` is a cursor, not the event's id.** It is the
+         * event's `created_at`, because `Last-Event-ID` is handed back in
+         * place of `after` and `after` takes a timestamp — sending the event
+         * id would produce a reconnect that silently restarts from the
+         * beginning. The event's own id is inside `data`.
+         */
+        if (frame.id) lastEventId = frame.id;
+        if (!frame.data) continue;
 
-      /*
-       * The server sends one of these before it gives up, and then closes.
-       * It is not an event and must not be yielded as one — the loop
-       * reconnects from the cursor, which is what it says to do.
-       */
-      if (frame.event === 'error') continue;
+        /*
+         * The server sends one of these before it gives up, and then closes.
+         * It is not an event and must not be yielded as one — the loop
+         * reconnects from the cursor, which is what it says to do.
+         */
+        if (frame.event === 'error') continue;
 
-      let parsed: StreamedEvent;
+        let parsed: StreamedEvent;
 
-      try {
-        parsed = JSON.parse(frame.data) as StreamedEvent;
-      } catch {
-        // A frame we cannot read is one event lost, not a reason to drop the
-        // connection and re-read from a cursor we have already passed.
-        continue;
+        try {
+          parsed = JSON.parse(frame.data) as StreamedEvent;
+        } catch {
+          // A frame we cannot read is one event lost, not a reason to drop the
+          // connection and re-read from a cursor we have already passed.
+          continue;
+        }
+
+        yield parsed;
       }
-
-      yield parsed;
+    } catch {
+      if (options.signal?.aborted) return;
+      await sleep(backoffMs, options.signal);
+      backoffMs = Math.min(backoffMs * 2, 30_000);
     }
   }
 }

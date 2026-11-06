@@ -7,6 +7,16 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.67.0 — one set of capabilities, two languages
+
+- `streamEvents` reconnects from its cursor when a connection is cut
+  mid-response; it threw `TypeError: terminated` before, despite its promise
+  that only `signal` ends the loop.
+- The Python package (`pidgeon`, same version) gains `pidgeon.identity`,
+  `pidgeon.sign_in` and `pidgeon.stream`, the twins of `@pidgeon-ai/id`,
+  `@pidgeon-ai/sign-in` and `streamEvents`. A test now fails the build when
+  either language has a capability the other lacks.
+
 ## 1.66.1 — a retried approval is the same approval
 
 - `signInsApprove` takes an `Idempotency-Key`: a retry with the same key
