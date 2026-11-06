@@ -98,8 +98,15 @@ export interface PidgeonSignInOptions {
   url: string;
   /** At least 32 characters. Signs the session and the sign-in in progress. */
   secret: string;
-  /** Pidgeon's issuer. Default `PIDGEON_ISSUER`. */
+  /** Pidgeon's issuer. Default `PIDGEON_ISSUER`. A person signs in here. */
   issuer?: string;
+  /**
+   * More issuers whose agents may sign in, beside `issuer`: a company's own,
+   * self-hosted (`@pidgeon-ai/issuer`), as `https://post.acme.com`. Only
+   * these are ever contacted; an ID token from any other is refused before
+   * anything is fetched. Default none.
+   */
+  issuers?: string[];
   /** Where the routes live. Default `/api/auth/pidgeon`. */
   basePath?: string;
   /** Where a person lands after signing in. Default `/`. */
@@ -171,20 +178,25 @@ interface Discovery {
   jwks_uri: string;
 }
 
+const trim = (issuer: string) => issuer.replace(/\/$/, '');
+
 export class PidgeonSignIn {
   readonly issuer: string;
+  /** Every issuer an agent may sign in from: `issuer` first, then `issuers`. */
+  readonly issuers: string[];
   readonly basePath: string;
   private readonly fetcher: typeof fetch;
   private readonly now: () => number;
   private readonly replay: ReplayStore;
-  private discovery: { at: number; value: Discovery } | null = null;
-  private keys: { at: number; value: Map<string, string> } | null = null;
+  private discovery = new Map<string, { at: number; value: Discovery }>();
+  private keys = new Map<string, { at: number; value: Map<string, string> }>();
 
   constructor(readonly options: PidgeonSignInOptions) {
     if (!options.secret || options.secret.length < 32) {
       throw new Error('Sign in with Pidgeon needs a secret of 32 characters or more.');
     }
-    this.issuer = (options.issuer ?? PIDGEON_ISSUER).replace(/\/$/, '');
+    this.issuer = trim(options.issuer ?? PIDGEON_ISSUER);
+    this.issuers = [...new Set([this.issuer, ...(options.issuers ?? []).map(trim)])];
     this.basePath = (options.basePath ?? '/api/auth/pidgeon').replace(/\/$/, '');
     this.fetcher = options.fetch ?? fetch;
     this.now = options.now ?? (() => Math.floor(Date.now() / 1000));
@@ -252,6 +264,7 @@ export class PidgeonSignIn {
     return Response.json(
       {
         issuer: this.issuer,
+        issuers: this.issuers,
         client_id: this.options.clientId,
         token_endpoint: this.tokenUrl,
         grant_types_supported: [JWT_BEARER],
@@ -338,7 +351,7 @@ export class PidgeonSignIn {
 
   /** The person: off to Pidgeon, with PKCE, a state and a nonce kept in a sealed cookie. */
   private async login(url: URL): Promise<Response> {
-    const discovery = await this.discover();
+    const discovery = await this.discover(this.issuer);
     const verifier = b64url(randomBytes(32));
     const flow = {
       state: b64url(randomBytes(16)),
@@ -398,7 +411,7 @@ export class PidgeonSignIn {
       });
     }
 
-    const discovery = await this.discover();
+    const discovery = await this.discover(this.issuer);
     const response = await this.fetcher(discovery.token_endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -449,9 +462,10 @@ export class PidgeonSignIn {
   // --- The ID token ----------------------------------------------------------------
 
   /**
-   * An ID token from Pidgeon, checked: signed by a key in the issuer's JWKS
-   * (EdDSA), for this site, from this issuer, current, and with the nonce
-   * this site sent when it sent one.
+   * An ID token from Pidgeon, checked: from an issuer this site lists (a
+   * person's, from `issuer` only), signed by a key in that issuer's JWKS
+   * (EdDSA), for this site, current, and with the nonce this site sent when
+   * it sent one.
    */
   async verifyIdToken(token: string, expect: { nonce?: string } = {}): Promise<PidgeonClaims> {
     const parts = token.split('.');
@@ -467,7 +481,14 @@ export class PidgeonSignIn {
     if (header.alg !== 'EdDSA' || !header.kid) {
       throw new SignInRefused('invalid_grant', 'The ID token is not signed the way Pidgeon signs.');
     }
-    const x = await this.key(header.kid);
+    // The issuer is chosen from the list before any key is looked for, so an
+    // unlisted one is never contacted. A browser's answer comes from `issuer` only.
+    const iss = typeof claims.iss === 'string' ? trim(claims.iss) : '';
+    const accepted = expect.nonce !== undefined ? [this.issuer] : this.issuers;
+    if (!accepted.includes(iss)) {
+      throw new SignInRefused('invalid_grant', 'The ID token is from another issuer.');
+    }
+    const x = await this.key(iss, header.kid);
     const signed = x
       ? verify(
           null,
@@ -481,9 +502,6 @@ export class PidgeonSignIn {
 
     const now = this.now();
     const aud = claims.aud;
-    if (String(claims.iss).replace(/\/$/, '') !== this.issuer) {
-      throw new SignInRefused('invalid_grant', 'The ID token is from another issuer.');
-    }
     if (!(
       aud === this.options.clientId ||
       (Array.isArray(aud) && aud.includes(this.options.clientId))
@@ -505,22 +523,36 @@ export class PidgeonSignIn {
     return claims as unknown as PidgeonClaims;
   }
 
-  private async discover(): Promise<Discovery> {
-    if (this.discovery && this.discovery.at > this.now() - 300) return this.discovery.value;
-    const response = await this.fetcher(`${this.issuer}/.well-known/openid-configuration`);
+  /**
+   * An issuer's configuration. It must name the issuer it was fetched from
+   * (OpenID Connect Discovery §4.3) and keep its keys on that issuer's
+   * origin, so a host that copies another issuer's document cannot point a
+   * site at keys of its own.
+   */
+  private async discover(issuer: string): Promise<Discovery> {
+    const held = this.discovery.get(issuer);
+    if (held && held.at > this.now() - 300) return held.value;
+    const response = await this.fetcher(`${issuer}/.well-known/openid-configuration`);
     if (!response.ok)
-      throw new Error(`${this.issuer} answered ${response.status} for its configuration.`);
-    const value = (await response.json()) as Discovery;
-    this.discovery = { at: this.now(), value };
+      throw new Error(`${issuer} answered ${response.status} for its configuration.`);
+    const value = (await response.json()) as Discovery & { issuer?: string };
+    if (typeof value.issuer !== 'string' || trim(value.issuer) !== issuer) {
+      throw new SignInRefused('invalid_grant', `${issuer}'s configuration names another issuer.`);
+    }
+    if (!sameOrigin(value.jwks_uri, issuer)) {
+      throw new SignInRefused('invalid_grant', `${issuer}'s keys are not on its own host.`);
+    }
+    this.discovery.set(issuer, { at: this.now(), value });
     return value;
   }
 
-  /** A key from the JWKS by `kid`, fetched again once when the `kid` is new (a rotation). */
-  private async key(kid: string): Promise<string | null> {
-    const fresh = this.keys && this.keys.at > this.now() - 300;
-    if (!fresh || !this.keys!.value.has(kid)) {
-      if (fresh && this.keys!.at > this.now() - 10) return null;
-      const discovery = await this.discover();
+  /** A key from the issuer's JWKS by `kid`, fetched again once when the `kid` is new (a rotation). */
+  private async key(issuer: string, kid: string): Promise<string | null> {
+    const held = this.keys.get(issuer);
+    const fresh = held && held.at > this.now() - 300;
+    if (!fresh || !held!.value.has(kid)) {
+      if (fresh && held!.at > this.now() - 10) return null;
+      const discovery = await this.discover(issuer);
       const response = await this.fetcher(discovery.jwks_uri);
       const jwks = (await response.json().catch(() => ({ keys: [] }))) as {
         keys?: { kid?: string; x?: string; kty?: string; crv?: string }[];
@@ -530,9 +562,9 @@ export class PidgeonSignIn {
         if (key.kid && key.x && key.kty === 'OKP' && key.crv === 'Ed25519')
           value.set(key.kid, key.x);
       }
-      this.keys = { at: this.now(), value };
+      this.keys.set(issuer, { at: this.now(), value });
     }
-    return this.keys!.value.get(kid) ?? null;
+    return this.keys.get(issuer)!.value.get(kid) ?? null;
   }
 
   // --- Sessions --------------------------------------------------------------------
@@ -574,6 +606,14 @@ export class PidgeonSignIn {
     const secure = this.origin.startsWith('https:') ? '; Secure' : '';
     const path = name === FLOW_COOKIE ? this.basePath : '/';
     return `${name}=${encodeURIComponent(value)}; Path=${path}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
+  }
+}
+
+function sameOrigin(url: unknown, issuer: string): boolean {
+  try {
+    return typeof url === 'string' && new URL(url).origin === new URL(issuer).origin;
+  } catch {
+    return false;
   }
 }
 

@@ -1,0 +1,33 @@
+{
+  "domain": "acme.com",
+  "issuer": "https://post.acme.com",
+  "organisation": "Acme Ltd",
+  "key": "pidgeon-issuer-key.json",
+  "directory": {
+    "static": [
+      {
+        "sub": "8a1f2c9e-0b7d-4f1e-9a55-3c2d1e0f4b6a",
+        "address": "support-agent@acme.com",
+        "kind": "agent",
+        "key": "<the agent's public key: the `key` line `pidgeon-issuer keygen` prints>",
+        "groups": ["refunds"],
+        "createdAt": "2026-11-01T00:00:00Z"
+      }
+    ]
+  },
+  "grants": [
+    {
+      "group": "refunds",
+      "scope": {
+        "name": "refunds.issue",
+        "label": "issue refunds up to £100",
+        "limit": { "amount": 10000, "currency": "GBP" }
+      },
+      "audience": "shop.example",
+      "subject": { "type": "account", "id": "acme" },
+      "days": 30
+    }
+  ],
+  "clients": [{ "client_id": "client_shop", "host": "shop.example" }],
+  "client_metadata_hosts": []
+}

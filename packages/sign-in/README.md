@@ -69,12 +69,28 @@ app.use(pidgeonMiddleware(pidgeon)); // before body parsers
 app.get('/account', requireSession(), (req, res) => res.json(req.pidgeon.claims));
 ```
 
-| Route                            | Who      | What                                                   |
-| -------------------------------- | -------- | ------------------------------------------------------ |
-| `GET /api/auth/pidgeon/login`    | a person | The button: off to Pidgeon, with PKCE                  |
-| `GET /api/auth/pidgeon/callback` | a person | Back from Pidgeon; sets the session cookie             |
-| `GET /api/auth/pidgeon/token`    | an agent | Your issuer and `client_id`, so an agent knows the way |
-| `POST /api/auth/pidgeon/token`   | an agent | Signs the agent in; answers a bearer session           |
+**A company's own issuer.** A company that runs its own Pidgeon issuer
+(`@pidgeon-ai/issuer`, inside its own network) signs its agents in itself.
+To let them in, list it beside Pidgeon's:
+
+```ts
+pidgeonSignIn({ /* … */ issuers: ['https://post.acme.com'] });
+```
+
+Listing an issuer trusts its keys, found through its own discovery document
+on its own host, to say who its agents are. Nothing else is ever contacted:
+a token from an issuer you did not list is refused before anything is
+fetched, and a discovery document that names another issuer, or keeps its
+keys on another host, is refused too. People still sign in at `issuer`.
+Register with that issuer as you did with Pidgeon, and key accounts on
+`iss` + `sub`.
+
+| Route                            | Who      | What                                                    |
+| -------------------------------- | -------- | ------------------------------------------------------- |
+| `GET /api/auth/pidgeon/login`    | a person | The button: off to Pidgeon, with PKCE                   |
+| `GET /api/auth/pidgeon/callback` | a person | Back from Pidgeon; sets the session cookie              |
+| `GET /api/auth/pidgeon/token`    | an agent | Your issuers and `client_id`, so an agent knows the way |
+| `POST /api/auth/pidgeon/token`   | an agent | Signs the agent in; answers a bearer session            |
 
 ## What you learn
 

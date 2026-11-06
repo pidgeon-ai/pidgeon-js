@@ -18,20 +18,32 @@ name: Publish
 on:
   push:
     tags:
-      ['sdk-v*', 'cli-v*', 'id-v*', 'sign-in-v*', 'mcp-v*', 'ai-sdk-v*', 'openclaw-v*', 'n8n-v*']
+      [
+        'sdk-v*',
+        'cli-v*',
+        'id-v*',
+        'sign-in-v*',
+        'issuer-v*',
+        'mcp-v*',
+        'ai-sdk-v*',
+        'openclaw-v*',
+        'n8n-v*',
+      ]
   workflow_dispatch:
     inputs:
       package:
         description: Which package to publish
         required: true
         type: choice
-        options: [sdk, cli, id, sign-in, mcp, ai-sdk, openclaw, n8n]
+        options: [sdk, cli, id, sign-in, issuer, mcp, ai-sdk, openclaw, n8n]
 
 permissions:
   contents: read
   # npm trusted publishing exchanges this for a credential that lives for one
   # job, so no long-lived npm token exists in this repository's secrets.
   id-token: write
+  # The issuer's container image, to ghcr.io, when it is switched on (below).
+  packages: write
 
 jobs:
   publish:
@@ -53,7 +65,7 @@ jobs:
           fi
 
           case "$name" in
-            sdk|cli|id|sign-in|mcp|ai-sdk|openclaw|n8n) ;;
+            sdk|cli|id|sign-in|issuer|mcp|ai-sdk|openclaw|n8n) ;;
             *) echo "Unknown package: $name" >&2; exit 1 ;;
           esac
 
@@ -186,3 +198,26 @@ jobs:
           done
           echo "The MCP registry does not list $version a minute after publishing." >&2
           exit 1
+
+      # The self-hosted issuer's container, `ghcr.io/pidgeon-ai/issuer:<version>`.
+      # **Off until Patrick switches it on**: the first public image is his
+      # call, so this runs only when the repository variable
+      # PUBLISH_ISSUER_IMAGE is `true` (Settings → Variables). The image is
+      # built from this tree with `packages/issuer/Dockerfile`, the same
+      # bundle npm got, and pushed with this job's own token; nothing else
+      # can push it.
+      - name: The issuer's container image
+        if: steps.package.outputs.name == 'issuer' && vars.PUBLISH_ISSUER_IMAGE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./packages/issuer/package.json').version")
+          image=ghcr.io/pidgeon-ai/issuer
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker build -f packages/issuer/Dockerfile \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            --label org.opencontainers.image.licenses=Apache-2.0 \
+            -t "$image:$version" -t "$image:latest" .
+          docker push "$image:$version"
+          docker push "$image:latest"

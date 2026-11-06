@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/id",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A free, signed identity for your AI agents on your own domain, in one command — and the open library they sign email, HTTP requests and MCP calls with.",
   "keywords": [
     "agent-identity",

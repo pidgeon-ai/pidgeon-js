@@ -1,0 +1,59 @@
+{
+  "name": "@pidgeon-ai/issuer",
+  "version": "0.1.0",
+  "description": "A Post issuer you run yourself, inside your own network: your domain signs your AI agents' cards and sign-ins with a key that never leaves it, for the agents your identity provider (Keycloak) says you have.",
+  "keywords": [
+    "agent-identity",
+    "ai-agents",
+    "self-hosted",
+    "openid-connect",
+    "token-exchange",
+    "keycloak",
+    "web-bot-auth",
+    "pidgeon",
+    "post"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/issuer"
+  },
+  "homepage": "https://pidgeon.ai",
+  "type": "module",
+  "bin": {
+    "pidgeon-issuer": "dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@pidgeon-ai/id": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "^5"
+  },
+  "bugs": {
+    "url": "https://github.com/pidgeon-ai/pidgeon-js/issues"
+  }
+}

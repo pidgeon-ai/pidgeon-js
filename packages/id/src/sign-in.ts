@@ -16,7 +16,10 @@ import { b64url, generateIdentity, type Identity } from './keys';
  *    else. The site answers with its own session.
  *
  * The site says where both are: `GET` on its token endpoint answers its
- * issuer and `client_id` (`@pidgeon-ai/sign-in` serves it).
+ * issuer, any more issuers it accepts agents from, and its `client_id`
+ * (`@pidgeon-ai/sign-in` serves it). The agent goes to the issuer that
+ * signed its card when the site lists it (a company's own, self-hosted), and
+ * to the site's issuer otherwise.
  *
  * An agent whose address is in a Pidgeon account holds no signing key of its
  * own: we sign its mail. It signs in with `signInWithApiKey` instead, sending
@@ -57,6 +60,8 @@ export interface SignInWithPidgeonInput {
 
 export interface SiteMetadata {
   issuer: string;
+  /** Every issuer the site accepts agents from, `issuer` first. */
+  issuers: string[];
   client_id: string;
   token_endpoint: string;
 }
@@ -101,7 +106,28 @@ export async function siteMetadata(site: string, fetcher: Fetch = fetch): Promis
       `${site} does not offer Sign in with Pidgeon.`,
     );
   }
-  return { issuer: body.issuer, client_id: body.client_id, token_endpoint: site };
+  const trim = (issuer: string) => issuer.replace(/\/$/, '');
+  const listed = Array.isArray(body.issuers)
+    ? body.issuers.filter((issuer): issuer is string => typeof issuer === 'string').map(trim)
+    : [];
+  return {
+    issuer: body.issuer,
+    issuers: [...new Set([trim(body.issuer), ...listed])],
+    client_id: body.client_id,
+    token_endpoint: site,
+  };
+}
+
+/** The issuer to sign in at: the one that signed the card, when the site lists it, else the site's. */
+function issuerFor(site: SiteMetadata, card: string): string {
+  try {
+    const payload = JSON.parse(Buffer.from(card.split('.')[1] ?? '', 'base64url').toString('utf8'));
+    const iss = typeof payload?.iss === 'string' ? payload.iss.replace(/\/$/, '') : null;
+    if (iss && site.issuers.includes(iss)) return iss;
+  } catch {
+    // Not a card we can read: the issuer will say so.
+  }
+  return site.issuer.replace(/\/$/, '');
 }
 
 /** The agent's card, from its domain's protocol host. */
@@ -238,14 +264,14 @@ async function signIn(
   const site = await siteMetadata(input.site, fetcher);
   admit?.(site);
   const card = input.card ?? (await fetchCard(agent, fetcher, input.postHost));
+  // An API key goes to the site's issuer only, which `admit` already checked.
+  const issuer = admit ? site.issuer.replace(/\/$/, '') : issuerFor(site, card);
 
   // 1. Pidgeon: the card and the grant, for this site, from whoever can show they are the agent.
-  const discovery = await json(
-    await fetcher(`${site.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`),
-  );
+  const discovery = await json(await fetcher(`${issuer}/.well-known/openid-configuration`));
   const tokenEndpoint = discovery.token_endpoint;
   if (typeof tokenEndpoint !== 'string') {
-    throw new SignInError('pidgeon', 0, undefined, `${site.issuer} has no token endpoint.`);
+    throw new SignInError('pidgeon', 0, undefined, `${issuer} has no token endpoint.`);
   }
   const exchange = form({
     grant_type: TOKEN_EXCHANGE,

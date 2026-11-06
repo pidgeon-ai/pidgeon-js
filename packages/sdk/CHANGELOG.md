@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.67.3 — a site lists the issuers it trusts
+
+- No change to this package's surface. The Python package's `PidgeonSignIn`
+  takes `issuers`, a company's own issuers beside Pidgeon's, and
+  `sign_in_with_pidgeon` signs in at the issuer that signed the agent's card
+  when the site lists it, as `@pidgeon-ai/sign-in` and `@pidgeon-ai/id`
+  0.2.0 do.
+
 ## 1.67.2 — the button carries the symbol
 
 - No change to this package's surface. The Python package's
