@@ -7,6 +7,12 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.65.0 — reply_to
+
+- `messagesSend` and `messagesCheck` take `reply_to`: where replies go when
+  not to `from`. It must be one of your own addresses, or an address on a
+  domain you have verified; anything else is refused with a 400.
+
 ## 1.64.0 — private pods
 
 - `private` on a pod. `podsCreate` and `podsUpdate` take it: `true` means

@@ -7291,6 +7291,10 @@ export type MessagesSendData = {
      */
     html?: string;
     /**
+     * Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified.
+     */
+    reply_to?: string;
+    /**
      * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
      */
     data?: {
@@ -7411,6 +7415,10 @@ export type MessagesCheckData = {
      * The rich body. Sanitised on the way in; scripts and remote content are removed.
      */
     html?: string;
+    /**
+     * Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified.
+     */
+    reply_to?: string;
     /**
      * Typed data: structured JSON sent beside the text, for software at the other end to read as fields. Travels as its own part; it is never mixed into the text.
      */

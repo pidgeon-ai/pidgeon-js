@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.64.0",
+    "version": "1.65.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -18139,6 +18139,12 @@
                     "maxLength": 1000000,
                     "description": "The rich body. Sanitised on the way in; scripts and remote content are removed."
                   },
+                  "reply_to": {
+                    "description": "Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified.",
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
                   "data": {
                     "type": "object",
                     "properties": {
@@ -18438,6 +18444,12 @@
                     "type": "string",
                     "maxLength": 1000000,
                     "description": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+                  },
+                  "reply_to": {
+                    "description": "Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified.",
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
                   },
                   "data": {
                     "type": "object",

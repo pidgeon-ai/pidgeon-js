@@ -3591,6 +3591,13 @@ export const COMMANDS: Command[] = [
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
       },
       {
+        "name": "reply_to",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified."
+      },
+      {
         "name": "data",
         "kind": "json",
         "required": false,
@@ -4161,6 +4168,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "The rich body. Sanitised on the way in; scripts and remote content are removed."
+      },
+      {
+        "name": "reply_to",
+        "kind": "string",
+        "required": false,
+        "where": "body",
+        "describe": "Where replies go, when not to `from`: one of your own addresses, or an address on a domain you have verified."
       },
       {
         "name": "data",
