@@ -7,6 +7,14 @@ the two would publish a release for every unrelated product deploy.
 Semver applies to **this package's own surface** — the exported names, the
 call shapes, the result shape — not to the API behind it.
 
+## 1.64.0 — private pods
+
+- `private` on a pod. `podsCreate` and `podsUpdate` take it: `true` means
+  the pod's mail is readable only with its own keys, not by the account's
+  keys or people. Anyone who administers the pod may turn it on; only one of
+  its own keys at `admin` turns it off, and `podsUpdate` now accepts a pod
+  key for that.
+
 ## 1.63.0 — grants
 
 - `grantsTemplatesList`, `grantsTemplatesCreate`, `grantsTemplatesDelete`:

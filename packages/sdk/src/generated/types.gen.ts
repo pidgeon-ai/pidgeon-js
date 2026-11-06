@@ -2795,6 +2795,10 @@ export type Pod = {
    */
   is_default: boolean;
   /**
+   * Mail in this pod is readable only with its own keys, not by the account’s keys or people.
+   */
+  private: boolean;
+  /**
    * Addresses in it.
    */
   identity_count: number;
@@ -2815,6 +2819,10 @@ export type PodCreated = {
    * Where an address lands when a create call names no pod. Exactly one per account.
    */
   is_default: boolean;
+  /**
+   * Mail in this pod is readable only with its own keys, not by the account’s keys or people.
+   */
+  private: boolean;
   /**
    * Addresses in it.
    */
@@ -5388,6 +5396,10 @@ export type PodsCreateData = {
      */
     client_id?: string | null;
     /**
+     * `true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off.
+     */
+    private?: boolean;
+    /**
      * An address to create in the new pod. The same fields as `POST /identities`.
      */
     address?: {
@@ -5623,6 +5635,10 @@ export type PodsUpdateData = {
      * Your own id for this pod. Carried and returned, never parsed.
      */
     client_id?: string | null;
+    /**
+     * `true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off.
+     */
+    private?: boolean;
   };
   headers?: {
     /**

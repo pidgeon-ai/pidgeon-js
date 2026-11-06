@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pidgeon API",
-    "version": "1.63.0",
+    "version": "1.64.0",
     "description": "An email inbox API for AI agents. Inboxes your code creates in one call, threads that carry state, and sending from a domain you own.\n\nEvery response is `{ data }`, a page is `{ data, has_more, next_cursor }`, and a failure is `{ error: { code, message } }`. There is no third envelope."
   },
   "servers": [
@@ -8175,6 +8175,10 @@
             "type": "boolean",
             "description": "Where an address lands when a create call names no pod. Exactly one per account."
           },
+          "private": {
+            "type": "boolean",
+            "description": "Mail in this pod is readable only with its own keys, not by the account’s keys or people."
+          },
           "identity_count": {
             "type": "integer",
             "minimum": -9007199254740991,
@@ -8191,6 +8195,7 @@
           "name",
           "client_id",
           "is_default",
+          "private",
           "identity_count",
           "created_at"
         ],
@@ -8215,6 +8220,10 @@
           "is_default": {
             "type": "boolean",
             "description": "Where an address lands when a create call names no pod. Exactly one per account."
+          },
+          "private": {
+            "type": "boolean",
+            "description": "Mail in this pod is readable only with its own keys, not by the account’s keys or people."
           },
           "identity_count": {
             "type": "integer",
@@ -8508,6 +8517,7 @@
           "name",
           "client_id",
           "is_default",
+          "private",
           "identity_count",
           "created_at",
           "address",
@@ -13882,6 +13892,10 @@
                     ],
                     "description": "Your own id for this pod. Carried and returned, never parsed."
                   },
+                  "private": {
+                    "description": "`true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off.",
+                    "type": "boolean"
+                  },
                   "address": {
                     "description": "An address to create in the new pod. The same fields as `POST /identities`.",
                     "type": "object",
@@ -14334,6 +14348,10 @@
                       }
                     ],
                     "description": "Your own id for this pod. Carried and returned, never parsed."
+                  },
+                  "private": {
+                    "description": "`true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off.",
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false

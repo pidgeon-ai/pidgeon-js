@@ -4335,6 +4335,13 @@ export const COMMANDS: Command[] = [
         "describe": "Your own id for this pod. Carried and returned, never parsed."
       },
       {
+        "name": "private",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "`true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off."
+      },
+      {
         "name": "address",
         "kind": "json",
         "required": false,
@@ -4444,6 +4451,13 @@ export const COMMANDS: Command[] = [
         "required": false,
         "where": "body",
         "describe": "Your own id for this pod. Carried and returned, never parsed."
+      },
+      {
+        "name": "private",
+        "kind": "boolean",
+        "required": false,
+        "where": "body",
+        "describe": "`true`: mail in this pod is readable only with its own keys, not by the account’s keys or people. Anyone who administers the pod may turn it on; only one of its own keys at `admin` turns it off."
       }
     ]
   },
