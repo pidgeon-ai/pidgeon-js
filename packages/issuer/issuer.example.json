@@ -20,14 +20,26 @@
       "group": "refunds",
       "scope": {
         "name": "refunds.issue",
-        "label": "issue refunds up to £100",
-        "limit": { "amount": 10000, "currency": "GBP" }
+        "label": "issue refunds up to \u00a3100",
+        "limit": {
+          "amount": 10000,
+          "currency": "GBP"
+        }
       },
       "audience": "shop.example",
-      "subject": { "type": "account", "id": "acme" },
+      "subject": {
+        "type": "account",
+        "id": "acme"
+      },
       "days": 30
     }
   ],
-  "clients": [{ "client_id": "client_shop", "host": "shop.example" }],
+  "clients": [
+    {
+      "client_id": "client_shop",
+      "host": "shop.example",
+      "redirect_uris": ["https://shop.example/api/auth/pidgeon/callback"]
+    }
+  ],
   "client_metadata_hosts": []
 }

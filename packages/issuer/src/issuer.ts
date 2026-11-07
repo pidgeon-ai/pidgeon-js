@@ -1,8 +1,21 @@
-import { createHash, createPublicKey, randomUUID, verify } from 'node:crypto';
+import { createHash, createPublicKey, randomBytes, randomUUID, verify } from 'node:crypto';
 
 import { jwkThumbprint, verifyRequest } from '@pidgeon-ai/id';
 
 import type { Directory, DirectoryAgent } from './directory';
+import {
+  checkSecret,
+  CODE_SECONDS,
+  cookieOf,
+  FLOW_COOKIE,
+  FLOW_SECONDS,
+  pkceHolds,
+  provider,
+  ProviderRefused,
+  seal,
+  unseal,
+  type PersonOptions,
+} from './person';
 import type { RetiredKey, Signer } from './signer';
 
 /**
@@ -14,7 +27,9 @@ import type { RetiredKey, Signer } from './signer';
  * work against it unchanged: the policy and the card at `post.<domain>`
  * (the draft's §discovery and §card), the token exchange an agent signs
  * (RFC 8693, Web Bot Auth's profile) and the ID token a site checks
- * (`@pidgeon-ai/sign-in`), grants (§grants). The formats are the app's own
+ * (`@pidgeon-ai/sign-in`), grants (§grants), and a person's sign-in, the
+ * authorization code flow with PKCE, through the company's own identity
+ * provider (`person.ts`). The formats are the app's own
  * (`src/lib/post/card.ts`, `grant.ts`, `pidgeon-sign-in.ts`), written out
  * here because a package cannot import the app; `tests/unit/issuer.test.ts`
  * holds them equal by reading what this signs with the app's own readers.
@@ -23,7 +38,7 @@ import type { RetiredKey, Signer } from './signer';
  * used once through `replay`, in memory unless a shared store is passed.
  * Run one replica, or pass one.
  *
- * Left out on purpose: the person's flow, userinfo, introspection and
+ * Left out on purpose: userinfo, introspection and
  * revocation (each needs a store; an ID token lives five minutes and
  * revoking an agent is disabling it in the identity provider), dynamic
  * client registration, and the card log.
@@ -41,6 +56,9 @@ export const PATHS = {
   card: '/.well-known/post/card',
   directory: '/.well-known/http-message-signatures-directory',
   token: '/api/post/oidc/token',
+  authorize: '/api/post/oidc/authorize',
+  /** The issuer's own: where the company's identity provider sends a person back. Cloud has none. */
+  callback: '/api/post/oidc/callback',
   jwks: '/api/post/oidc/jwks',
   grants: '/api/post/grants',
 } as const;
@@ -65,10 +83,14 @@ export interface GrantRule {
   days?: number;
 }
 
-/** A site, registered by hand: its `client_id` and the host its grants must be for. */
+/**
+ * A site, registered by hand: its `client_id`, the host its grants must be
+ * for, and where a person's sign-in may return to, each matched exactly.
+ */
 export interface StaticClient {
   client_id: string;
   host: string;
+  redirect_uris?: string[];
 }
 
 /** Remembers a signature's `keyid nonce` until it expires; false when it was used. */
@@ -96,6 +118,8 @@ export interface IssuerOptions {
    * make it fetch an arbitrary URL.
    */
   clientMetadataHosts?: string[];
+  /** A person's sign-in, through the company's identity provider. Absent: agents only. */
+  person?: PersonOptions;
   replay?: ReplayStore;
   fetch?: typeof fetch;
   /** Milliseconds since the epoch, for tests. */
@@ -167,6 +191,10 @@ export function createIssuer(options: IssuerOptions): Issuer {
   const replay = options.replay ?? memoryReplayStore(now);
   const organisation = options.organisation ?? domain;
   const nowSeconds = () => Math.floor(now() / 1000);
+  const person = options.person
+    ? { ...options.person, secret: checkSecret(options.person.secret) }
+    : null;
+  const upstream = person ? provider(person.oidc, fetcher, now) : null;
 
   // --- Signing ----------------------------------------------------------------------
 
@@ -282,9 +310,19 @@ export function createIssuer(options: IssuerOptions): Issuer {
       issuer,
       token_endpoint: `${issuer}${PATHS.token}`,
       jwks_uri: `${issuer}${PATHS.jwks}`,
-      grant_types_supported: [TOKEN_EXCHANGE],
-      // No person signs in here yet: there is no authorization endpoint.
-      response_types_supported: [],
+      ...(person
+        ? {
+            authorization_endpoint: `${issuer}${PATHS.authorize}`,
+            grant_types_supported: ['authorization_code', TOKEN_EXCHANGE],
+            response_types_supported: ['code'],
+            code_challenge_methods_supported: ['S256'],
+            scopes_supported: ['openid', 'email'],
+          }
+        : {
+            grant_types_supported: [TOKEN_EXCHANGE],
+            // No person signs in here: there is no authorization endpoint.
+            response_types_supported: [],
+          }),
       subject_types_supported: ['public'],
       id_token_signing_alg_values_supported: ['EdDSA'],
       token_endpoint_auth_methods_supported: ['none'],
@@ -304,6 +342,8 @@ export function createIssuer(options: IssuerOptions): Issuer {
         'standing',
         'card',
         'grant',
+        'grants',
+        'nonce',
         'cnf',
         'act',
         'sub_type',
@@ -424,13 +464,24 @@ export function createIssuer(options: IssuerOptions): Issuer {
 
   // --- Sites ------------------------------------------------------------------------
 
-  const clientCache = new Map<string, { at: number; host: string }>();
+  interface Site {
+    host: string;
+    redirectUris: string[];
+  }
+  const clientCache = new Map<string, { at: number; site: Site }>();
 
   /** The site's host, from the static list or its metadata document. */
   async function clientHost(clientId: string | null): Promise<string> {
     if (!clientId) throw new Refused('invalid_target', "audience is the site's client_id.");
+    return (await site(clientId)).host;
+  }
+
+  /** A site the issuer knows: listed in the config, or by a metadata document on an allowed host. */
+  async function site(clientId: string): Promise<Site> {
     const listed = options.clients?.find((client) => client.client_id === clientId);
-    if (listed) return listed.host.toLowerCase();
+    if (listed) {
+      return { host: listed.host.toLowerCase(), redirectUris: listed.redirect_uris ?? [] };
+    }
 
     let url: URL;
     try {
@@ -443,7 +494,7 @@ export function createIssuer(options: IssuerOptions): Issuer {
       throw new Refused('invalid_target', `${clientId} is not a site this issuer knows.`);
     }
     const held = clientCache.get(clientId);
-    if (held && held.at > now() - 300_000) return held.host;
+    if (held && held.at > now() - 300_000) return held.site;
 
     const response = await fetcher(clientId, {
       redirect: 'error',
@@ -457,13 +508,20 @@ export function createIssuer(options: IssuerOptions): Issuer {
     } catch {
       // Refused below.
     }
-    const redirect = Array.isArray(document.redirect_uris) ? document.redirect_uris[0] : null;
-    if (document.client_id !== clientId || typeof redirect !== 'string') {
+    const redirects = Array.isArray(document.redirect_uris)
+      ? document.redirect_uris.filter((uri): uri is string => typeof uri === 'string')
+      : [];
+    if (document.client_id !== clientId || redirects.length === 0) {
       throw new Refused('invalid_target', `${clientId} does not describe a site.`);
     }
-    const host = new URL(redirect).hostname.toLowerCase();
-    clientCache.set(clientId, { at: now(), host });
-    return host;
+    let found: Site;
+    try {
+      found = { host: new URL(redirects[0]!).hostname.toLowerCase(), redirectUris: redirects };
+    } catch {
+      throw new Refused('invalid_target', `${clientId} does not describe a site.`);
+    }
+    clientCache.set(clientId, { at: now(), site: found });
+    return found;
   }
 
   // --- The token exchange ------------------------------------------------------------
@@ -476,8 +534,7 @@ export function createIssuer(options: IssuerOptions): Issuer {
    * key; the agent live **now** in the identity provider; the grant, when it
    * carries one, ours, that agent's, in force, for this site.
    */
-  async function exchange(request: Request): Promise<Response> {
-    const body = await request.text();
+  async function exchange(request: Request, body: string): Promise<Response> {
     const form = new URLSearchParams(body);
     if (form.get('grant_type') !== TOKEN_EXCHANGE) {
       throw new Refused('unsupported_grant_type', `Use ${TOKEN_EXCHANGE}.`);
@@ -720,6 +777,240 @@ export function createIssuer(options: IssuerOptions): Issuer {
     return json({ object: 'list', data: grants.map((grant) => ({ object: 'grant', ...grant })) });
   }
 
+  // --- A person ---------------------------------------------------------------------
+
+  interface Flow {
+    site: {
+      clientId: string;
+      redirectUri: string;
+      state: string | null;
+      nonce: string | null;
+      challenge: string;
+      scope: string;
+    };
+    upstream: { state: string; nonce: string; verifier: string };
+    exp: number;
+  }
+
+  interface Code {
+    jti: string;
+    clientId: string;
+    redirectUri: string;
+    challenge: string;
+    nonce: string | null;
+    scope: string;
+    sub: string;
+    email: string;
+    authTime: number;
+    exp: number;
+  }
+
+  const callbackUrl = `${issuer}${PATHS.callback}`;
+  const random = () => b64url(randomBytes(32));
+
+  function flowCookie(value: string, maxAge: number): string {
+    const secure = issuer.startsWith('https:') ? '; Secure' : '';
+    return `${FLOW_COOKIE}=${value}; Path=${PATHS.callback}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
+  }
+
+  /** Back to the site, once its return address is known to be its own. */
+  function backToSite(
+    redirectUri: string,
+    state: string | null,
+    values: Record<string, string>,
+    headers: Record<string, string> = {},
+  ): Response {
+    const url = new URL(redirectUri);
+    for (const [name, value] of Object.entries(values)) url.searchParams.set(name, value);
+    if (state) url.searchParams.set('state', state);
+    url.searchParams.set('iss', issuer);
+    return new Response(null, {
+      status: 302,
+      headers: { location: url.toString(), 'cache-control': 'no-store', ...headers },
+    });
+  }
+
+  /**
+   * `GET /api/post/oidc/authorize`, Cloud's parameters. Nothing leaves the
+   * issuer until the site is one it knows and `redirect_uri` is one of that
+   * site's, compared as strings: a trailing slash, a port or a query makes
+   * it another address, and the answer is a page here, never a redirect.
+   */
+  async function authorize(url: URL): Promise<Response> {
+    const params = url.searchParams;
+    for (const name of ['client_id', 'redirect_uri', 'state', 'nonce', 'code_challenge']) {
+      if (params.getAll(name).length > 1) return page(`${name} is given more than once`);
+    }
+    const clientId = params.get('client_id');
+    const redirectUri = params.get('redirect_uri');
+    if (!clientId || !redirectUri) return page('client_id and redirect_uri are required');
+    const known = await site(clientId).catch((error) => {
+      if (error instanceof Refused) return null;
+      throw error;
+    });
+    if (!known) return page(`${clientId} is not a site this issuer knows`);
+    if (!known.redirectUris.includes(redirectUri)) {
+      return page(`${redirectUri} is not where ${clientId} receives sign-ins`);
+    }
+
+    const state = params.get('state');
+    const fail = (error: string, description: string) =>
+      backToSite(redirectUri, state, { error, error_description: description });
+    if (params.get('response_type') !== 'code') {
+      return fail('unsupported_response_type', 'response_type is code.');
+    }
+    const scope = params.get('scope') ?? '';
+    if (!scope.split(' ').includes('openid')) {
+      return fail('invalid_scope', 'scope includes openid.');
+    }
+    const challenge = params.get('code_challenge');
+    if (
+      !challenge ||
+      !/^[A-Za-z0-9_-]{43}$/.test(challenge) ||
+      params.get('code_challenge_method') !== 'S256'
+    ) {
+      return fail('invalid_request', 'PKCE is required: code_challenge with S256.');
+    }
+
+    const flow: Flow = {
+      site: { clientId, redirectUri, state, nonce: params.get('nonce'), challenge, scope },
+      upstream: { state: random(), nonce: random(), verifier: random() },
+      exp: nowSeconds() + FLOW_SECONDS,
+    };
+    const location = await upstream!.authorizeUrl({
+      redirectUri: callbackUrl,
+      state: flow.upstream.state,
+      nonce: flow.upstream.nonce,
+      verifier: flow.upstream.verifier,
+    });
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location,
+        'cache-control': 'no-store',
+        'set-cookie': flowCookie(seal(person!.secret, 'flow', flow), FLOW_SECONDS),
+      },
+    });
+  }
+
+  /**
+   * `GET /api/post/oidc/callback`: the provider's answer, accepted only in
+   * the browser that started this sign-in (the sealed cookie's `state`), so
+   * a code for one member cannot be dropped into a colleague's browser.
+   */
+  async function callback(request: Request, url: URL): Promise<Response> {
+    const flow = unseal<Flow>(person!.secret, 'flow', cookieOf(request, FLOW_COOKIE));
+    const clear = { 'set-cookie': flowCookie('', 0) };
+    if (
+      !flow ||
+      flow.exp <= nowSeconds() ||
+      url.searchParams.get('state') !== flow.upstream.state
+    ) {
+      return page('this sign-in was not started in this browser. Start again from the site', clear);
+    }
+    const back = (values: Record<string, string>) =>
+      backToSite(flow.site.redirectUri, flow.site.state, values, clear);
+    const code = url.searchParams.get('code');
+    if (url.searchParams.get('error') || !code) {
+      return back({ error: 'access_denied', error_description: 'The person did not sign in.' });
+    }
+
+    let who;
+    try {
+      who = await upstream!.redeem({
+        code,
+        redirectUri: callbackUrl,
+        verifier: flow.upstream.verifier,
+        nonce: flow.upstream.nonce,
+      });
+    } catch (error) {
+      if (!(error instanceof ProviderRefused)) throw error;
+      return back({ error: 'access_denied', error_description: error.message });
+    }
+    const domains = (person!.emailDomains ?? [domain]).map((one) => one.toLowerCase());
+    if (!domains.includes(who.email.slice(who.email.lastIndexOf('@') + 1))) {
+      return back({
+        error: 'access_denied',
+        error_description: `${who.email} is not an address this issuer signs people in with.`,
+      });
+    }
+    // An agent's address is the agent's: a person given it in the provider is not signed in as it.
+    if ((await options.directory.agents()).some((agent) => agent.address === who.email)) {
+      return back({
+        error: 'access_denied',
+        error_description: `${who.email} is an agent's address, not a person's.`,
+      });
+    }
+
+    const sealed: Code = {
+      jti: randomUUID(),
+      clientId: flow.site.clientId,
+      redirectUri: flow.site.redirectUri,
+      challenge: flow.site.challenge,
+      nonce: flow.site.nonce,
+      scope: flow.site.scope,
+      sub: who.sub,
+      email: who.email,
+      authTime: who.authTime,
+      exp: nowSeconds() + CODE_SECONDS,
+    };
+    return back({ code: seal(person!.secret, 'code', sealed) });
+  }
+
+  /** `authorization_code` at the token endpoint, as Cloud's `exchangePersonCode`. */
+  async function redeemCode(form: URLSearchParams): Promise<Response> {
+    const verifier = form.get('code_verifier');
+    const clientId = form.get('client_id');
+    if (!verifier || !clientId) {
+      throw new Refused('invalid_request', 'code, code_verifier and client_id are required.');
+    }
+    const code = unseal<Code>(person!.secret, 'code', form.get('code'));
+    if (!code) throw new Refused('invalid_grant', 'That code is not valid.');
+    if (code.clientId !== clientId) {
+      throw new Refused('invalid_grant', 'That code was issued to a different client.');
+    }
+    // Spent before anything else is checked, so two requests with one code cannot both win.
+    if (!(await replay.use(`code ${code.jti}`, code.exp + 60))) {
+      throw new Refused('invalid_grant', 'That code has already been used.');
+    }
+    if (code.exp <= nowSeconds()) throw new Refused('invalid_grant', 'That code has expired.');
+    const redirectUri = form.get('redirect_uri');
+    if (redirectUri !== null && redirectUri !== code.redirectUri) {
+      throw new Refused('invalid_grant', 'redirect_uri does not match the authorization request.');
+    }
+    if (!pkceHolds(verifier, code.challenge)) {
+      throw new Refused('invalid_grant', 'code_verifier does not match the code_challenge.');
+    }
+
+    const iat = nowSeconds();
+    const idToken = await jws(
+      { alg: 'EdDSA', typ: 'JWT' },
+      {
+        iss: issuer,
+        aud: clientId,
+        iat,
+        exp: iat + ID_TOKEN_SECONDS,
+        auth_time: code.authTime,
+        ...(code.nonce ? { nonce: code.nonce } : {}),
+        jti: randomUUID(),
+        sub: code.sub,
+        kind: 'person',
+        email: code.email,
+        email_verified: true,
+        // Grants here are the organisation's, to its agents; a person gives none at this issuer.
+        grants: [],
+      },
+    );
+    // No userinfo here, so the access token is the ID token.
+    return json({
+      access_token: idToken,
+      token_type: 'Bearer',
+      expires_in: ID_TOKEN_SECONDS,
+      id_token: idToken,
+      scope: code.scope,
+    });
+  }
+
   // --- Routes -----------------------------------------------------------------------
 
   async function handle(request: Request): Promise<Response | null> {
@@ -748,7 +1039,16 @@ export function createIssuer(options: IssuerOptions): Issuer {
           300,
         );
       }
-      if (request.method === 'POST' && path === PATHS.token) return await exchange(request);
+      if (request.method === 'POST' && path === PATHS.token) {
+        const body = await request.text();
+        const form = new URLSearchParams(body);
+        if (person && form.get('grant_type') === 'authorization_code') {
+          return await redeemCode(form);
+        }
+        return await exchange(request, body);
+      }
+      if (person && get && path === PATHS.authorize) return await authorize(url);
+      if (person && get && path === PATHS.callback) return await callback(request, url);
       if (get && path === PATHS.grants) return await listGrants(request);
       const status = /^\/api\/post\/grants\/(grt_[A-Za-z0-9_-]+)\/status$/.exec(path);
       if (get && status) {
@@ -779,6 +1079,18 @@ export function createIssuer(options: IssuerOptions): Issuer {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+/** A page for the person, where a redirect would go somewhere the issuer cannot vouch for. */
+function page(reason: string, headers: Record<string, string> = {}): Response {
+  return new Response(`This sign-in can’t go on: ${reason}.\n`, {
+    status: 400,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store',
+      ...headers,
+    },
+  });
 }
 
 function json(value: unknown, maxAge = 0, status = 200): Response {

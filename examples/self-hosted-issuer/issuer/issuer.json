@@ -12,14 +12,33 @@
     }
   },
   "directory_cache_seconds": 5,
+  "person": {
+    "oidc": {
+      "issuer": "http://localhost:8081/realms/acme",
+      "discovery_url": "http://keycloak:8080/realms/acme/.well-known/openid-configuration",
+      "client_id": "pidgeon-issuer-sign-in"
+    }
+  },
   "grants": [
     {
       "group": "refunds",
-      "scope": { "name": "refunds.issue", "label": "issue refunds" },
+      "scope": {
+        "name": "refunds.issue",
+        "label": "issue refunds"
+      },
       "audience": "localhost",
-      "subject": { "type": "account", "id": "acme" },
+      "subject": {
+        "type": "account",
+        "id": "acme"
+      },
       "days": 30
     }
   ],
-  "clients": [{ "client_id": "client_shop", "host": "localhost" }]
+  "clients": [
+    {
+      "client_id": "client_shop",
+      "host": "localhost",
+      "redirect_uris": ["http://localhost:3490/api/auth/pidgeon/callback"]
+    }
+  ]
 }

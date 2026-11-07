@@ -2,7 +2,8 @@
  * Acme runs its own issuer: Keycloak says who its agents are, the issuer
  * signs for acme.test with a key that never leaves this machine, and an
  * agent signs in to a website with no person present. Then an administrator
- * disables the agent in Keycloak, and its next sign-in fails.
+ * disables the agent in Keycloak, and its next sign-in fails. Last, a person,
+ * Alice, signs in to the same site through Keycloak's own login page.
  *
  *   pnpm demo            # needs Docker
  *   docker compose down  # afterwards
@@ -192,6 +193,53 @@ try {
   console.log(`  refused: ${error.message}`);
 }
 await updateAgentClient((client) => (client.enabled = true));
+
+// 8. A person signs in, through Keycloak's login page, as a browser would.
+step('8. Alice signs in to the site as herself, through Keycloak (alice / alice).');
+/** A browser: one cookie jar per host, redirects followed by hand so each hop is seen. */
+const jar = new Map<string, Map<string, string>>();
+async function browse(url: string, init: RequestInit = {}): Promise<Response> {
+  const host = new URL(url).host;
+  const cookies = jar.get(host) ?? new Map<string, string>();
+  const response = await fetch(url, {
+    ...init,
+    redirect: 'manual',
+    headers: {
+      ...(init.headers as Record<string, string>),
+      cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join('; '),
+    },
+  });
+  for (const line of response.headers.getSetCookie()) {
+    const [pair] = line.split(';');
+    const eq = pair!.indexOf('=');
+    cookies.set(pair!.slice(0, eq), pair!.slice(eq + 1));
+  }
+  jar.set(host, cookies);
+  const next = response.headers.get('location');
+  return next ? browse(new URL(next, url).toString()) : response;
+}
+const loginPage = await browse(`http://localhost:${SITE_PORT}/api/auth/pidgeon/login`);
+const form = /<form[^>]*id="kc-form-login"[^>]*action="([^"]+)"/.exec(await loginPage.text());
+if (!form) throw new Error('Keycloak did not show its login page.');
+const account = await browse(form[1]!.replaceAll('&amp;', '&'), {
+  method: 'POST',
+  headers: { 'content-type': 'application/x-www-form-urlencoded' },
+  body: new URLSearchParams({ username: 'alice', password: 'alice' }).toString(),
+});
+// The site sent her home with a session cookie; her account page says who she is.
+const person = (
+  (await (await browse(`http://localhost:${SITE_PORT}/account`)).json()) as {
+    signed_in_as?: Record<string, unknown>;
+  }
+).signed_in_as;
+if (person?.kind === 'person') {
+  console.log(
+    `  the site says: ${person.email}, ${person.kind}, iss ${person.iss}, sub ${person.sub}`,
+  );
+} else {
+  console.log(`  Alice was not signed in (${account.status}). That is a bug.`);
+  process.exitCode = 1;
+}
 
 site.close();
 step('Done. `docker compose down` stops Keycloak and the issuer.');

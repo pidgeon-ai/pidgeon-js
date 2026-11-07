@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { cachedDirectory, staticDirectory, type Directory, type DirectoryAgent } from './directory';
 import { keycloakDirectory } from './keycloak';
 import type { GrantRule, IssuerOptions, StaticClient } from './issuer';
+import { checkSecret } from './person';
 import { fileSigner, seedSigner, type RetiredKey } from './signer';
 
 /**
@@ -34,6 +35,24 @@ export interface IssuerFile {
           group?: string;
         };
       };
+  /**
+   * A person's sign-in, through the company's OpenID Connect provider, with
+   * the issuer as one of its clients. Needs `PIDGEON_ISSUER_SECRET`.
+   */
+  person?: {
+    oidc: {
+      /** The provider's issuer, as its ID tokens say. */
+      issuer: string;
+      /** Where the issuer reaches the provider's configuration, when not at its issuer URL. */
+      discovery_url?: string;
+      client_id: string;
+      /** The environment variable holding its secret. Default `PIDGEON_PERSON_CLIENT_SECRET`. */
+      client_secret_env?: string;
+      token_auth?: 'client_secret_basic' | 'client_secret_post';
+    };
+    /** Default the domain. */
+    email_domains?: string[];
+  };
   grants?: GrantRule[];
   clients?: StaticClient[];
   client_metadata_hosts?: string[];
@@ -69,8 +88,35 @@ export async function loadConfig(
     retired.push({ kid: old.kid, publicKey: old.publicKey, notAfter: new Date(entry.not_after) });
   }
 
+  let person: IssuerOptions['person'];
+  if (file.person) {
+    const { oidc } = file.person;
+    const secretName = oidc?.client_secret_env ?? 'PIDGEON_PERSON_CLIENT_SECRET';
+    if (!oidc?.issuer || !oidc.client_id) {
+      throw new Error(
+        `${path}: \`person.oidc\` names the provider's \`issuer\` and the \`client_id\`.`,
+      );
+    }
+    const clientSecret = env[secretName];
+    if (!clientSecret) {
+      throw new Error(`${path}: set ${secretName}, the issuer's client secret at ${oidc.issuer}.`);
+    }
+    person = {
+      secret: checkSecret(env.PIDGEON_ISSUER_SECRET),
+      oidc: {
+        issuer: oidc.issuer,
+        discoveryUrl: oidc.discovery_url,
+        clientId: oidc.client_id,
+        clientSecret,
+        tokenAuth: oidc.token_auth,
+      },
+      emailDomains: file.person.email_domains,
+    };
+  }
+
   return {
     domain: file.domain,
+    person,
     issuer: file.issuer,
     organisation: file.organisation,
     signer,

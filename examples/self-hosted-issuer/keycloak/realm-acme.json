@@ -26,6 +26,22 @@
       "serviceAccountsEnabled": true
     },
     {
+      "clientId": "pidgeon-issuer-sign-in",
+      "name": "Pidgeon issuer (signs people in)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "example-sign-in-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:8080/api/post/oidc/callback"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
       "clientId": "support-agent",
       "name": "Support agent",
       "enabled": true,
@@ -57,6 +73,21 @@
       "enabled": true,
       "serviceAccountClientId": "support-agent",
       "groups": ["/agents", "/refunds"]
+    },
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@acme.test",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Example",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice",
+          "temporary": false
+        }
+      ]
     }
   ]
 }

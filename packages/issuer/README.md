@@ -100,6 +100,37 @@ const { site } = await signInWithPidgeon(await loadIdentity('acme.com'), {
 });
 ```
 
+## A person signs in, through your identity provider
+
+Your staff sign in to the same sites as themselves, through your own OpenID
+Connect provider (Keycloak, Auth0, Okta, Entra), with the flow Pidgeon Cloud
+uses. Register the issuer at the provider as a confidential client whose
+redirect URI is `https://post.acme.com/api/post/oidc/callback`, then:
+
+```json
+"person": {
+  "oidc": { "issuer": "https://sso.acme.com/realms/acme", "client_id": "pidgeon-issuer" }
+},
+"clients": [
+  {
+    "client_id": "client_shop",
+    "host": "shop.example",
+    "redirect_uris": ["https://shop.example/api/auth/pidgeon/callback"]
+  }
+]
+```
+
+with the client's secret in `PIDGEON_PERSON_CLIENT_SECRET` and a random
+`PIDGEON_ISSUER_SECRET` of 32 characters or more (`openssl rand -base64 32`),
+which seals the sign-in in progress and the sixty-second code, so there is
+still no database. The issuer will not start without it. Rotating it only
+ends the sign-ins in flight.
+
+A site that sets `issuer: 'https://post.acme.com'` signs people in there.
+The person must have a verified address at your domain that is not an
+agent's; the site gets `kind: "person"`, your provider's `sub` and that
+address.
+
 ## What it checks before it signs anything
 
 - The token request is signed by a key your identity provider gives an
@@ -113,7 +144,7 @@ const { site } = await signInWithPidgeon(await loadIdentity('acme.com'), {
 
 ## Left out
 
-The person's sign-in, userinfo, introspection and revocation endpoints (an ID
+Userinfo, introspection and revocation endpoints (an ID
 token lasts five minutes; revoking an agent is disabling it), dynamic client
 registration, and Pidgeon's card log, which would mean sending us your agents.
 Authorization stays yours: a grant is a relation (`customer:42#refunds.issue`

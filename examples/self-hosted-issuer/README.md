@@ -4,6 +4,7 @@ Acme runs its own Pidgeon issuer. Keycloak, its identity provider, says who
 its agents are; the issuer signs for `acme.test` with a key that never leaves
 this machine; and an agent signs in to a website with no person present. Then
 an administrator disables the agent in Keycloak, and its next sign-in fails.
+Last, a person, Alice, signs in to the same site through Keycloak's login page.
 Nothing here reaches Pidgeon.
 
 ```bash
@@ -20,7 +21,7 @@ repository (`packages/issuer/Dockerfile`).
 | ---------------- | ------------------------------------------------------------------- |
 | `localhost:8081` | Keycloak, realm `acme` (`keycloak/realm-acme.json`; admin / admin)  |
 | `localhost:8080` | The issuer for `acme.test` (`issuer/issuer.json`)                   |
-| `localhost:3490` | Shoebox, a site that lists Acme's issuer (`site.ts`)                |
+| `localhost:3490` | Shoebox, a site whose issuer is Acme's (`site.ts`)                  |
 | `.keys/`         | The issuer's key and the agent's, made by the demo, never committed |
 
 ## How Keycloak becomes Pidgeon IDs
@@ -44,3 +45,15 @@ its JWKS). The issuer reads the same key from there, so the one key the agent
 holds signs it in to Keycloak and to every site, and no secret exists. Step 3
 of the demo gets a Keycloak token with it. A client that authenticates with a
 secret instead names its key in a `pidgeon.key` attribute.
+
+## A person, through Keycloak
+
+The issuer is also a client of Keycloak, `pidgeon-issuer-sign-in`, for people.
+A site sends Alice to the issuer, the issuer sends her to Keycloak's login page,
+and she comes back signed in to the site as `kind: person`, with Keycloak's
+`sub` and her verified address. Step 8 does it as a browser would, cookies and
+all. Browsers reach Keycloak at `localhost:8081` and the issuer reaches it at
+`keycloak:8080`, so Keycloak runs with `KC_HOSTNAME` and a dynamic back channel
+and the issuer's `person.oidc.discovery_url` names the inside address. The seal
+secret in `docker-compose.yml` is an example; make a real one with
+`openssl rand -base64 32`.

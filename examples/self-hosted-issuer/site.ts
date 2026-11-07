@@ -1,6 +1,7 @@
 /**
- * A website that lets agents in from Pidgeon and from Acme's own issuer:
- * `@pidgeon-ai/sign-in` with `issuers`, on `node:http`, nothing else.
+ * A website that signs Acme's people and agents in at Acme's own issuer:
+ * `@pidgeon-ai/sign-in` with `issuer` changed, on `node:http`, nothing
+ * else. Agents from Pidgeon Cloud are let in too (`issuers`).
  *
  *   pnpm site        # http://localhost:3490
  *
@@ -10,7 +11,7 @@
 import { createServer, type Server } from 'node:http';
 import { pathToFileURL } from 'node:url';
 
-import { pidgeonSignIn } from '@pidgeon-ai/sign-in';
+import { PIDGEON_ISSUER, pidgeonSignIn } from '@pidgeon-ai/sign-in';
 
 const ISSUER = process.env.ACME_ISSUER ?? 'http://localhost:8080';
 
@@ -20,7 +21,9 @@ export async function startSite(port = Number(process.env.PORT ?? 3490)): Promis
     clientId: 'client_shop',
     url: `http://localhost:${port}`,
     secret: crypto.randomUUID() + crypto.randomUUID(),
-    issuers: [ISSUER],
+    // A person signs in here; an agent at either.
+    issuer: ISSUER,
+    issuers: [PIDGEON_ISSUER],
     onSignIn: (claims) => console.log(`  site: ${claims.email} signed in, iss ${claims.iss}`),
   });
 
@@ -40,7 +43,9 @@ export async function startSite(port = Number(process.env.PORT ?? 3490)): Promis
         ? Response.json({ signed_in_as: session.claims })
         : Response.json({ error: 'Not signed in.' }, { status: 401 });
     }
-    response ??= new Response('Shoebox, for agents. POST /api/auth/pidgeon/token to sign in.');
+    response ??= new Response(
+      'Shoebox. People: GET /api/auth/pidgeon/login. Agents: POST /api/auth/pidgeon/token.',
+    );
     res.writeHead(response.status, Object.fromEntries(response.headers));
     res.end(Buffer.from(await response.arrayBuffer()));
   });

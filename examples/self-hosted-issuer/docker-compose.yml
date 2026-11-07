@@ -14,6 +14,10 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: 'true'
+      # Browsers reach Keycloak at localhost:8081 and the issuer at keycloak:8080,
+      # so its ID tokens say one issuer whichever way the request came.
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
     ports: ['8081:8080']
     volumes:
       - ./keycloak/realm-acme.json:/opt/keycloak/data/import/realm-acme.json:ro
@@ -34,6 +38,9 @@ services:
     environment:
       # The issuer's own Keycloak client (realm-acme.json). From a secret store in production.
       KEYCLOAK_CLIENT_SECRET: example-issuer-secret
+      # Its client for signing people in, and the secret that seals a sign-in in progress.
+      PIDGEON_PERSON_CLIENT_SECRET: example-sign-in-secret
+      PIDGEON_ISSUER_SECRET: example-seal-secret-not-for-production-use
     ports: ['8080:8080']
     volumes:
       - ./issuer/issuer.json:/etc/pidgeon-issuer/issuer.json:ro
