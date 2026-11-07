@@ -1,4 +1,5 @@
 import { onePerAddress, type Directory, type DirectoryAgent } from './directory';
+import { withBackoff } from './rate-limit';
 
 /**
  * Auth0 as the directory: the issuer reads the tenant's Management API and
@@ -91,9 +92,14 @@ export function auth0Directory(options: Auth0Options): Directory {
   }
 
   async function management<T>(path: string): Promise<T | null> {
-    const response = await fetcher(`${base}/api/v2${path}`, {
-      headers: { authorization: `Bearer ${await accessToken()}`, accept: 'application/json' },
-    });
+    const bearer = await accessToken();
+    const response = await withBackoff(
+      () =>
+        fetcher(`${base}/api/v2${path}`, {
+          headers: { authorization: `Bearer ${bearer}`, accept: 'application/json' },
+        }),
+      now,
+    );
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`Auth0 answered ${response.status} for ${path}.`);
     return (await response.json()) as T;

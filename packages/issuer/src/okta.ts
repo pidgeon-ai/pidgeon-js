@@ -1,6 +1,7 @@
 import { createPrivateKey, randomUUID, sign, type KeyObject } from 'node:crypto';
 
 import { onePerAddress, type Directory, type DirectoryAgent } from './directory';
+import { withBackoff } from './rate-limit';
 
 /**
  * Okta as the directory: the issuer reads the org's Apps API and never
@@ -129,9 +130,14 @@ export function oktaDirectory(options: OktaOptions): Directory {
   }
 
   async function api(url: string): Promise<Response> {
-    const response = await fetcher(url, {
-      headers: { authorization: `Bearer ${await accessToken()}`, accept: 'application/json' },
-    });
+    const bearer = await accessToken();
+    const response = await withBackoff(
+      () =>
+        fetcher(url, {
+          headers: { authorization: `Bearer ${bearer}`, accept: 'application/json' },
+        }),
+      now,
+    );
     if (!response.ok && response.status !== 404) {
       throw new Error(`Okta answered ${response.status} for ${new URL(url).pathname}.`);
     }

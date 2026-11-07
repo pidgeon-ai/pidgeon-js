@@ -93,8 +93,9 @@ An agent is an active OAuth service app whose profile names it:
 `"profile": { "pidgeon": { "key": "…", "address": "…", "kind": "agent",
 "groups": ["refunds"] } }`. Deactivate the app to switch it off. The issuer
 reads them with a service app of its own granted `okta.apps.read` and a
-read-only admin role, signing in with Private Key JWT; its RSA or P-256
-private key is `OKTA_PRIVATE_KEY`.
+read-only admin role (`READ_ONLY_ADMIN` is enough), signing in with Private
+Key JWT; its RSA or P-256 private key is `OKTA_PRIVATE_KEY`, and its `kid`
+is `key_id`.
 
 ```json
 "directory": { "okta": { "org": "https://acme.okta.com", "client_id": "<the issuer's app>" } }
