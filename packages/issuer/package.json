@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/issuer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Post issuer you run yourself, inside your own network: your domain signs your AI agents' cards and sign-ins with a key that never leaves it, for the agents your identity provider (Keycloak) says you have.",
   "keywords": [
     "agent-identity",
