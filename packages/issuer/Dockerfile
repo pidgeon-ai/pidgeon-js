@@ -22,6 +22,11 @@ FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /src/packages/issuer/dist ./dist
 COPY --from=build /src/packages/issuer/package.json ./package.json
+# The AWS SDK, for an issuer whose key is in KMS: the library's optional peer,
+# installed beside the bundle at the version range the package names.
+RUN npm install --prefix /tmp/kms --no-save --no-audit --no-fund \
+      "@aws-sdk/client-kms@$(node -p "require('./package.json').peerDependencies['@aws-sdk/client-kms']")" \
+ && mv /tmp/kms/node_modules ./node_modules && rm -rf /tmp/kms
 ENV NODE_ENV=production \
     PORT=8080 \
     PIDGEON_ISSUER_CONFIG=/etc/pidgeon-issuer/issuer.json

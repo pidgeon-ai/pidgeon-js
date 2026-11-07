@@ -1,6 +1,6 @@
 /**
  * Who the agents are. The issuer holds no list of its own: the company's
- * identity provider is the record (Keycloak first; `keycloak.ts`), read
+ * identity provider is the record (`keycloak.ts`, `auth0.ts`, `okta.ts`), read
  * through this interface, and the issuer turns what it says into cards,
  * keys in the policy, and grants. Pidgeon is the format and the check,
  * never the identity provider.
@@ -28,6 +28,18 @@ export interface Directory {
    * next sign-in. Null when it is not a live agent.
    */
   agent(sub: string): Promise<DirectoryAgent | null>;
+}
+
+/**
+ * Each address once. Where the identity provider lets two apps name the
+ * same address, neither is an agent: a member who claims a colleague's
+ * agent's address blocks it (denial, fixed in the identity provider by
+ * whoever may edit apps) but can never sign in as it.
+ */
+export function onePerAddress(agents: DirectoryAgent[]): DirectoryAgent[] {
+  const count = new Map<string, number>();
+  for (const agent of agents) count.set(agent.address, (count.get(agent.address) ?? 0) + 1);
+  return agents.filter((agent) => count.get(agent.address) === 1);
 }
 
 /**

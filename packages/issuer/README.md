@@ -2,7 +2,7 @@
 
 A Post issuer you run yourself, inside your own network. Your own domain
 signs your AI agents' cards, sign-ins and grants, with a key that never
-leaves you, for the agents your identity provider says you have. Nothing is
+leaves you, for the agents your identity provider (Keycloak, Auth0, Okta) says you have. Nothing is
 sent to Pidgeon: not the key, not the list of agents.
 
 It is for companies that may not hand authentication to a third party. Pidgeon
@@ -32,8 +32,8 @@ with `pidgeon-issuer export <dir>` and serve it from any static host.
 
 1. **The issuer's key**, once: `pidgeon-issuer keygen acme.com`. It writes
    `pidgeon-issuer-key.json` (mode 0600). Mount it as a secret, or put the
-   seed in `PIDGEON_ISSUER_KEY`. Any `Signer` fits in its place, so a KMS or
-   an HSM needs no change to the rest.
+   seed in `PIDGEON_ISSUER_KEY`. Or keep it in AWS KMS, below. Any `Signer`
+   fits in its place, so an HSM needs no change to the rest.
 2. **Each agent's key**, on the agent's machine: `pidgeon-issuer keygen
 acme.com --out ~/.config/pidgeon/id/acme.com.json`. Give the identity
    provider the `key` line it prints; the private half stays with the agent.
@@ -73,6 +73,37 @@ rest, and its groups are what `grants` maps.
 secret is `KEYCLOAK_CLIENT_SECRET`. `examples/self-hosted-issuer` runs all of
 it in Docker.
 
+## Auth0
+
+An agent is a machine-to-machine application whose metadata names it:
+`pidgeon_key` (the agent's public key), `pidgeon_address`, and optionally
+`pidgeon_kind`, `pidgeon_groups` (comma-separated) and `pidgeon_disabled`
+(`true` to switch it off; Auth0 applications have no enabled switch). The
+issuer reads them with an application of its own authorized for the
+Management API with `read:clients` only; its secret is
+`AUTH0_CLIENT_SECRET`.
+
+```json
+"directory": { "auth0": { "tenant": "acme.eu.auth0.com", "client_id": "<the issuer's app>" } }
+```
+
+## Okta
+
+An agent is an active OAuth service app whose profile names it:
+`"profile": { "pidgeon": { "key": "…", "address": "…", "kind": "agent",
+"groups": ["refunds"] } }`. Deactivate the app to switch it off. The issuer
+reads them with a service app of its own granted `okta.apps.read` and a
+read-only admin role, signing in with Private Key JWT; its RSA or P-256
+private key is `OKTA_PRIVATE_KEY`.
+
+```json
+"directory": { "okta": { "org": "https://acme.okta.com", "client_id": "<the issuer's app>" } }
+```
+
+On Auth0 and Okta the agent authenticates to the provider with its own RSA
+or EC credential: neither accepts an Ed25519 key for that, so the one-key
+trick is Keycloak's alone.
+
 ## Sign in to a site
 
 A site lists your issuer beside Pidgeon's:
@@ -99,6 +130,25 @@ const { site } = await signInWithPidgeon(await loadIdentity('acme.com'), {
   site: 'https://shop.example/api/auth/pidgeon/token',
 });
 ```
+
+## The key in AWS KMS
+
+Make an Ed25519 key that never leaves KMS and name it instead of a file:
+
+```bash
+aws kms create-key --key-spec ECC_NIST_EDWARDS25519 --key-usage SIGN_VERIFY
+aws kms create-alias --alias-name alias/pidgeon-issuer --target-key-id <key id>
+```
+
+```json
+"key": { "kms": "alias/pidgeon-issuer", "region": "eu-west-1" }
+```
+
+The issuer's role needs `kms:GetPublicKey` and `kms:Sign` on that key and
+nothing else; credentials come the AWS SDK's usual way. Install
+`@aws-sdk/client-kms` beside the library (the container image has it). The
+key is read once at start: an alias is pinned to the key it names then, and
+every signature is checked against that key before it leaves.
 
 ## A person signs in, through your identity provider
 

@@ -8,7 +8,7 @@ takes the server as it is.
 `PIDGEON_API_KEY` is an admin key. The program uses it to make an address that
 expires in an hour and a key for that address alone, with send access and the
 same hour. The agent gets only that key. Create the admin key at
-[pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys).
+[pidgeon.ai/app/keys](https://pidgeon.ai/app/keys).
 
 ## Python
 

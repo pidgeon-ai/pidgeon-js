@@ -4,8 +4,8 @@ import { identityFromSeed } from '@pidgeon-ai/id';
 
 /**
  * The issuer's signing key, behind one interface so custody never touches
- * the protocol: a file today; AWS KMS or an HSM over PKCS#11 implement the
- * same three members and nothing else changes.
+ * the protocol: a file, AWS KMS (`kms.ts`), or an HSM over PKCS#11
+ * implementing the same three members, and nothing else changes.
  *
  * Everything the issuer signs is a JWS signing input (a card, an ID token,
  * a grant), a few hundred bytes, so a KMS that signs pure Ed25519 only up to

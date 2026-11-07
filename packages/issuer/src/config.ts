@@ -2,8 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 import { cachedDirectory, staticDirectory, type Directory, type DirectoryAgent } from './directory';
+import { auth0Directory } from './auth0';
 import { keycloakDirectory } from './keycloak';
+import { oktaDirectory } from './okta';
 import type { GrantRule, IssuerOptions, StaticClient } from './issuer';
+import { kmsRetiredKey, kmsSigner } from './kms';
 import { checkSecret } from './person';
 import { fileSigner, seedSigner, type RetiredKey } from './signer';
 
@@ -17,10 +20,14 @@ export interface IssuerFile {
   domain: string;
   issuer?: string;
   organisation?: string;
-  /** The key file, relative to this file. `PIDGEON_ISSUER_KEY` (the seed) wins when set. */
-  key?: string;
+  /**
+   * The key file, relative to this file, or a key in AWS KMS (`{ "kms":
+   * "arn:aws:kms:…" }`, an `ECC_NIST_EDWARDS25519` key). `PIDGEON_ISSUER_KEY`
+   * (the seed) wins when set.
+   */
+  key?: KeyRef;
   /** Keys being withdrawn: published until `not_after`. */
-  retired?: { key: string; not_after: string }[];
+  retired?: { key: KeyRef; not_after: string }[];
   directory:
     | { static: DirectoryAgent[] }
     | {
@@ -33,6 +40,28 @@ export interface IssuerFile {
           client_secret_env?: string;
           /** The group whose members are agents. Default `agents`. */
           group?: string;
+        };
+      }
+    | {
+        auth0: {
+          /** The tenant's domain: `acme.eu.auth0.com`. */
+          tenant: string;
+          /** The issuer's own machine-to-machine application, with `read:clients` only. */
+          client_id: string;
+          /** The environment variable holding its secret. Default `AUTH0_CLIENT_SECRET`. */
+          client_secret_env?: string;
+        };
+      }
+    | {
+        okta: {
+          /** The org: `https://acme.okta.com`. */
+          org: string;
+          /** The issuer's own service app, with `okta.apps.read` and a read-only admin role. */
+          client_id: string;
+          /** The environment variable holding its RSA or P-256 private key, PEM. Default `OKTA_PRIVATE_KEY`. */
+          private_key_env?: string;
+          /** That key's `kid` in the app's JWKS. */
+          key_id?: string;
         };
       };
   /**
@@ -60,6 +89,9 @@ export interface IssuerFile {
   directory_cache_seconds?: number;
 }
 
+/** A key file's path, or a KMS key: its ARN, id or alias, and its region when not the default. */
+export type KeyRef = string | { kms: string; region?: string };
+
 export async function loadConfig(
   path: string,
   env: Record<string, string | undefined> = process.env,
@@ -77,15 +109,26 @@ export async function loadConfig(
 
   const signer = env.PIDGEON_ISSUER_KEY
     ? seedSigner(env.PIDGEON_ISSUER_KEY, { domain: file.domain })
-    : file.key
+    : typeof file.key === 'string'
       ? await fileSigner(here(file.key))
-      : null;
-  if (!signer) throw new Error(`${path}: name a \`key\` file, or set PIDGEON_ISSUER_KEY.`);
+      : file.key?.kms
+        ? await kmsSigner({ keyId: file.key.kms, region: file.key.region })
+        : null;
+  if (!signer) {
+    throw new Error(`${path}: name a \`key\` file or a KMS key, or set PIDGEON_ISSUER_KEY.`);
+  }
 
   const retired: RetiredKey[] = [];
   for (const entry of file.retired ?? []) {
-    const old = await fileSigner(here(entry.key));
-    retired.push({ kid: old.kid, publicKey: old.publicKey, notAfter: new Date(entry.not_after) });
+    const notAfter = new Date(entry.not_after);
+    if (typeof entry.key === 'string') {
+      const old = await fileSigner(here(entry.key));
+      retired.push({ kid: old.kid, publicKey: old.publicKey, notAfter });
+    } else {
+      retired.push(
+        await kmsRetiredKey({ keyId: entry.key.kms, region: entry.key.region, notAfter }),
+      );
+    }
   }
 
   let person: IssuerOptions['person'];
@@ -149,6 +192,32 @@ function directoryFrom(
       group: keycloak.group,
     });
   }
+  if ('auth0' in directory) {
+    const { auth0 } = directory;
+    const secretName = auth0.client_secret_env ?? 'AUTH0_CLIENT_SECRET';
+    const secret = env[secretName];
+    if (!secret) throw new Error(`${path}: set ${secretName}, the issuer's Auth0 client secret.`);
+    return auth0Directory({
+      tenant: auth0.tenant,
+      clientId: auth0.client_id,
+      clientSecret: secret,
+      domain: file.domain,
+    });
+  }
+  if ('okta' in directory) {
+    const { okta } = directory;
+    const keyName = okta.private_key_env ?? 'OKTA_PRIVATE_KEY';
+    const privateKey = env[keyName];
+    if (!privateKey)
+      throw new Error(`${path}: set ${keyName}, the issuer's Okta private key (PEM).`);
+    return oktaDirectory({
+      org: okta.org,
+      clientId: okta.client_id,
+      privateKey,
+      keyId: okta.key_id,
+      domain: file.domain,
+    });
+  }
   if ('static' in directory && Array.isArray(directory.static)) {
     for (const agent of directory.static) {
       if (!agent.address?.toLowerCase().endsWith(`@${file.domain.toLowerCase()}`)) {
@@ -157,5 +226,7 @@ function directoryFrom(
     }
     return staticDirectory(directory.static);
   }
-  throw new Error(`${path}: \`directory\` is { "keycloak": {...} } or { "static": [...] }.`);
+  throw new Error(
+    `${path}: \`directory\` is { "keycloak": {...} }, { "auth0": {...} }, { "okta": {...} } or { "static": [...] }.`,
+  );
 }

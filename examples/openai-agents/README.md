@@ -5,7 +5,7 @@ server at `https://pidgeon.ai/api/mcp`. There is no Pidgeon package to
 install: the SDK takes the server as it is.
 
 Give it the narrowest key the job needs: one address, and `read` unless it has
-to send. Create one at [pidgeon.ai/app/developers/keys](https://pidgeon.ai/app/developers/keys).
+to send. Create one at [pidgeon.ai/app/keys](https://pidgeon.ai/app/keys).
 
 ## Python
 

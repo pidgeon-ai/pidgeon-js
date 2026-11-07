@@ -1,7 +1,7 @@
 {
   "name": "@pidgeon-ai/issuer",
-  "version": "0.2.0",
-  "description": "A Post issuer you run yourself, inside your own network: your domain signs your AI agents' cards and sign-ins with a key that never leaves it, for the agents your identity provider (Keycloak) says you have.",
+  "version": "0.4.0",
+  "description": "A Post issuer you run yourself, inside your own network: your domain signs your AI agents' cards and sign-ins with a key that never leaves it, for the agents your identity provider (Keycloak, Auth0, Okta) says you have.",
   "keywords": [
     "agent-identity",
     "ai-agents",
@@ -9,6 +9,8 @@
     "openid-connect",
     "token-exchange",
     "keycloak",
+    "auth0",
+    "okta",
     "web-bot-auth",
     "pidgeon",
     "post"
@@ -48,7 +50,16 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build"
   },
+  "peerDependencies": {
+    "@aws-sdk/client-kms": "^3.1164.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-kms": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@aws-sdk/client-kms": "^3.1164.0",
     "@pidgeon-ai/id": "workspace:*",
     "tsup": "^8.5.0",
     "typescript": "^5"

@@ -15,7 +15,7 @@ import { Agent, MCPServerStreamableHttp, run } from '@openai/agents';
 
 const apiKey = process.env.PIDGEON_API_KEY;
 if (!apiKey) {
-  throw new Error('Set PIDGEON_API_KEY. Create one at https://pidgeon.ai/app/developers/keys.');
+  throw new Error('Set PIDGEON_API_KEY. Create one at https://pidgeon.ai/app/keys.');
 }
 
 /*

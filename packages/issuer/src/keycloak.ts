@@ -1,4 +1,4 @@
-import type { Directory, DirectoryAgent } from './directory';
+import { onePerAddress, type Directory, type DirectoryAgent } from './directory';
 
 /**
  * Keycloak as the directory: the company's identity provider says who its
@@ -167,7 +167,7 @@ export function keycloakDirectory(options: KeycloakOptions): Directory {
       const clients = (await admin<KeycloakClient[]>('/clients?first=0&max=1000')) ?? [];
       const candidates = clients.filter((client) => keyOf(client) !== null);
       const agents = await Promise.all(candidates.map(agentOf));
-      return agents.filter((agent): agent is DirectoryAgent => agent !== null);
+      return onePerAddress(agents.filter((agent): agent is DirectoryAgent => agent !== null));
     },
 
     /**
