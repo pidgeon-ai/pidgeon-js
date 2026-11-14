@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.1.1
+
+- `calendar.create` and `calendar.update` take `attendees` and `sendInvites`,
+  and `calendar.remove` takes `{ sendInvites }`: the attendees get an
+  invitation, an update or a cancellation from the inbox. `CalendarEvent` has
+  `organizer`, `attendees` and, after a write that sent, `invites`.
+
+## 2.1.0
+
+All of Email, and webhooks. Additive: 2.0 code runs unchanged.
+
+- `messages`: `list`, `get` (`body: 'clean'` for the Firewall's cleaned text),
+  `markSeen`, `await` (wait for mail), `search`; sending takes `attachmentIds`.
+- `threads` (list, read, file, star, hand to a person, delete, labels),
+  `labels`, `contacts`, `attachments` (`upload`, which goes straight to
+  storage over 4 MB; `get`, a five-minute link), `calendar`, `domains` (mail
+  on your own domain), `appPasswords` (for mail apps), `storage()`,
+  `testInbound()` (with a test key), and `webhooks`.
+- `inboxes.create` takes `domain`; `inboxes.holdSuspicious`.
+- Types follow the API: an inbox's `kind` is `agent` or `events`, and it has
+  `hold_suspicious` (no `owner_id`).
+
 ## 2.0.0
 
 For the new Pidgeon: Passport, Bouncer, Email and Auth. A new major version,

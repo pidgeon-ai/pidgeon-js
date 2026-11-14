@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+- Email: `pidgeon mail list|read|wait`, `pidgeon search`, `pidgeon threads
+list|show|file|hand-over`, `pidgeon app-passwords`, and `--domain` on
+  `inboxes create`.
+- Bouncer: `pidgeon verify` and `pidgeon reports create`.
+- Auth: `pidgeon sites` and `pidgeon mandates`.
+- `pidgeon webhooks list|create|remove`.
+
 ## 2.0.0
 
 The command line for the new Pidgeon. A new major version: 1.x spoke the old

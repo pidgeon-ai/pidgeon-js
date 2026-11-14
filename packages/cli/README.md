@@ -21,6 +21,12 @@ pidgeon inboxes create bookings --agent <agent-id>
 pidgeon send <inbox-id> --to ana@example.com --subject "Table for two" --text "Friday at 8?"
 pidgeon drafts create <inbox-id> --to ana@example.com --subject "…" --text "…"
 pidgeon drafts approval <draft-id>    # a person sends or rejects it
+pidgeon mail wait <inbox-id>          # until mail arrives
+pidgeon mail read <message-id>        # as the Firewall cleaned it
+pidgeon threads hand-over <thread-id> # to a person
+pidgeon app-passwords create <inbox-id> "Apple Mail"
+pidgeon sites create Shop --redirect https://shop.example/callback
+pidgeon reports create <verification-id> --category spam --evidence "…"
 pidgeon events
 pidgeon api GET /v1/email/rules       # any /v1 call
 ```

@@ -70,9 +70,34 @@ const draft = await pidgeon.drafts.create(inbox.id, {
   text: '…',
 });
 await pidgeon.drafts.requestApproval(draft.id);
+
+// Wait for mail, read it as the Firewall cleaned it, answer in its conversation:
+let since: string | undefined;
+for (;;) {
+  const { data, next_since } = await pidgeon.messages.await(inbox.id, { since, body: 'clean' });
+  for (const message of data) {
+    if (message.firewall?.verdict === 'suspicious') {
+      await pidgeon.threads.update(message.thread_id, {
+        ownerType: 'human',
+        status: 'human_review',
+      });
+      continue;
+    }
+    await pidgeon.messages.send(inbox.id, {
+      to: [message.from.address],
+      subject: `Re: ${message.subject}`,
+      text: 'On it.',
+      replyTo: message.id,
+    });
+  }
+  since = next_since;
+}
 ```
 
-Also `pidgeon.rules`, `pidgeon.suppressions`, `pidgeon.events`, `pidgeon.pods`,
+Also `pidgeon.threads`, `pidgeon.labels`, `pidgeon.contacts`,
+`pidgeon.attachments` (`upload`, `get`), `pidgeon.calendar`,
+`pidgeon.domains`, `pidgeon.appPasswords`, `pidgeon.webhooks`,
+`pidgeon.rules`, `pidgeon.suppressions`, `pidgeon.events`, `pidgeon.pods`,
 and `pidgeon.request(method, path, …)` for any `/v1` call. A refusal throws
 `PidgeonError` with the API's `status` and `code`.
 

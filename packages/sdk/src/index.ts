@@ -110,7 +110,8 @@ export type AgentDetail = Agent & {
   reputation: { band: Band; seen: string; next: string | null };
 };
 
-export type InboxKind = 'person' | 'shared' | 'agent' | 'events';
+/** `agent`: an agent's inbox (the default). `events`: receives only, as events. */
+export type InboxKind = 'agent' | 'events';
 
 export type Inbox = {
   id: string;
@@ -118,11 +119,143 @@ export type Inbox = {
   kind: InboxKind;
   display_name: string | null;
   pod_id: string;
-  owner_id: string | null;
   agent_id: string | null;
   status: string;
+  /** Mail the Firewall calls suspicious waits for a person. */
+  hold_suspicious: boolean;
   created_at: string;
 };
+
+/** The Firewall's reading of a received message. */
+export type Firewall = {
+  verdict: 'clean' | 'suspicious';
+  signals: { kind: string; where: string; detail?: string }[];
+  clean_text?: string;
+  version: number;
+};
+
+export type Attachment = {
+  id: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  inline: boolean;
+  content_id: string | null;
+};
+
+/** A message as the API serves it. A held one has `is_held` and nothing it says. */
+export type Message = {
+  id: string;
+  thread_id: string;
+  inbox_id: string;
+  direction: 'in' | 'out';
+  status: string;
+  is_held: boolean;
+  from: { address: string; name: string | null };
+  to: string[];
+  cc: string[];
+  bcc?: string[];
+  subject: string | null;
+  text: string | null;
+  html: string | null;
+  spam: boolean | null;
+  seen: boolean;
+  test: boolean;
+  attachments: Attachment[];
+  firewall: Firewall | null;
+  created_at: string;
+  sent_at: string | null;
+};
+
+export type Thread = {
+  id: string;
+  inbox_id: string;
+  subject: string | null;
+  folder: 'inbox' | 'archive' | 'spam' | 'trash';
+  starred: boolean;
+  status: 'open' | 'waiting' | 'resolved' | 'human_review';
+  owner_type: 'agent' | 'human' | 'automation';
+  assignee_id: string | null;
+  labels: { id: string; name: string; colour: string }[];
+  message_count: number;
+  unread_count: number;
+  last_message_at: string;
+  created_at: string;
+};
+
+export type Label = {
+  id: string;
+  inbox_id: string;
+  name: string;
+  colour: string;
+  created_at: string;
+};
+
+export type Contact = {
+  id: string;
+  inbox_id: string;
+  email: string;
+  name: string | null;
+  notes: string | null;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+  edited_at: string | null;
+  created_at: string;
+};
+
+export type MailDomain = {
+  id: string;
+  domain: string;
+  mail: boolean;
+  status: 'pending' | 'verified' | 'failed' | null;
+  receiving: boolean;
+  checked_at: string | null;
+  records: {
+    purpose: string;
+    type: string;
+    name: string;
+    value: string;
+    priority?: number;
+    required: boolean;
+  }[];
+};
+
+export type AppPassword = {
+  id: string;
+  inbox_id: string;
+  name: string;
+  prefix: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  /** Answered once, when it is made. */
+  password?: string;
+};
+
+export type CalendarEvent = {
+  id: string;
+  title: string | null;
+  start: string;
+  end: string;
+  all_day: boolean;
+  description?: string | null;
+  location?: string | null;
+  organizer?: string | null;
+  attendees?: { email: string; status: 'needs_action' | 'accepted' | 'declined' | 'tentative' }[];
+  /** After a write with `sendInvites`: who was sent the invitation, or why nobody was. */
+  invites?: { sent_to: string[]; error: string | null };
+  [field: string]: unknown;
+};
+
+export type Webhook = {
+  id: string;
+  url: string;
+  events: string[];
+  created_at: string;
+  disabled_at: string | null;
+};
+
+export type BodyChoice = 'original' | 'clean';
 
 /** What to send, or what a draft says. `replyTo` is one of the inbox's messages. */
 export type MessageInput = {
@@ -133,6 +266,8 @@ export type MessageInput = {
   text?: string;
   html?: string;
   replyTo?: string;
+  /** Finished uploads of this inbox (`email.attachments.upload`). */
+  attachmentIds?: string[];
 };
 
 /** What sending answers: `sent`, `held` for a person's approval, or `scheduled`. */
@@ -205,6 +340,7 @@ const messageBody = (input: MessageInput) => ({
   text: input.text,
   html: input.html,
   reply_to: input.replyTo,
+  attachment_ids: input.attachmentIds,
 });
 
 const segment = (id: string) => encodeURIComponent(id);
@@ -364,6 +500,8 @@ export class Pidgeon {
       displayName?: string;
       agentId?: string;
       podId?: string;
+      /** One of your own domains with mail on; `pidgeon.email` when left out. */
+      domain?: string;
     }): Promise<Inbox> =>
       this.request('POST', '/v1/email/inboxes', {
         body: {
@@ -372,7 +510,13 @@ export class Pidgeon {
           display_name: input.displayName,
           agent_id: input.agentId,
           pod_id: input.podId,
+          domain: input.domain,
         },
+      }),
+    /** Hold suspicious mail for a person. A key can turn holding on, never off. */
+    holdSuspicious: (id: string): Promise<Inbox> =>
+      this.request('PATCH', `/v1/email/inboxes/${segment(id)}`, {
+        body: { hold_suspicious: true },
       }),
     /** Remove an inbox. Its address is retired, never given to anyone again. */
     remove: (id: string): Promise<void> =>
@@ -385,7 +529,293 @@ export class Pidgeon {
       this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/messages`, {
         body: messageBody(input),
       }),
+    /** The inbox's mail, newest first. `body: 'clean'` serves the Firewall's cleaned text. */
+    list: (
+      inboxId: string,
+      options: ListOptions & { body?: BodyChoice } = {},
+    ): Promise<Page<Message>> =>
+      this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/messages`, { query: options }),
+    get: (id: string, options: { body?: BodyChoice } = {}): Promise<Message> =>
+      this.request('GET', `/v1/email/messages/${segment(id)}`, { query: options }),
+    /** Mark a received message read, or unread. */
+    markSeen: (id: string, seen = true): Promise<Message> =>
+      this.request('PATCH', `/v1/email/messages/${segment(id)}`, { body: { seen } }),
+    /**
+     * Wait for mail: answers as soon as received mail newer than `since` (a
+     * time or a message id; default now) is there, or after `timeout`
+     * seconds (at most 50). Pass `next_since` back to wait for the next.
+     */
+    await: (
+      inboxId: string,
+      options: { since?: string; timeout?: number; body?: BodyChoice } = {},
+    ): Promise<{ data: Message[]; held: number; next_since: string }> =>
+      this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/messages/await`, {
+        query: options,
+      }),
+    /** Mail by words in its subject, sender or text, newest first. */
+    search: (q: string, options: ListOptions & { inboxId?: string } = {}): Promise<Page<Message>> =>
+      this.request('GET', '/v1/email/search', {
+        query: { q, inbox_id: options.inboxId, limit: options.limit, cursor: options.cursor },
+      }),
   };
+
+  /** Conversations across your inboxes, and what is filed where. */
+  readonly threads = {
+    list: (
+      options: ListOptions & {
+        inboxId?: string;
+        folder?: Thread['folder'];
+        labelId?: string;
+        status?: Thread['status'];
+        starred?: boolean;
+      } = {},
+    ): Promise<Page<Thread>> =>
+      this.request('GET', '/v1/email/threads', {
+        query: {
+          inbox_id: options.inboxId,
+          folder: options.folder,
+          label_id: options.labelId,
+          status: options.status,
+          starred: options.starred ? 'true' : undefined,
+          limit: options.limit,
+          cursor: options.cursor,
+        },
+      }),
+    /** The conversation, and its messages oldest first. */
+    get: (
+      id: string,
+      options: ListOptions & { body?: BodyChoice } = {},
+    ): Promise<Thread & { messages: Page<Message> }> =>
+      this.request('GET', `/v1/email/threads/${segment(id)}`, { query: options }),
+    /** File, star or hand over: `{ ownerType: 'human', status: 'human_review' }` puts it before a person. */
+    update: (
+      id: string,
+      input: {
+        folder?: Thread['folder'];
+        starred?: boolean;
+        status?: Thread['status'];
+        ownerType?: Thread['owner_type'];
+        assigneeId?: string | null;
+      },
+    ): Promise<Thread> =>
+      this.request('PATCH', `/v1/email/threads/${segment(id)}`, {
+        body: {
+          folder: input.folder,
+          starred: input.starred,
+          status: input.status,
+          owner_type: input.ownerType,
+          assignee_id: input.assigneeId,
+        },
+      }),
+    /** Delete the conversation, its messages and files, for good. */
+    remove: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/threads/${segment(id)}`),
+    addLabel: (id: string, labelId: string): Promise<Thread> =>
+      this.request('POST', `/v1/email/threads/${segment(id)}/labels`, {
+        body: { label_id: labelId },
+      }),
+    removeLabel: (id: string, labelId: string): Promise<Thread> =>
+      this.request('DELETE', `/v1/email/threads/${segment(id)}/labels/${segment(labelId)}`),
+  };
+
+  /** An inbox's labels. */
+  readonly labels = {
+    list: (inboxId: string): Promise<{ data: Label[] }> =>
+      this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/labels`),
+    create: (inboxId: string, input: { name: string; colour?: string }): Promise<Label> =>
+      this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/labels`, { body: input }),
+    update: (id: string, input: { name?: string; colour?: string }): Promise<Label> =>
+      this.request('PATCH', `/v1/email/labels/${segment(id)}`, { body: input }),
+    remove: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/labels/${segment(id)}`),
+  };
+
+  /** Files: those that arrived, and uploads to send. */
+  readonly attachments = {
+    /** Its details and a link to its bytes that lasts five minutes. */
+    get: (id: string): Promise<Attachment & { url: string; expires_in: number }> =>
+      this.request('GET', `/v1/email/attachments/${segment(id)}`),
+    /** Upload a file to send (name its id in `attachmentIds`). Up to 25 MB; over 4 MB goes straight to storage. */
+    upload: async (
+      inboxId: string,
+      file: { filename: string; contentType: string; content: Uint8Array | ArrayBuffer | Blob },
+    ): Promise<Attachment> => {
+      const blob =
+        file.content instanceof Blob
+          ? file.content
+          : new Blob([file.content as BlobPart], { type: file.contentType });
+      if (blob.size <= 4 * 1024 * 1024) {
+        const form = new FormData();
+        form.set('file', new File([blob], file.filename, { type: file.contentType }));
+        return this.multipart(`/v1/email/inboxes/${segment(inboxId)}/attachments`, form);
+      }
+      const made = await this.request<Attachment & { upload: { url: string } }>(
+        'POST',
+        `/v1/email/inboxes/${segment(inboxId)}/attachments/uploads`,
+        { body: { filename: file.filename, content_type: file.contentType, size: blob.size } },
+      );
+      const put = await this.fetchImpl(made.upload.url, {
+        method: 'PUT',
+        headers: { 'content-type': file.contentType },
+        body: blob,
+      });
+      if (!put.ok) throw new PidgeonError(put.status, 'upload_failed', 'Storage refused the file.');
+      return this.request('POST', `/v1/email/attachments/${segment(made.id)}/complete`, {
+        body: {},
+      });
+    },
+  };
+
+  /** Who an inbox corresponds with. */
+  readonly contacts = {
+    list: (
+      options: ListOptions & { inboxId?: string; search?: string } = {},
+    ): Promise<Page<Contact>> =>
+      this.request('GET', '/v1/email/contacts', {
+        query: {
+          inbox_id: options.inboxId,
+          search: options.search,
+          limit: options.limit,
+          cursor: options.cursor,
+        },
+      }),
+    get: (id: string): Promise<Contact> => this.request('GET', `/v1/email/contacts/${segment(id)}`),
+    update: (
+      id: string,
+      input: { name?: string | null; notes?: string | null },
+    ): Promise<Contact> =>
+      this.request('PATCH', `/v1/email/contacts/${segment(id)}`, { body: input }),
+    remove: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/contacts/${segment(id)}`),
+  };
+
+  /** Each inbox's calendar. */
+  readonly calendar = {
+    list: (
+      inboxId: string,
+      options: ListOptions & { after?: string; before?: string } = {},
+    ): Promise<Page<CalendarEvent>> =>
+      this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/events`, { query: options }),
+    get: (id: string): Promise<CalendarEvent> =>
+      this.request('GET', `/v1/email/events/${segment(id)}`),
+    create: (
+      inboxId: string,
+      input: {
+        title: string;
+        start: string;
+        end: string;
+        allDay?: boolean;
+        description?: string;
+        location?: string;
+        /** Who is on it; writing the list sends nothing. */
+        attendees?: string[];
+        /** Invite them now (a key with `send` access): an email from the inbox with the `.ics`. */
+        sendInvites?: boolean;
+      },
+    ): Promise<CalendarEvent> =>
+      this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/events`, {
+        body: {
+          title: input.title,
+          start: input.start,
+          end: input.end,
+          all_day: input.allDay,
+          description: input.description,
+          location: input.location,
+          attendees: input.attendees,
+          send_invites: input.sendInvites,
+        },
+      }),
+    update: (
+      id: string,
+      input: {
+        title?: string;
+        start?: string;
+        end?: string;
+        allDay?: boolean;
+        description?: string;
+        location?: string;
+        attendees?: string[];
+        /** Send the attendees the updated invitation (a key with `send` access). */
+        sendInvites?: boolean;
+      },
+    ): Promise<CalendarEvent> =>
+      this.request('PATCH', `/v1/email/events/${segment(id)}`, {
+        body: {
+          title: input.title,
+          start: input.start,
+          end: input.end,
+          all_day: input.allDay,
+          description: input.description,
+          location: input.location,
+          attendees: input.attendees,
+          send_invites: input.sendInvites,
+        },
+      }),
+    /** With `sendInvites`, the attendees are sent a cancellation first (a key with `send` access). */
+    remove: (
+      id: string,
+      options: { sendInvites?: boolean } = {},
+    ): Promise<void | { deleted: true; invites: { sent_to: string[]; error: string | null } }> =>
+      this.request('DELETE', `/v1/email/events/${segment(id)}`, {
+        query: options.sendInvites ? { send_invites: 'true' } : undefined,
+      }),
+  };
+
+  /** Inboxes on your own domains. A key of the whole account only. */
+  readonly domains = {
+    list: (): Promise<{ data: MailDomain[] }> => this.request('GET', '/v1/email/domains'),
+    get: (id: string): Promise<MailDomain> =>
+      this.request('GET', `/v1/email/domains/${segment(id)}`),
+    /** Turn mail on for a domain you proved; answers the DNS records to set. */
+    enableMail: (id: string): Promise<MailDomain> =>
+      this.request('POST', `/v1/email/domains/${segment(id)}/mail`, { body: {} }),
+    disableMail: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/domains/${segment(id)}/mail`),
+    /** Ask DNS and the mail service where the domain stands now. */
+    check: (id: string): Promise<MailDomain> =>
+      this.request('POST', `/v1/email/domains/${segment(id)}/check`, { body: {} }),
+  };
+
+  /** Passwords for mail apps (IMAP, SMTP, CalDAV), one inbox each. */
+  readonly appPasswords = {
+    list: (inboxId: string): Promise<{ data: AppPassword[] }> =>
+      this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/app-passwords`),
+    /** Answers `password` this once. */
+    create: (inboxId: string, name: string): Promise<AppPassword> =>
+      this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/app-passwords`, {
+        body: { name },
+      }),
+    revoke: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/app-passwords/${segment(id)}`),
+  };
+
+  /** How much of the account's 10 GB its mail and files use. */
+  storage(): Promise<{ used_bytes: number; limit_bytes: number }> {
+    return this.request('GET', '/v1/email/storage');
+  }
+
+  /** With a test key: deliver a message to one of your inboxes as if from outside, marked test. */
+  testInbound(input: {
+    inboxId: string;
+    from: string;
+    fromName?: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    inReplyTo?: string;
+  }): Promise<{ inbox_id: string; message_id: string | null; outcome: string | null }> {
+    return this.request('POST', '/v1/email/test/inbound', {
+      body: {
+        inbox_id: input.inboxId,
+        from: input.from,
+        from_name: input.fromName,
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+        in_reply_to: input.inReplyTo,
+      },
+    });
+  }
 
   readonly drafts = {
     create: (inboxId: string, input: MessageInput): Promise<Draft> =>
@@ -489,6 +919,34 @@ export class Pidgeon {
     list: (): Promise<{ data: Pod[] }> => this.request('GET', '/v1/pods'),
     create: (name: string): Promise<Pod> => this.request('POST', '/v1/pods', { body: { name } }),
   };
+
+  /** Your webhook endpoints. A key of the whole account only. */
+  readonly webhooks = {
+    list: (): Promise<{ data: Webhook[] }> => this.request('GET', '/v1/webhooks'),
+    /** Answers `secret` once: check each delivery's signature with it (`verifyWebhook`). */
+    create: (input: { url: string; events: string[] }): Promise<{ id: string; secret: string }> =>
+      this.request('POST', '/v1/webhooks', { body: input }),
+    remove: (id: string): Promise<void> => this.request('DELETE', `/v1/webhooks/${segment(id)}`),
+  };
+
+  /** A multipart POST (uploads): the same authentication and errors as `request`. */
+  private async multipart<T>(path: string, form: FormData): Promise<T> {
+    const response = await this.fetchImpl(new URL(`${this.baseUrl}${path}`), {
+      method: 'POST',
+      headers: { authorization: `Bearer ${await this.token()}` },
+      body: form,
+    });
+    const data = (await response.json().catch(() => null)) as
+      (T & { error?: { code: string; message: string } }) | null;
+    if (!response.ok) {
+      throw new PidgeonError(
+        response.status,
+        data?.error?.code ?? 'error',
+        data?.error?.message ?? `Pidgeon answered ${response.status}.`,
+      );
+    }
+    return data as T;
+  }
 }
 
 /** `fetch`, signed as your agent: every request carries its Web Bot Auth signature. */
