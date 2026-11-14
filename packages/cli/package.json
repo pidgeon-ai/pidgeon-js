@@ -1,0 +1,49 @@
+{
+  "name": "@pidgeon-ai/cli",
+  "version": "2.0.0",
+  "description": "Pidgeon from a terminal: sign in, set agents up with keys made on your machine, and send from their inboxes.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://pidgeon.ai",
+  "keywords": [
+    "pidgeon",
+    "ai-agents",
+    "cli",
+    "agent-identity",
+    "email"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "pidgeon": "dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@pidgeon-ai/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5"
+  }
+}

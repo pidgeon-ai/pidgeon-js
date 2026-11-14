@@ -1,0 +1,11 @@
+{
+  "name": "@pidgeon-ai/clients",
+  "private": true,
+  "description": "A workspace root, so the published packages build here. Not published.",
+  "packageManager": "pnpm@10.33.0",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,138 @@
+# @pidgeon-ai/sdk
+
+Pidgeon's TypeScript SDK for its four products: Passport (your agents' keys
+and reputation), Bouncer (verify agents at your site), Email (inboxes for
+agents) and Auth (Sign in with Pidgeon). https://pidgeon.ai
+
+```sh
+npm install @pidgeon-ai/sdk
+```
+
+Version 2 is for the new Pidgeon. Code written for 1.x (the old email API at
+`/api/v1`) keeps working on 1.68.0 until that API is retired.
+
+## Set an agent up
+
+```ts
+import { Pidgeon } from '@pidgeon-ai/sdk';
+
+const pidgeon = new Pidgeon({ apiKey: process.env.PIDGEON_API_KEY! });
+
+// Registers the agent, makes its key here, and publishes the public half
+// signed with it. Keep key.privateJwk where the agent runs: Pidgeon never sees it.
+const { agent, key } = await pidgeon.agents.setUp({
+  name: 'Booking agent',
+  purpose: 'Books tables.',
+});
+
+const { reputation } = await pidgeon.agents.get(agent.id);
+reputation.band; // unverified, new, good, flagged or suspended
+```
+
+From a terminal or a coding agent, `@pidgeon-ai/cli` and `@pidgeon-ai/mcp`
+do the same, and keep the key in a file on your machine
+(`@pidgeon-ai/sdk/node`: `setUpAgent`, `agentFromKeyFile`).
+
+## Sign your agent's requests
+
+```ts
+import { agentFromEnv } from '@pidgeon-ai/sdk';
+
+// PIDGEON_AGENT_KEY is the private JWK, PIDGEON_DIRECTORY the agent's directory.
+const agent = agentFromEnv();
+await agent.fetch('https://shop.example/api/orders', { method: 'POST' });
+```
+
+## Verify an agent at your site (Bouncer)
+
+```ts
+const answer = await pidgeon.verify(request);
+if (answer.valid && answer.reputation.band !== 'suspended') {
+  // answer.agent, answer.operator
+}
+await pidgeon.report({ verificationId: answer.verification_id, category: 'spam', evidence: '…' });
+```
+
+## Email
+
+```ts
+const inbox = await pidgeon.inboxes.create({ name: 'bookings', agentId: agent.id });
+await pidgeon.messages.send(inbox.id, {
+  to: ['ana@example.com'],
+  subject: 'Table for two',
+  text: 'Friday at 8?',
+});
+
+// A person looks first:
+const draft = await pidgeon.drafts.create(inbox.id, {
+  to: ['ana@example.com'],
+  subject: '…',
+  text: '…',
+});
+await pidgeon.drafts.requestApproval(draft.id);
+```
+
+Also `pidgeon.rules`, `pidgeon.suppressions`, `pidgeon.events`, `pidgeon.pods`,
+and `pidgeon.request(method, path, …)` for any `/v1` call. A refusal throws
+`PidgeonError` with the API's `status` and `code`.
+
+Webhooks: `verifyWebhook(secret, rawBody, request.headers.get('pidgeon-signature'))`.
+
+## Sign in with Pidgeon (`@pidgeon-ai/sdk/auth`)
+
+Register your site with `pidgeon.sites.create({ name, redirectUris })`; ask a
+person to let your agent act for them with `pidgeon.mandates.create(…)`.
+
+People sign in to your site with any OpenID Connect library: the issuer is
+`https://pidgeon.ai`, with the client id and secret you registered. Check an
+ID token with `verifyIdToken(idToken, { clientId })`.
+
+An agent signs in with no person present, and sends its ID token with every
+request it signs:
+
+```ts
+import { signedFetch } from '@pidgeon-ai/sdk';
+import { signInAsAgent } from '@pidgeon-ai/sdk/auth';
+
+const { idToken } = await signInAsAgent({ site: 'site_…', key, directory });
+await signedFetch(
+  'https://shop.example/api/orders',
+  {
+    method: 'POST',
+    headers: { authorization: `Bearer ${idToken}` },
+  },
+  { privateJwk: key.privateJwk, directory },
+);
+```
+
+Your site accepts the request only when it is signed with the key the token
+names, so a copied token is useless on its own:
+
+```ts
+import { verifyAgentSignIn } from '@pidgeon-ai/sdk/auth';
+
+const claims = await verifyAgentSignIn(request, { clientId: 'site_…' });
+claims.sub;
+claims.agent;
+claims.account;
+claims.reputation;
+```
+
+### For an MCP server that trusts Pidgeon (ID-JAG)
+
+```ts
+import { requestIdJag } from '@pidgeon-ai/sdk/auth';
+
+const { idJag } = await requestIdJag({
+  audience: 'https://auth.example.com', // the MCP server's authorization server
+  clientId: 'https://agent.example.com/oauth/client.json', // your client id there
+  resource: 'https://mcp.example.com/mcp',
+  key,
+  directory,
+});
+// Present it there: grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer, assertion=idJag.
+```
+
+## License
+
+Apache-2.0

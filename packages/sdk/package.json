@@ -1,0 +1,61 @@
+{
+  "name": "@pidgeon-ai/sdk",
+  "version": "2.0.0",
+  "description": "Pidgeon's TypeScript SDK: Passport, Bouncer, Email and Auth. Sign your agents' requests, verify agents at your site, send mail from agent inboxes, and Sign in with Pidgeon.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://pidgeon.ai",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./credential": {
+      "types": "./dist/credential.d.ts",
+      "default": "./dist/credential.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "web-bot-auth": "0.2.0",
+    "jose": "^6.2.17"
+  },
+  "keywords": [
+    "ai-agents",
+    "web-bot-auth",
+    "http-message-signatures",
+    "agent-identity",
+    "email",
+    "oauth",
+    "mcp"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5"
+  }
+}

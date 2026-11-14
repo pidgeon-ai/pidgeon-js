@@ -1,0 +1,124 @@
+name: Publish
+
+# Tag-driven, and the tag names the package: `sdk-v2.0.0` publishes
+# `@pidgeon-ai/sdk` 2.0.0, `cli-v2.0.0` the CLI, `mcp-v1.0.0` the MCP server.
+# The release job in the private repository (`scripts/release.ts`) cuts the
+# tags after the sync that put this tree here succeeded. Nobody tags by hand.
+#
+# This file is generated from `mirrors/js/` in the private repository and
+# overwritten on every sync: change it there.
+#
+# No npm token exists anywhere: npm's trusted publishing exchanges this job's
+# OIDC token for a credential that lives for the job, and the tarball carries
+# provenance pointing at this public commit. A version npm already has is
+# skipped, so a rerun of a half-finished release does only the missing half.
+on:
+  push:
+    tags: ['sdk-v*', 'cli-v*', 'mcp-v*']
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        required: true
+        type: choice
+        options: [sdk, cli, mcp]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # The environment npm's trusted publisher is pinned to.
+    environment: npm
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Which package
+        id: package
+        env:
+          INPUT: ${{ inputs.package }}
+        run: |
+          name="${INPUT:-${GITHUB_REF_NAME%%-v*}}"
+          case "$name" in
+            sdk|cli|mcp) ;;
+            *) echo "Unknown package: $name" >&2; exit 1 ;;
+          esac
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "dir=packages/$name" >> "$GITHUB_OUTPUT"
+          echo "npm=$(node -p "require('./packages/$name/package.json').name")" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          # No lockfile here: the tree is replaced on every sync.
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - name: An npm that can do trusted publishing
+        run: npm install -g npm@latest
+
+      - run: pnpm install --frozen-lockfile=false
+
+      - name: The tag matches the version
+        if: github.event_name == 'push'
+        working-directory: ${{ steps.package.outputs.dir }}
+        run: |
+          declared=$(node -p "require('./package.json').version")
+          tagged="${GITHUB_REF_NAME#*-v}"
+          if [ "$declared" != "$tagged" ]; then
+            echo "Tag says $tagged; package.json says $declared." >&2
+            exit 1
+          fi
+
+      # `...` builds its dependencies first: the CLI and the MCP server compile
+      # against the SDK's emitted types.
+      - name: Build
+        run: pnpm --filter "${{ steps.package.outputs.npm }}..." build
+
+      - name: Publish
+        working-directory: ${{ steps.package.outputs.dir }}
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
+            echo "::notice::npm already has $name $version. Skipping."
+            exit 0
+          fi
+          tarball=$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)
+          # A `workspace:` left in the packed manifest is uninstallable for everyone.
+          if tar -xzOf "$tarball" package/package.json | grep -q '"workspace:'; then
+            echo "The packed manifest still has a workspace: dependency." >&2
+            exit 1
+          fi
+          # npm's OIDC exchange reports a refusal only at this log level, then
+          # falls through to a token that does not exist and answers a bare 404.
+          npm publish "$tarball" --access public --provenance --loglevel silly
+
+      # The official MCP registry (registry.modelcontextprotocol.io), which is
+      # how a coding agent finds a server it was not told about. Runs only
+      # when MCP_REGISTRY_KEY is set: the `ai.pidgeon/` namespace is proved
+      # over HTTP at https://pidgeon.ai/.well-known/mcp-registry-auth.
+      - name: List in the MCP registry
+        if: steps.package.outputs.name == 'mcp'
+        working-directory: packages/mcp
+        env:
+          MCP_REGISTRY_KEY: ${{ secrets.MCP_REGISTRY_KEY }}
+        run: |
+          if [ -z "$MCP_REGISTRY_KEY" ]; then
+            echo "::notice::MCP_REGISTRY_KEY is not set; not listing in the MCP registry."
+            exit 0
+          fi
+          curl -sSfL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+          version=$(node -p "require('./package.json').version")
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            npm view "@pidgeon-ai/mcp@$version" version >/dev/null 2>&1 && break
+            sleep 10
+          done
+          ./mcp-publisher login http --domain pidgeon.ai --private-key "$MCP_REGISTRY_KEY"
+          ./mcp-publisher publish

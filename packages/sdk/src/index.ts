@@ -1,0 +1,579 @@
+/**
+ * Pidgeon's TypeScript SDK (docs/plan.md §11).
+ *
+ * For an agent: `signedFetch`, or `agentFromEnv().fetch`, signs every request
+ * with the agent's key, so a website that checks can tell who stands behind it.
+ *
+ * For a website: `new Pidgeon({ apiKey }).verify(request)` asks Pidgeon who
+ * stands behind an agent's request and how they stand; `.report()` reports
+ * one that misbehaved.
+ *
+ * For an operator's tooling and coding agents: `.agents.setUp()` registers an
+ * agent, makes its key here and publishes the public half; `.inboxes`,
+ * `.messages` and `.drafts` are Email; `.sites` and `.mandates` are Auth.
+ *
+ * `generateAgentKey()` and `.publishKey()` make a
+ * key where the agent runs and publish its public half.
+ */
+import {
+  generateAgentKey,
+  signAgentRequest,
+  type AgentKeyPair,
+  type PublicJwk,
+} from './credential.ts';
+
+export * from './credential.ts';
+
+export const DEFAULT_BASE_URL = 'https://pidgeon.ai';
+
+export type Band = 'unverified' | 'new' | 'good' | 'flagged' | 'suspended';
+
+/** What `verify` answers (docs/plan.md §6). */
+export type VerifyAnswer =
+  | {
+      valid: true;
+      verification_id: string;
+      agent: { id: string; name: string; purpose: string };
+      operator: {
+        id: string;
+        name: string;
+        kind: 'individual' | 'business';
+        verification: 'none' | 'domain' | 'kyc' | 'kyb';
+        country: string | null;
+        since: string;
+      };
+      reputation: { band: Band; seen_at_receivers: number; reports_90d: number; revoked: false };
+    }
+  | {
+      valid: false;
+      verification_id: string;
+      reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked';
+      operator?: { id: string; name: string };
+    };
+
+export type ReportCategory = 'fraud' | 'abuse' | 'scraping' | 'spam' | 'fake_signups' | 'other';
+
+export class PidgeonError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'PidgeonError';
+  }
+}
+
+/** An agent's request, as a website received it. */
+export type IncomingRequest =
+  | Request
+  | {
+      method: string;
+      url: string;
+      headers: Record<string, string | string[] | undefined> | Headers;
+    };
+
+function headersOf(input: IncomingRequest): Record<string, string> {
+  const raw = input.headers;
+  const out: Record<string, string> = {};
+  if (raw instanceof Headers) {
+    raw.forEach((value, name) => (out[name] = value));
+    return out;
+  }
+  for (const [name, value] of Object.entries(raw)) {
+    if (value !== undefined)
+      out[name.toLowerCase()] = Array.isArray(value) ? value.join(', ') : value;
+  }
+  return out;
+}
+
+/** A page of a `/v1` list: every list answers this shape. */
+export type Page<T> = { data: T[]; has_more: boolean; next_cursor: string | null };
+
+export type ListOptions = { limit?: number; cursor?: string };
+
+/** An agent, as `/v1/agents` answers it. */
+export type Agent = {
+  id: string;
+  name: string;
+  purpose: string;
+  status: 'active' | 'revoked';
+  pod_id: string;
+  created_at: string;
+  revoked_at: string | null;
+};
+
+/** One agent in full: its published keys, its directory, and its operator's reputation. */
+export type AgentDetail = Agent & {
+  directory: string;
+  keys: { kid: string; created_at: string; expires_at: string | null; revoked_at: string | null }[];
+  reputation: { band: Band; seen: string; next: string | null };
+};
+
+export type InboxKind = 'person' | 'shared' | 'agent' | 'events';
+
+export type Inbox = {
+  id: string;
+  address: string;
+  kind: InboxKind;
+  display_name: string | null;
+  pod_id: string;
+  owner_id: string | null;
+  agent_id: string | null;
+  status: string;
+  created_at: string;
+};
+
+/** What to send, or what a draft says. `replyTo` is one of the inbox's messages. */
+export type MessageInput = {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  text?: string;
+  html?: string;
+  replyTo?: string;
+};
+
+/** What sending answers: `sent`, `held` for a person's approval, or `scheduled`. */
+export type SendResult = { id: string; thread_id: string; status: 'sent' | 'held' | 'scheduled' };
+
+/** A draft, or a message waiting (held for a person, or scheduled). */
+export type Draft = {
+  id: string;
+  inbox_id: string;
+  thread_id: string;
+  status: 'draft' | 'held' | 'scheduled';
+  to: string[];
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  text: string | null;
+  html: string | null;
+  send_at: string | null;
+};
+
+/** A send or receive rule: an address, or a domain and its subdomains, allowed or blocked. */
+export type Rule = {
+  id: string;
+  inbox_id: string | null;
+  direction: 'send' | 'receive';
+  action: 'allow' | 'block';
+  pattern: string;
+  created_at: string;
+};
+
+export type Suppression = { address: string; reason: string; created_at: string };
+
+export type Event = {
+  id: string;
+  type: string;
+  created_at: string;
+  pod_id: string | null;
+  data: Record<string, unknown>;
+};
+
+export type Pod = { id: string; name: string; default: boolean; created_at: string };
+
+/** A site registered for Sign in with Pidgeon. `client_secret` is answered once, at creation. */
+export type Site = {
+  client_id: string;
+  name: string;
+  redirect_uris: string[];
+  pod_id?: string | null;
+  client_secret?: string;
+  [field: string]: unknown;
+};
+
+export type Mandate = {
+  id: string;
+  agent_id: string;
+  client_id: string;
+  scope: string;
+  description: string;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  consent_url?: string;
+};
+
+const messageBody = (input: MessageInput) => ({
+  to: input.to,
+  cc: input.cc,
+  bcc: input.bcc,
+  subject: input.subject,
+  text: input.text,
+  html: input.html,
+  reply_to: input.replyTo,
+});
+
+const segment = (id: string) => encodeURIComponent(id);
+
+/**
+ * The client for Pidgeon's API: the website's, the operator's, and a coding
+ * agent's. Keep the API key on a server. `apiKey` is an API key (`pgn_…`) or
+ * an OAuth access token (`pgn_oat_…`); `getToken` is asked before each
+ * request instead, for a token that is refreshed.
+ */
+export class Pidgeon {
+  private readonly token: () => Promise<string>;
+  readonly baseUrl: string;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(options: {
+    apiKey?: string;
+    getToken?: () => Promise<string>;
+    baseUrl?: string;
+    fetch?: typeof fetch;
+  }) {
+    const { apiKey, getToken } = options;
+    if (getToken) this.token = getToken;
+    else if (apiKey) this.token = async () => apiKey;
+    else throw new Error('Pidgeon needs an API key (Settings → API keys).');
+    this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '');
+    this.fetchImpl = options.fetch ?? ((input, init) => fetch(input, init));
+  }
+
+  /** Any `/v1` call: the methods below are this with the path and body filled in. */
+  async request<T>(
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    path: string,
+    options: {
+      body?: unknown;
+      query?: Record<string, string | number | undefined>;
+      headers?: Record<string, string>;
+    } = {},
+  ): Promise<T> {
+    const url = new URL(`${this.baseUrl}${path}`);
+    for (const [name, value] of Object.entries(options.query ?? {})) {
+      if (value !== undefined) url.searchParams.set(name, String(value));
+    }
+    const response = await this.fetchImpl(url, {
+      method,
+      headers: {
+        authorization: `Bearer ${await this.token()}`,
+        ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...options.headers,
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+    if (response.status === 204) return undefined as T;
+    const data = (await response.json().catch(() => null)) as
+      (T & { error?: { code: string; message: string } }) | null;
+    if (!response.ok) {
+      throw new PidgeonError(
+        response.status,
+        data?.error?.code ?? 'error',
+        data?.error?.message ?? `Pidgeon answered ${response.status}.`,
+      );
+    }
+    return data as T;
+  }
+
+  // ---------------------------------------------------------------- Bouncer
+
+  /** Who stands behind an agent's request, and how they stand. Forward it as you received it. */
+  verify(request: IncomingRequest): Promise<VerifyAnswer> {
+    return this.request('POST', '/v1/verify', {
+      body: { request: { method: request.method, url: request.url, headers: headersOf(request) } },
+    });
+  }
+
+  /** Report an agent from one of your verifications: what it did, in your words. */
+  report(input: {
+    verificationId: string;
+    category: ReportCategory;
+    evidence: string;
+  }): Promise<{ id: string }> {
+    return this.request('POST', '/v1/reports', {
+      body: {
+        verification_id: input.verificationId,
+        category: input.category,
+        evidence: input.evidence,
+      },
+    });
+  }
+
+  // --------------------------------------------------------------- Passport
+
+  /**
+   * Publish an agent's public key. The request is signed with the key itself,
+   * which is how Pidgeon knows you hold it; the private half never leaves you.
+   */
+  async publishKey(input: {
+    agentId: string;
+    key: AgentKeyPair;
+    directory: string;
+  }): Promise<{ kid: string }> {
+    const path = `/v1/agents/${segment(input.agentId)}/keys`;
+    const signature = await signAgentRequest(
+      new Request(`${this.baseUrl}${path}`, { method: 'POST' }),
+      { privateJwk: input.key.privateJwk, directory: input.directory },
+    );
+    return this.request('POST', path, {
+      body: { public_jwk: input.key.publicJwk satisfies PublicJwk },
+      headers: signature,
+    });
+  }
+
+  readonly agents = {
+    list: (options: ListOptions = {}): Promise<Page<Agent>> =>
+      this.request('GET', '/v1/agents', { query: options }),
+    /** Register an agent. It has no key until you make one where it runs and publish it. */
+    create: (input: {
+      name: string;
+      purpose?: string;
+      podId?: string;
+    }): Promise<Agent & { directory: string }> =>
+      this.request('POST', '/v1/agents', {
+        body: { name: input.name, purpose: input.purpose ?? '', pod_id: input.podId },
+      }),
+    /** The agent, its keys, its directory and its operator's reputation. */
+    get: (id: string): Promise<AgentDetail> => this.request('GET', `/v1/agents/${segment(id)}`),
+    /**
+     * Register an agent, make its key here, and publish the public half
+     * signed with it. Keep `key.privateJwk` where the agent runs: it is the
+     * agent's identity, and Pidgeon never sees it.
+     */
+    setUp: async (input: {
+      name: string;
+      purpose?: string;
+      podId?: string;
+    }): Promise<{ agent: Agent & { directory: string }; key: AgentKeyPair; kid: string }> => {
+      const agent = await this.agents.create(input);
+      const key = await generateAgentKey();
+      const { kid } = await this.publishKey({
+        agentId: agent.id,
+        key,
+        directory: agent.directory,
+      });
+      return { agent, key, kid };
+    },
+  };
+
+  // ------------------------------------------------------------------ Email
+
+  readonly inboxes = {
+    list: (options: ListOptions = {}): Promise<Page<Inbox>> =>
+      this.request('GET', '/v1/email/inboxes', { query: options }),
+    get: (id: string): Promise<Inbox> => this.request('GET', `/v1/email/inboxes/${segment(id)}`),
+    /** `name` is the part before the @. Bind an agent's inbox to it with `agentId`. */
+    create: (input: {
+      name: string;
+      kind?: InboxKind;
+      displayName?: string;
+      agentId?: string;
+      podId?: string;
+    }): Promise<Inbox> =>
+      this.request('POST', '/v1/email/inboxes', {
+        body: {
+          name: input.name,
+          kind: input.kind ?? 'agent',
+          display_name: input.displayName,
+          agent_id: input.agentId,
+          pod_id: input.podId,
+        },
+      }),
+    /** Remove an inbox. Its address is retired, never given to anyone again. */
+    remove: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/inboxes/${segment(id)}`),
+  };
+
+  readonly messages = {
+    /** Send from an inbox: `status` is `sent`, or `held` while a person approves it. */
+    send: (inboxId: string, input: MessageInput): Promise<SendResult> =>
+      this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/messages`, {
+        body: messageBody(input),
+      }),
+  };
+
+  readonly drafts = {
+    create: (inboxId: string, input: MessageInput): Promise<Draft> =>
+      this.request('POST', `/v1/email/inboxes/${segment(inboxId)}/drafts`, {
+        body: messageBody(input),
+      }),
+    get: (id: string): Promise<Draft> => this.request('GET', `/v1/email/drafts/${segment(id)}`),
+    /** Replace a draft's addresses and body. */
+    update: (id: string, input: MessageInput): Promise<Draft> =>
+      this.request('PATCH', `/v1/email/drafts/${segment(id)}`, { body: messageBody(input) }),
+    remove: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/email/drafts/${segment(id)}`),
+    /** Send now, or at `sendAt` (up to 90 days ahead). */
+    send: (id: string, options: { sendAt?: Date | string } = {}): Promise<SendResult> =>
+      this.request('POST', `/v1/email/drafts/${segment(id)}/send`, {
+        body: {
+          send_at: options.sendAt instanceof Date ? options.sendAt.toISOString() : options.sendAt,
+        },
+      }),
+    /** Hold it for a person of the account to send or reject (`draft.approval_requested` carries the link). */
+    requestApproval: (id: string): Promise<Draft> =>
+      this.request('POST', `/v1/email/drafts/${segment(id)}/approval`, { body: {} }),
+  };
+
+  /** Send and receive rules, for one inbox or (`inboxId` left out) every inbox. Keys of the whole account only. */
+  readonly rules = {
+    list: (): Promise<{ data: Rule[] }> => this.request('GET', '/v1/email/rules'),
+    create: (input: {
+      direction: 'send' | 'receive';
+      action: 'allow' | 'block';
+      pattern: string;
+      inboxId?: string;
+    }): Promise<Rule> =>
+      this.request('POST', '/v1/email/rules', {
+        body: {
+          direction: input.direction,
+          action: input.action,
+          pattern: input.pattern,
+          inbox_id: input.inboxId ?? null,
+        },
+      }),
+    remove: (id: string): Promise<void> => this.request('DELETE', `/v1/email/rules/${segment(id)}`),
+  };
+
+  /** The do-not-send list: bounces and complaints put addresses on it; you can too. */
+  readonly suppressions = {
+    list: (): Promise<{ data: Suppression[] }> => this.request('GET', '/v1/email/suppressions'),
+    add: (address: string): Promise<{ address: string }> =>
+      this.request('POST', '/v1/email/suppressions', { body: { address } }),
+    remove: (address: string): Promise<void> =>
+      this.request('DELETE', '/v1/email/suppressions', { query: { address } }),
+  };
+
+  // ------------------------------------------------------------------- Auth
+
+  /** Sites registered for Sign in with Pidgeon. */
+  readonly sites = {
+    list: (): Promise<{ data: Site[] }> => this.request('GET', '/v1/auth/clients'),
+    /** Answers `client_secret` once: keep it on the site's server. */
+    create: (input: { name: string; redirectUris: string[]; podId?: string }): Promise<Site> =>
+      this.request('POST', '/v1/auth/clients', {
+        body: { name: input.name, redirect_uris: input.redirectUris, pod_id: input.podId },
+      }),
+    remove: (clientId: string): Promise<void> =>
+      this.request('DELETE', `/v1/auth/clients/${segment(clientId)}`),
+  };
+
+  /** A person's permission for one of your agents to act for them at one site. */
+  readonly mandates = {
+    list: (): Promise<{ data: Mandate[] }> => this.request('GET', '/v1/auth/mandates'),
+    /** Answers `consent_url`: send it to the person, who allows or declines. */
+    create: (input: {
+      agentId: string;
+      clientId: string;
+      scope: string;
+      description: string;
+      days?: number;
+    }): Promise<Mandate> =>
+      this.request('POST', '/v1/auth/mandates', {
+        body: {
+          agent_id: input.agentId,
+          client_id: input.clientId,
+          scope: input.scope,
+          description: input.description,
+          days: input.days,
+        },
+      }),
+    revoke: (id: string): Promise<void> =>
+      this.request('DELETE', `/v1/auth/mandates/${segment(id)}`),
+  };
+
+  // ---------------------------------------------------------------- Account
+
+  readonly events = {
+    /** The account's event log, newest first. */
+    list: (options: ListOptions & { type?: string } = {}): Promise<Page<Event>> =>
+      this.request('GET', '/v1/events', { query: options }),
+  };
+
+  readonly pods = {
+    list: (): Promise<{ data: Pod[] }> => this.request('GET', '/v1/pods'),
+    create: (name: string): Promise<Pod> => this.request('POST', '/v1/pods', { body: { name } }),
+  };
+}
+
+/** `fetch`, signed as your agent: every request carries its Web Bot Auth signature. */
+export async function signedFetch(
+  input: string | URL | Request,
+  init: RequestInit | undefined,
+  agent: { privateJwk: JsonWebKey; directory: string },
+): Promise<Response> {
+  const request = new Request(input, init);
+  const signature = await signAgentRequest(request, agent);
+  const headers = new Headers(request.headers);
+  for (const [name, value] of Object.entries(signature)) headers.set(name, value);
+  return fetch(new Request(request, { headers }));
+}
+
+/** Your agent, from `PIDGEON_AGENT_KEY` and `PIDGEON_DIRECTORY` (the dashboard gives both). */
+export function agentFromEnv(env: Record<string, string | undefined> = process.env): {
+  fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+} {
+  const key = env.PIDGEON_AGENT_KEY;
+  const directory = env.PIDGEON_DIRECTORY;
+  if (!key || !directory) {
+    throw new Error(
+      'Set PIDGEON_AGENT_KEY and PIDGEON_DIRECTORY: your agent’s page on pidgeon.ai has both.',
+    );
+  }
+  const privateJwk = JSON.parse(key) as JsonWebKey;
+  return { fetch: (input, init) => signedFetch(input, init, { privateJwk, directory }) };
+}
+
+export { generateAgentKey };
+
+/** A webhook Pidgeon sent you, once its signature checks out. */
+export type WebhookPayload = {
+  id: string;
+  type: string;
+  created: string;
+  data: Record<string, unknown>;
+};
+
+async function hmacHex(secret: string, message: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const mac = new Uint8Array(
+    await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)),
+  );
+  return Array.from(mac, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Check a webhook's `Pidgeon-Signature` header against your endpoint's secret
+ * and return the event, or throw. Pass the raw body as received, before any
+ * JSON parsing. Signatures older than `toleranceSeconds` are refused, so a
+ * captured delivery cannot be replayed later.
+ */
+export async function verifyWebhook(
+  secret: string,
+  rawBody: string,
+  signatureHeader: string | null,
+  options: { toleranceSeconds?: number; now?: Date } = {},
+): Promise<WebhookPayload> {
+  const parts = Object.fromEntries(
+    (signatureHeader ?? '').split(',').map((part) => part.trim().split('=') as [string, string]),
+  );
+  const timestamp = Number(parts.t);
+  if (!Number.isInteger(timestamp) || typeof parts.v1 !== 'string') {
+    throw new PidgeonError(
+      400,
+      'invalid_signature',
+      'The Pidgeon-Signature header is missing or malformed.',
+    );
+  }
+  const now = Math.floor((options.now ?? new Date()).getTime() / 1000);
+  if (Math.abs(now - timestamp) > (options.toleranceSeconds ?? 300)) {
+    throw new PidgeonError(400, 'stale_signature', 'The webhook was signed too long ago.');
+  }
+  const expected = await hmacHex(secret, `${timestamp}.${rawBody}`);
+  let same = expected.length === parts.v1.length;
+  for (let i = 0; i < expected.length; i++) same = same && expected[i] === parts.v1[i];
+  if (!same)
+    throw new PidgeonError(400, 'invalid_signature', 'The webhook signature does not match.');
+  return JSON.parse(rawBody) as WebhookPayload;
+}
