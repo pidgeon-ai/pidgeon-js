@@ -103,7 +103,8 @@ jobs:
       # The official MCP registry (registry.modelcontextprotocol.io), which is
       # how a coding agent finds a server it was not told about. Runs only
       # when MCP_REGISTRY_KEY is set: the `ai.pidgeon/` namespace is proved
-      # over HTTP at https://pidgeon.ai/.well-known/mcp-registry-auth.
+      # over HTTP at https://pidgeon.ai/.well-known/mcp-registry-auth, which
+      # lists this key's public half (the app's public/.well-known/).
       - name: List in the MCP registry
         if: steps.package.outputs.name == 'mcp'
         working-directory: packages/mcp
@@ -114,11 +115,26 @@ jobs:
             echo "::notice::MCP_REGISTRY_KEY is not set; not listing in the MCP registry."
             exit 0
           fi
-          curl -sSfL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+          curl -sSfL https://github.com/modelcontextprotocol/registry/releases/download/v1.8.9/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
           version=$(node -p "require('./package.json').version")
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             npm view "@pidgeon-ai/mcp@$version" version >/dev/null 2>&1 && break
             sleep 10
           done
+          listed() {
+            curl -sSf "https://registry.modelcontextprotocol.io/v0/servers?search=ai.pidgeon/mcp&limit=100" \
+              | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>process.exit(JSON.parse(s).servers.some(e=>e.server.name==='ai.pidgeon/mcp'&&e.server.version===process.argv[1])?0:1))" "$version"
+          }
+          if listed; then
+            echo "::notice::The MCP registry already lists $version."
+            exit 0
+          fi
           ./mcp-publisher login http --domain pidgeon.ai --private-key "$MCP_REGISTRY_KEY"
           ./mcp-publisher publish
+          # The registry can take a few seconds to show what it accepted.
+          for attempt in 1 2 3 4 5 6; do
+            listed && exit 0
+            sleep 10
+          done
+          echo "The MCP registry does not list $version a minute after publishing." >&2
+          exit 1
