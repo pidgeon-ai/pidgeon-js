@@ -17,6 +17,9 @@ or `PIDGEON_AGENT_KEY` (the file's `private_jwk`) and `PIDGEON_DIRECTORY`.
 
 ```sh
 pidgeon agents show <agent-id>        # its keys, and how websites see it
+pidgeon agents rename <agent-id> "Table agent"
+pidgeon keys revoke <agent-id> <kid>  # requests signed with it stop verifying
+pidgeon agents revoke <agent-id>      # it and every key; cannot be undone
 pidgeon inboxes create bookings --agent <agent-id>
 pidgeon send <inbox-id> --to ana@example.com --subject "Table for two" --text "Friday at 8?"
 pidgeon drafts create <inbox-id> --to ana@example.com --subject "…" --text "…"
@@ -28,10 +31,13 @@ pidgeon app-passwords create <inbox-id> "Apple Mail"
 pidgeon sites create Shop --redirect https://shop.example/callback
 pidgeon reports create <verification-id> --category spam --evidence "…"
 pidgeon events
+pidgeon pods list | create <name> | remove <pod-id>
 pidgeon api GET /v1/email/rules       # any /v1 call
 ```
 
 `pidgeon --help` lists every command; `--json` prints the API's own answer.
+A list prints a page at a time (`--limit`); when there is more, its last line
+is the `--cursor` that reads the next page.
 
 Signing in opens the browser once; the session is kept in
 `~/.config/pidgeon/credentials.json` and refreshed. On a machine with no

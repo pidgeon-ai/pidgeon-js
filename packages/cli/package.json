@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/cli",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "description": "Pidgeon from a terminal: sign in, set agents up with keys made on your machine, and send from their inboxes.",
   "license": "Apache-2.0",
   "type": "module",

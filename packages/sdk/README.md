@@ -40,8 +40,16 @@ import { agentFromEnv } from '@pidgeon-ai/sdk';
 
 // PIDGEON_AGENT_KEY is the private JWK, PIDGEON_DIRECTORY the agent's directory.
 const agent = agentFromEnv();
-await agent.fetch('https://shop.example/api/orders', { method: 'POST' });
+await agent.fetch('https://shop.example/api/orders', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ sku: 'tea' }),
+});
 ```
+
+Each call is signed afresh: the signature covers the host, method, path and
+query, carries a new nonce, and lasts a minute. Pidgeon accepts a signature
+once, so sign again to retry; never resend old signature headers.
 
 ## Verify an agent at your site (Bouncer)
 

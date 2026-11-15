@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.4.0
+
+- `pidgeon agents rename <id> <name>`, `pidgeon agents revoke <id>`,
+  `pidgeon keys revoke <agent-id> <kid>` and `pidgeon pods list|create|remove`.
+- Lists that page (`agents`, `inboxes`, `mail list`, `search`, `threads
+list`, `events`) take `--limit` and `--cursor`, and end with
+  `More: --cursor <next>` when there is more; they were cut off silently.
+- `mail list` shows sent mail by who it went to, not the inbox's address.
+- `agents create` and `inboxes create` take `--pod`.
+- `keys proof` takes `--name`, so the key file names its agent.
+- Signed requests carry a nonce and cover the query (SDK 2.4.0).
+
+## 2.3.0
+
+- `pidgeon webhooks create --inbox <id>...` takes several inboxes.
+- `--days` must be a whole number of days; `abc` used to ask for 30.
+- The help lists `--cc` and `--bcc`, and that `drafts create` takes the
+  same options as `send`.
+
 ## 2.2.0
 
 - `pidgeon webhooks create --inbox <id>`: the endpoint hears only that

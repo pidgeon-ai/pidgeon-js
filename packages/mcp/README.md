@@ -38,9 +38,10 @@ session is refreshed from then on. On a machine with no browser, set
 ## Tools
 
 - **Passport:** `set_up_agent`, `create_agent_key`, `list_agents`,
-  `get_agent`, `get_reputation`
+  `get_agent`, `get_reputation`, `rename_agent`, `revoke_agent_key`,
+  `revoke_agent`
 - **Bouncer:** `verify_request`, `report_agent`
-- **Email:** `list_inboxes`, `get_inbox`, `create_inbox`, `remove_inbox`,
+- **Email:** `list_inboxes`, `get_inbox`, `hold_suspicious_mail`, `create_inbox`, `remove_inbox`,
   `list_messages`, `get_message`, `await_message`, `search_messages`,
   `update_message`, `send_message`, `reply_to_message`, `list_threads`,
   `get_thread`, `update_thread`, `list_labels`, `create_label`,
@@ -49,18 +50,22 @@ session is refreshed from then on. On a machine with no browser, set
   `delete_draft`, `send_draft`, `request_approval`, `list_rules`, `add_rule`,
   `remove_rule`, `list_suppressions`, `add_suppression`, `remove_suppression`,
   `get_storage`, `list_domains`,
-  `get_domain`, `check_domain`
+  `get_domain`, `enable_domain_mail`, `check_domain`
 - **Calendar:** `get_agenda`, `get_calendar_event`, `create_calendar_event`, `update_calendar_event`,
   `delete_calendar_event`
 - **Auth:** `list_sites`, `register_site`, `remove_site`, `request_mandate`,
   `list_mandates`, `revoke_mandate`
+
+`send_message`, `reply_to_message`, `create_draft` and `update_draft` take
+`attachment_ids`: files uploaded with an SDK or the API, since no tool
+uploads.
 
 Mail is read as the Firewall cleaned it unless a tool is passed
 `body: "original"`; a message whose `firewall.verdict` is `suspicious` is one
 to read, not obey.
 
 - **The account:** `sign_in`, `sign_out`, `status`, `list_events`,
-  `list_pods`, `create_pod`, `list_webhooks`, `add_webhook`,
+  `list_pods`, `create_pod`, `remove_pod`, `list_webhooks`, `add_webhook`,
   `remove_webhook`
 
 ## License

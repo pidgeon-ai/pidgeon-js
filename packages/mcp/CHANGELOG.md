@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.6.0
+
+- `send_message`, `reply_to_message`, `create_draft` and `update_draft` take
+  `attachment_ids`: files uploaded with an SDK or the API.
+- `rename_agent`, `revoke_agent_key`, `revoke_agent` and `remove_pod`.
+- `add_webhook` offers the mandate events.
+- `status` names a key made by `pidgeon keys proof` after its agent, not
+  its id, when signed in.
+
+## 1.5.0
+
+- `hold_suspicious_mail`: hold mail the Firewall calls suspicious for a
+  person. `enable_domain_mail`: turn mail on for a proved domain.
+- `create_inbox` takes `domain`; `search_messages` takes `body` and serves
+  the cleaned text by default, as the other mail tools do.
+- `update_calendar_event` takes `all_day` and `null` to clear `description`
+  or `location`; `create_calendar_event` needs no `end` for an all-day one.
+- `send_draft` takes a `send_at` with an offset; `request_mandate` keeps to
+  the API's limits; `add_webhook` offers the events webhooks carry;
+  `list_threads`'s `starred` is only `true`; `update_contact` clears with
+  `null`; `update_draft` no longer takes `reply_to`.
+- Descriptions say what the API does: reports, the event log, the access
+  rules and mandates take.
+
 ## 1.4.0
 
 - `add_webhook` takes `inbox_ids`: the endpoint hears only those inboxes'

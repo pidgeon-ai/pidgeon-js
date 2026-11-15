@@ -21,7 +21,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import { generateAgentKey, signAgentRequest } from './credential.ts';
-import { DEFAULT_BASE_URL, Pidgeon, PidgeonError, type Agent } from './index.ts';
+import { DEFAULT_BASE_URL, Pidgeon, PidgeonError, signedFetch, type Agent } from './index.ts';
 
 type Env = Record<string, string | undefined>;
 
@@ -431,18 +431,8 @@ export async function agentFromKeyFile(path: string): Promise<{
   const entry = await readJson<StoredAgentKey>(path);
   if (!entry?.private_jwk || !entry.directory)
     throw new Error(`${path} is not an agent key Pidgeon made.`);
-  return {
-    fetch: async (input, init) => {
-      const request = new Request(input, init);
-      const signature = await signAgentRequest(request, {
-        privateJwk: entry.private_jwk,
-        directory: entry.directory,
-      });
-      const headers = new Headers(request.headers);
-      for (const [name, value] of Object.entries(signature)) headers.set(name, value);
-      return fetch(new Request(request, { headers }));
-    },
-  };
+  const agent = { privateJwk: entry.private_jwk, directory: entry.directory };
+  return { fetch: (input, init) => signedFetch(input, init, agent) };
 }
 
 /**

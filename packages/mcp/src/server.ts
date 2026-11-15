@@ -125,7 +125,21 @@ export function createServer(options: Options = {}): McpServer {
             : session
               ? `a session (${session.scope})`
               : null,
-          agent_keys_here: await listAgentKeys(env),
+          agent_keys_here: await Promise.all(
+            (await listAgentKeys(env)).map(async (key) =>
+              // A key made by `pidgeon keys proof` without --name is filed under
+              // the agent's id; when signed in, show the agent's name instead.
+              key.name !== key.agent_id
+                ? key
+                : {
+                    ...key,
+                    name: await pidgeon.agents.get(key.agent_id).then(
+                      (agent) => agent.name,
+                      () => key.name,
+                    ),
+                  },
+            ),
+          ),
         };
       }),
   );

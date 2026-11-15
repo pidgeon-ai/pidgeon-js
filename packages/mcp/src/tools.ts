@@ -9,9 +9,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
-import { PidgeonError, type Pidgeon } from '@pidgeon-ai/sdk';
+import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.4.0';
+export const VERSION = '1.6.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -48,7 +48,7 @@ const messageShape = {
   to: addresses.describe('Who it is to.'),
   cc: z.array(z.string().email()).optional(),
   bcc: z.array(z.string().email()).optional(),
-  subject: z.string().max(998),
+  subject: z.string().max(998).optional(),
   text: z.string().optional().describe('The plain-text body. Send text, html or both.'),
   html: z.string().optional(),
   reply_to: z
@@ -56,15 +56,25 @@ const messageShape = {
     .uuid()
     .optional()
     .describe('A message of this inbox to reply to; the reply joins its thread.'),
+  attachment_ids: z
+    .array(z.string().uuid())
+    .max(20)
+    .optional()
+    .describe(
+      'Files to attach: finished uploads of this inbox, up to 20 and 25 MB in all. Upload them with the SDK or the API; no tool uploads.',
+    ),
 };
+/** A draft's conversation is fixed when it is written. */
+const { reply_to: _replyTo, ...withoutReplyTo } = messageShape;
 type MessageArgs = {
   to: string[];
   cc?: string[];
   bcc?: string[];
-  subject: string;
+  subject?: string;
   text?: string;
   html?: string;
   reply_to?: string;
+  attachment_ids?: string[];
 };
 const asMessage = (args: MessageArgs) => ({
   to: args.to,
@@ -74,6 +84,7 @@ const asMessage = (args: MessageArgs) => ({
   text: args.text,
   html: args.html,
   replyTo: args.reply_to,
+  attachmentIds: args.attachment_ids,
 });
 
 export const READ = { readOnlyHint: true, openWorldHint: true } as const;
@@ -126,9 +137,61 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       answer(async () => {
         const id = agent_id ?? (await pidgeon.agents.list({ limit: 1 })).data[0]?.id;
         if (!id)
-          return { reputation: null, note: 'The account has no agents yet: set_up_agent first.' };
+          return {
+            reputation: null,
+            note: 'The account has no agents yet: register one first (set_up_agent, or register_agent on the hosted server).',
+          };
         const agent = await pidgeon.agents.get(id);
         return { agent_id: agent.id, ...agent.reputation };
+      }),
+  );
+
+  server.registerTool(
+    'rename_agent',
+    {
+      title: 'Rename an agent',
+      description:
+        'Change an agent’s name, what it does, or both: what websites see when it arrives. Needs the Everything level.',
+      inputSchema: {
+        agent_id: z.string().uuid(),
+        name: z.string().min(1).max(80).optional(),
+        purpose: z.string().max(280).optional().describe('What it does, in a sentence.'),
+      },
+      annotations: WRITE,
+    },
+    ({ agent_id, name, purpose }) =>
+      answer(() => pidgeon.agents.update(agent_id, { name, purpose })),
+  );
+
+  server.registerTool(
+    'revoke_agent_key',
+    {
+      title: 'Revoke an agent’s key',
+      description:
+        'Revoke one of an agent’s keys, by its kid (get_agent lists them): requests signed with it stop verifying at once. Its other keys stay. Ask the person first. Needs the Everything level.',
+      inputSchema: { agent_id: z.string().uuid(), kid: z.string().min(1) },
+      annotations: DESTROY,
+    },
+    ({ agent_id, kid }) =>
+      answer(async () => {
+        await pidgeon.agents.revokeKey(agent_id, kid);
+        return { revoked: kid };
+      }),
+  );
+
+  server.registerTool(
+    'revoke_agent',
+    {
+      title: 'Revoke an agent',
+      description:
+        'Revoke an agent and every key it has: no request it signs verifies again, and it cannot be undone. Ask the person first. Needs the Everything level.',
+      inputSchema: { agent_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ agent_id }) =>
+      answer(async () => {
+        await pidgeon.agents.revoke(agent_id);
+        return { revoked: agent_id };
       }),
   );
 
@@ -157,6 +220,18 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
   );
 
   server.registerTool(
+    'hold_suspicious_mail',
+    {
+      title: 'Hold suspicious mail for a person',
+      description:
+        'Hold mail the Firewall calls suspicious in this inbox for a person to read first. A key turns this on, never off.',
+      inputSchema: { inbox_id: z.string().uuid() },
+      annotations: WRITE,
+    },
+    ({ inbox_id }) => answer(() => pidgeon.inboxes.holdSuspicious(inbox_id)),
+  );
+
+  server.registerTool(
     'create_inbox',
     {
       title: 'Make an inbox',
@@ -168,12 +243,19 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         agent_id: z.string().uuid().optional(),
         display_name: z.string().max(120).optional(),
         pod_id: z.string().uuid().optional(),
+        domain: z
+          .string()
+          .optional()
+          .describe(
+            'One of your domains with mail on (enable_domain_mail); pidgeon.email if left out.',
+          ),
       },
       annotations: WRITE,
     },
     (args) =>
       answer(() =>
         pidgeon.inboxes.create({
+          domain: args.domain,
           name: args.name,
           kind: args.kind,
           agentId: args.agent_id,
@@ -234,8 +316,8 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     'update_draft',
     {
       title: 'Edit a draft',
-      description: 'Replace a draft’s addresses and body.',
-      inputSchema: { draft_id: z.string().uuid(), ...messageShape },
+      description: 'Replace a draft’s addresses and body; it stays in its conversation.',
+      inputSchema: { draft_id: z.string().uuid(), ...withoutReplyTo },
       annotations: WRITE,
     },
     ({ draft_id, ...message }) => answer(() => pidgeon.drafts.update(draft_id, asMessage(message))),
@@ -258,7 +340,10 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Send a draft',
       description: 'Send a draft now, or at send_at (ISO 8601, up to 90 days ahead).',
-      inputSchema: { draft_id: z.string().uuid(), send_at: z.string().datetime().optional() },
+      inputSchema: {
+        draft_id: z.string().uuid(),
+        send_at: z.string().datetime({ offset: true }).optional(),
+      },
       annotations: WRITE,
     },
     ({ draft_id, send_at }) => answer(() => pidgeon.drafts.send(draft_id, { sendAt: send_at })),
@@ -280,7 +365,8 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     'list_rules',
     {
       title: 'List mail rules',
-      description: 'The account’s send and receive rules.',
+      description:
+        'The account’s send and receive rules. Needs a key or sign-in of the whole account.',
       annotations: READ,
     },
     () => answer(() => pidgeon.rules.list()),
@@ -291,7 +377,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Add a mail rule',
       description:
-        'Allow or block an address, or a domain and its subdomains, for sending or receiving; for one inbox, or every inbox when inbox_id is left out.',
+        'Allow or block an address, or a domain and its subdomains, for sending or receiving; for one inbox, or every inbox when inbox_id is left out. Needs the Everything level, of the whole account.',
       inputSchema: {
         direction: z.enum(['send', 'receive']),
         action: z.enum(['allow', 'block']),
@@ -308,7 +394,8 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     'remove_rule',
     {
       title: 'Remove a mail rule',
-      description: 'Remove a send or receive rule.',
+      description:
+        'Remove a send or receive rule. Needs the Everything level, of the whole account.',
       inputSchema: { rule_id: z.string().uuid() },
       annotations: DESTROY,
     },
@@ -321,7 +408,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'List the do-not-send list',
       description:
-        'Addresses the account will not send to: bounces, complaints, and ones added by hand.',
+        'Addresses the account will not send to: bounces, complaints, and ones added by hand. Needs a key or sign-in of the whole account.',
       annotations: READ,
     },
     () => answer(() => pidgeon.suppressions.list()),
@@ -388,6 +475,18 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
   );
 
   server.registerTool(
+    'enable_domain_mail',
+    {
+      title: 'Turn mail on for a domain',
+      description:
+        'Turn mail on for a domain the account has proved, so inboxes can be made on it. Answers the DNS records a person sets at the domain’s DNS host (nothing is changed there), then check_domain. Needs the Everything level, of the whole account.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: WRITE,
+    },
+    ({ domain_id }) => answer(() => pidgeon.domains.enableMail(domain_id)),
+  );
+
+  server.registerTool(
     'check_domain',
     {
       title: 'Check a domain’s records',
@@ -406,7 +505,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Read the event log',
       description:
-        'What happened in the account, newest first: mail sent, received and held, keys, agents, sign-ins.',
+        'What happened in the account, newest first: mail sent, received and held, conversations, the calendar, API keys, sign-ins and mandates, reports and reputation, pods and members.',
       inputSchema: {
         type: z.string().optional(),
         limit: z.number().int().min(1).max(100).optional(),
@@ -434,12 +533,12 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Add a webhook endpoint',
       description:
-        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). Needs the Everything level, of the whole account.',
+        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, Auth’s mandate.requested, mandate.granted, mandate.declined and mandate.revoked, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). Needs the Everything level, of the whole account.',
       inputSchema: {
         url: z.string().url().describe('A public https:// address.'),
-        events: z.array(z.string()).min(1).describe('The event types to deliver.'),
+        events: z.array(z.enum(WEBHOOK_EVENTS)).min(1).describe('The event types to deliver.'),
         inbox_ids: z
-          .array(z.string())
+          .array(z.string().uuid())
           .min(1)
           .optional()
           .describe('Hear only these inboxes’ events. Left out, the whole account’s.'),
@@ -485,6 +584,22 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       annotations: WRITE,
     },
     ({ name }) => answer(() => pidgeon.pods.create(name)),
+  );
+
+  server.registerTool(
+    'remove_pod',
+    {
+      title: 'Remove a pod',
+      description:
+        'Remove an empty pod. The default pod stays, and so does a pod with agents, domains or webhook endpoints in it. Needs the Everything level, of the whole account.',
+      inputSchema: { pod_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ pod_id }) =>
+      answer(async () => {
+        await pidgeon.pods.remove(pod_id);
+        return { removed: pod_id };
+      }),
   );
   // ------------------------------------------------------------ Reading mail
   // Names kept from the old MCP server where the tool still exists: agents
@@ -546,14 +661,15 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       description:
         'Mail by words in its subject, sender or text, newest first. Held mail is never found.',
       inputSchema: {
-        query: z.string().min(1),
+        query: z.string().min(1).max(200),
         inbox_id: z.string().uuid().optional(),
         cursor: z.string().optional(),
+        body,
       },
       annotations: READ,
     },
-    ({ query, inbox_id, cursor }) =>
-      answer(() => pidgeon.messages.search(query, { inboxId: inbox_id, cursor })),
+    ({ query, inbox_id, cursor, body }) =>
+      answer(() => pidgeon.messages.search(query, { inboxId: inbox_id, cursor, body })),
   );
 
   server.registerTool(
@@ -578,10 +694,11 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         text: z.string().min(1),
         html: z.string().optional(),
         cc: z.array(z.string().email()).optional(),
+        attachment_ids: messageShape.attachment_ids,
       },
       annotations: WRITE,
     },
-    ({ message_id, text, html, cc }) =>
+    ({ message_id, text, html, cc, attachment_ids }) =>
       answer(async () => {
         const original = await pidgeon.messages.get(message_id);
         const subject = original.subject ?? '';
@@ -592,6 +709,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
           text,
           html,
           replyTo: original.id,
+          attachmentIds: attachment_ids,
         });
       }),
   );
@@ -609,7 +727,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         folder: z.enum(['inbox', 'archive', 'spam', 'trash']).optional(),
         label_id: z.string().uuid().optional(),
         status: z.enum(['open', 'waiting', 'resolved', 'human_review']).optional(),
-        starred: z.boolean().optional(),
+        starred: z.literal(true).optional().describe('Only starred ones.'),
         cursor: z.string().optional(),
       },
       annotations: READ,
@@ -774,8 +892,8 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       description: 'A contact’s name or notes. Once edited, mail no longer renames it.',
       inputSchema: {
         contact_id: z.string().uuid(),
-        name: z.string().max(200).optional(),
-        notes: z.string().max(5000).optional(),
+        name: z.string().max(200).nullable().optional().describe('`null` clears it.'),
+        notes: z.string().max(5000).nullable().optional().describe('`null` clears it.'),
       },
       annotations: WRITE,
     },
@@ -834,9 +952,12 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         'An event in an inbox’s calendar. Timed: ISO 8601 times with their offset. All day: dates, `end` the last day. `attendees` records who is on it; invitations go only with `send_invites: true` (a key with send access).',
       inputSchema: {
         inbox_id: z.string().uuid(),
-        title: z.string().min(1),
+        title: z.string().min(1).max(1000),
         start: z.string(),
-        end: z.string(),
+        end: z
+          .string()
+          .optional()
+          .describe('Required for a timed event; all day, the last day (default the start).'),
         all_day: z.boolean().optional(),
         description: z.string().optional(),
         location: z.string().optional(),
@@ -868,11 +989,12 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         'Change what you name; the rest of the event stays. `send_invites: true` sends the attendees the updated invitation.',
       inputSchema: {
         event_id: z.string().uuid(),
-        title: z.string().optional(),
+        title: z.string().max(1000).optional(),
         start: z.string().optional(),
         end: z.string().optional(),
-        description: z.string().optional(),
-        location: z.string().optional(),
+        all_day: z.boolean().optional(),
+        description: z.string().nullable().optional().describe('`null` clears it.'),
+        location: z.string().nullable().optional().describe('`null` clears it.'),
         attendees: z.array(z.string().email()).max(50).optional(),
         send_invites: z.boolean().optional(),
       },
@@ -884,6 +1006,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
           title: args.title,
           start: args.start,
           end: args.end,
+          allDay: args.all_day,
           description: args.description,
           location: args.location,
           attendees: args.attendees,
@@ -941,7 +1064,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Report an agent',
       description:
-        'For a website: report the agent behind one of your verifications. It weighs on its operator’s reputation once reviewed.',
+        'For a website: report the agent behind one of your verifications. One upheld report, or open reports from two websites, flag its operator. Needs a verified domain and send access.',
       inputSchema: {
         verification_id: z.string().uuid(),
         category: z.enum(['fraud', 'abuse', 'scraping', 'spam', 'fake_signups', 'other']),
@@ -974,7 +1097,11 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
         'Register a site so people and agents can sign in to it with Pidgeon. Answers `client_secret` once: keep it on the site’s server.',
       inputSchema: {
         name: z.string().min(1).max(120),
-        redirect_uris: z.array(z.string().url()).min(1),
+        redirect_uris: z
+          .array(z.string().url())
+          .min(1)
+          .max(20)
+          .describe('https addresses (http on localhost), matched exactly.'),
         pod_id: z.string().uuid().optional(),
       },
       annotations: WRITE,
@@ -1004,8 +1131,8 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       inputSchema: {
         agent_id: z.string().uuid(),
         client_id: z.string(),
-        scope: z.string(),
-        description: z.string().min(1).max(500),
+        scope: z.string().min(1).max(500),
+        description: z.string().min(1).max(280),
         days: z.number().int().min(1).max(90).optional(),
       },
       annotations: WRITE,

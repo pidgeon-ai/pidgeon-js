@@ -1,5 +1,5 @@
 /**
- * Pidgeon's TypeScript SDK (docs/plan.md §11).
+ * Pidgeon's TypeScript SDK.
  *
  * For an agent: `signedFetch`, or `agentFromEnv().fetch`, signs every request
  * with the agent's key, so a website that checks can tell who stands behind it.
@@ -28,7 +28,7 @@ export const DEFAULT_BASE_URL = 'https://pidgeon.ai';
 
 export type Band = 'unverified' | 'new' | 'good' | 'flagged' | 'suspended';
 
-/** What `verify` answers (docs/plan.md §6). */
+/** What `verify` answers. */
 export type VerifyAnswer =
   | {
       valid: true;
@@ -43,11 +43,17 @@ export type VerifyAnswer =
         since: string;
       };
       reputation: { band: Band; seen_at_receivers: number; reports_90d: number; revoked: false };
+      /**
+       * Whether Pidgeon will refuse this signature if it is sent again: true
+       * when it carries a nonce (every signature these SDKs make does).
+       */
+      replay_protected?: boolean;
     }
   | {
       valid: false;
       verification_id: string;
-      reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked';
+      /** `replayed`: this signature was verified before, so the request is a copy. */
+      reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked' | 'replayed';
       operator?: { id: string; name: string };
     };
 
@@ -92,6 +98,9 @@ export type Page<T> = { data: T[]; has_more: boolean; next_cursor: string | null
 
 export type ListOptions = { limit?: number; cursor?: string };
 
+/** What `messages.search` narrows by, beside the words. */
+export type SearchOptions = ListOptions & { inboxId?: string; body?: BodyChoice };
+
 /** An agent, as `/v1/agents` answers it. */
 export type Agent = {
   id: string;
@@ -120,7 +129,7 @@ export type Inbox = {
   display_name: string | null;
   pod_id: string;
   agent_id: string | null;
-  status: string;
+  status: 'active' | 'suspended';
   /** Mail the Firewall calls suspicious waits for a person. */
   hold_suspicious: boolean;
   created_at: string;
@@ -236,23 +245,76 @@ export type AppPassword = {
 
 export type CalendarEvent = {
   id: string;
+  inbox_id: string;
+  uid: string;
   title: string | null;
+  /** Timed: an instant. All day: the first day, `YYYY-MM-DD`. */
   start: string;
+  /** Timed: an instant. All day: the last day, inclusive. */
   end: string;
+  starts_at: string;
+  ends_at: string;
   all_day: boolean;
-  description?: string | null;
-  location?: string | null;
-  organizer?: string | null;
-  attendees?: { email: string; status: 'needs_action' | 'accepted' | 'declined' | 'tentative' }[];
+  /** The series' RRULE as written, or null for a one-off. */
+  recurrence: string | null;
+  description: string | null;
+  location: string | null;
+  /** The address organising it, when it has attendees. */
+  organizer: string | null;
+  attendees: { email: string; status: 'needs_action' | 'accepted' | 'declined' | 'tentative' }[];
+  etag: string;
+  created_at: string;
+  updated_at: string;
   /** After a write with `sendInvites`: who was sent the invitation, or why nobody was. */
   invites?: { sent_to: string[]; error: string | null };
-  [field: string]: unknown;
 };
+
+/** The events a webhook can carry; the event log (`events.list`) holds more. */
+export const WEBHOOK_EVENTS = [
+  'report.created',
+  'reputation.changed',
+  'operator.reputation_changed',
+  'mandate.requested',
+  'mandate.granted',
+  'mandate.declined',
+  'mandate.revoked',
+  'message.received',
+  'message.held',
+  'message.released',
+  'message.blocked',
+  'message.quarantined',
+  'message.sent',
+  'message.failed',
+  'message.scheduled',
+  'message.delivered',
+  'message.delayed',
+  'message.bounced',
+  'message.complained',
+  'message.rejected',
+  'message.exfiltration_blocked',
+  'draft.created',
+  'draft.approval_requested',
+  'draft.approved',
+  'draft.rejected',
+  'thread.updated',
+  'thread.deleted',
+  'inbox.created',
+  'inbox.updated',
+  'inbox.removed',
+  'email.domain_added',
+  'email.domain_verified',
+  'email.domain_broken',
+  'email.domain_removed',
+  'calendar.event.created',
+  'calendar.event.updated',
+  'calendar.event.deleted',
+] as const;
+export type WebhookEventType = (typeof WEBHOOK_EVENTS)[number];
 
 export type Webhook = {
   id: string;
   url: string;
-  events: string[];
+  events: WebhookEventType[];
   /** The inboxes it hears; null when it hears the whole account. */
   inbox_ids: string[] | null;
   created_at: string;
@@ -266,11 +328,11 @@ export type MessageInput = {
   to: string[];
   cc?: string[];
   bcc?: string[];
-  subject: string;
+  subject?: string;
   text?: string;
   html?: string;
   replyTo?: string;
-  /** Finished uploads of this inbox (`email.attachments.upload`). */
+  /** Finished uploads of this inbox (`pidgeon.attachments.upload`). */
   attachmentIds?: string[];
 };
 
@@ -319,9 +381,9 @@ export type Site = {
   client_id: string;
   name: string;
   redirect_uris: string[];
-  pod_id?: string | null;
+  pod_id: string | null;
+  created_at: string;
   client_secret?: string;
-  [field: string]: unknown;
 };
 
 export type Mandate = {
@@ -330,10 +392,12 @@ export type Mandate = {
   client_id: string;
   scope: string;
   description: string;
-  status: string;
+  status: 'requested' | 'granted' | 'declined' | 'revoked';
   expires_at: string;
   created_at: string;
+  /** On a request: the link to send the person, and until when it works. */
   consent_url?: string;
+  request_expires_at?: string;
 };
 
 const messageBody = (input: MessageInput) => ({
@@ -470,6 +534,16 @@ export class Pidgeon {
       }),
     /** The agent, its keys, its directory and its operator's reputation. */
     get: (id: string): Promise<AgentDetail> => this.request('GET', `/v1/agents/${segment(id)}`),
+    /** Rename the agent, or change what it does: what websites see when it arrives. */
+    update: (id: string, input: { name?: string; purpose?: string }): Promise<Agent> =>
+      this.request('PATCH', `/v1/agents/${segment(id)}`, {
+        body: { name: input.name, purpose: input.purpose },
+      }),
+    /** Revoke the agent and every key it has. None verifies again; it cannot be undone. */
+    revoke: (id: string): Promise<void> => this.request('DELETE', `/v1/agents/${segment(id)}`),
+    /** Revoke one of the agent's keys, by its `kid`. Its other keys stay. */
+    revokeKey: (id: string, kid: string): Promise<void> =>
+      this.request('DELETE', `/v1/agents/${segment(id)}/keys/${segment(kid)}`),
     /**
      * Register an agent, make its key here, and publish the public half
      * signed with it. Keep `key.privateJwk` where the agent runs: it is the
@@ -556,11 +630,32 @@ export class Pidgeon {
       this.request('GET', `/v1/email/inboxes/${segment(inboxId)}/messages/await`, {
         query: options,
       }),
-    /** Mail by words in its subject, sender or text, newest first. */
-    search: (q: string, options: ListOptions & { inboxId?: string } = {}): Promise<Page<Message>> =>
-      this.request('GET', '/v1/email/search', {
-        query: { q, inbox_id: options.inboxId, limit: options.limit, cursor: options.cursor },
-      }),
+    /**
+     * Mail by words in its subject, sender or text, newest first:
+     * `search('invoice', { inboxId })`, or `search({ q: 'invoice', inboxId })`.
+     */
+    search: (
+      query: string | (SearchOptions & { q: string }),
+      options: SearchOptions = {},
+    ): Promise<Page<Message>> => {
+      const { q, ...rest } = typeof query === 'string' ? { ...options, q: query } : query;
+      if (typeof q !== 'string' || !q.trim()) {
+        return Promise.reject(
+          new TypeError(
+            'messages.search needs the words to look for: search("invoice") or search({ q: "invoice" }).',
+          ),
+        );
+      }
+      return this.request('GET', '/v1/email/search', {
+        query: {
+          q,
+          inbox_id: rest.inboxId,
+          limit: rest.limit,
+          cursor: rest.cursor,
+          body: rest.body,
+        },
+      });
+    },
   };
 
   /** Conversations across your inboxes, and what is filed where. */
@@ -707,7 +802,8 @@ export class Pidgeon {
       input: {
         title: string;
         start: string;
-        end: string;
+        /** Required for a timed event; for an all-day one, the last day (default the start). */
+        end?: string;
         allDay?: boolean;
         description?: string;
         location?: string;
@@ -736,8 +832,10 @@ export class Pidgeon {
         start?: string;
         end?: string;
         allDay?: boolean;
-        description?: string;
-        location?: string;
+        /** `null` clears it. */
+        description?: string | null;
+        /** `null` clears it. */
+        location?: string | null;
         attendees?: string[];
         /** Send the attendees the updated invitation (a key with `send` access). */
         sendInvites?: boolean;
@@ -803,7 +901,7 @@ export class Pidgeon {
     inboxId: string;
     from: string;
     fromName?: string;
-    subject: string;
+    subject?: string;
     text?: string;
     html?: string;
     inReplyTo?: string;
@@ -827,8 +925,8 @@ export class Pidgeon {
         body: messageBody(input),
       }),
     get: (id: string): Promise<Draft> => this.request('GET', `/v1/email/drafts/${segment(id)}`),
-    /** Replace a draft's addresses and body. */
-    update: (id: string, input: MessageInput): Promise<Draft> =>
+    /** Replace a draft's addresses and body; its thread stays, so `replyTo` is not taken. */
+    update: (id: string, input: Omit<MessageInput, 'replyTo'>): Promise<Draft> =>
       this.request('PATCH', `/v1/email/drafts/${segment(id)}`, { body: messageBody(input) }),
     remove: (id: string): Promise<void> =>
       this.request('DELETE', `/v1/email/drafts/${segment(id)}`),
@@ -922,6 +1020,8 @@ export class Pidgeon {
   readonly pods = {
     list: (): Promise<{ data: Pod[] }> => this.request('GET', '/v1/pods'),
     create: (name: string): Promise<Pod> => this.request('POST', '/v1/pods', { body: { name } }),
+    /** Remove an empty pod. Not the default pod, and not one with agents, domains or endpoints in it. */
+    remove: (id: string): Promise<void> => this.request('DELETE', `/v1/pods/${segment(id)}`),
   };
 
   /** Your webhook endpoints. A key of the whole account only. */
@@ -933,7 +1033,7 @@ export class Pidgeon {
      */
     create: (input: {
       url: string;
-      events: string[];
+      events: WebhookEventType[];
       inboxIds?: string[];
     }): Promise<{ id: string; secret: string }> =>
       this.request('POST', '/v1/webhooks', {
@@ -995,7 +1095,7 @@ export { generateAgentKey };
 /** A webhook Pidgeon sent you, once its signature checks out. */
 export type WebhookPayload = {
   id: string;
-  type: string;
+  type: WebhookEventType;
   created: string;
   data: Record<string, unknown>;
 };

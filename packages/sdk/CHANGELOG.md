@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.4.0
+
+- `signedFetch`, `agentFromEnv().fetch` and `agentFromKeyFile().fetch` send
+  a request with a body. They threw "Cannot construct a Request with a
+  Request object that has already been used" on any POST or PUT with one.
+- Every signature carries a fresh 64-byte nonce and covers `@query` (`?`
+  when the URL has none), so neither the query nor the signature can be
+  reused: sign again to retry. `newNonce()`; `signAgentRequest` takes
+  `nonce` for tests. `verifyAgentRequest` answers the signature's `nonce`.
+- `VerifyAnswer`: `replay_protected`, and the reason `replayed`.
+- `messages.search` takes `search(q, options)` or `search({ q, ...options })`;
+  with no words it rejects with a `TypeError` instead of answering nothing.
+- `agents.update`, `agents.revoke`, `agents.revokeKey` and `pods.remove`.
+- `WEBHOOK_EVENTS` has `mandate.requested`, `mandate.granted`,
+  `mandate.declined` and `mandate.revoked`.
+- Typings no longer cite documents outside the package.
+
+## 2.3.0
+
+- `messages.search` takes `body: 'clean'`, as reading does.
+- `WEBHOOK_EVENTS` and `WebhookEventType`: the events a webhook carries.
+  `webhooks.create`, `Webhook.events` and `WebhookPayload.type` use them,
+  so a misspelt event fails to compile rather than with a 400.
+- Types say what the API answers: `CalendarEvent` in full, `Site` with
+  `created_at`, `Mandate.status` and `request_expires_at`, `Inbox.status`.
+- `calendar.update` takes `null` to clear `description` or `location`;
+  `calendar.create` takes no `end` for an all-day event; `subject` and
+  `testInbound`'s `subject` are optional, as in the API.
+- `drafts.update` no longer takes `replyTo`: a draft keeps its conversation.
+
 ## 2.2.0
 
 - `webhooks.create` takes `inboxIds`: the endpoint hears only those inboxes'
