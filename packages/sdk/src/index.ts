@@ -209,6 +209,8 @@ export type MailDomain = {
   mail: boolean;
   status: 'pending' | 'verified' | 'failed' | null;
   receiving: boolean;
+  /** Whether Pidgeon signs agents' `Agent-of` here: the `pgn2._domainkey` record answered at the last check. */
+  agent_signing: boolean;
   checked_at: string | null;
   records: {
     purpose: string;
@@ -251,6 +253,8 @@ export type Webhook = {
   id: string;
   url: string;
   events: string[];
+  /** The inboxes it hears; null when it hears the whole account. */
+  inbox_ids: string[] | null;
   created_at: string;
   disabled_at: string | null;
 };
@@ -923,9 +927,18 @@ export class Pidgeon {
   /** Your webhook endpoints. A key of the whole account only. */
   readonly webhooks = {
     list: (): Promise<{ data: Webhook[] }> => this.request('GET', '/v1/webhooks'),
-    /** Answers `secret` once: check each delivery's signature with it (`verifyWebhook`). */
-    create: (input: { url: string; events: string[] }): Promise<{ id: string; secret: string }> =>
-      this.request('POST', '/v1/webhooks', { body: input }),
+    /**
+     * Answers `secret` once: check each delivery's signature with it (`verifyWebhook`).
+     * With `inboxIds` it hears only those inboxes' events; without, the whole account's.
+     */
+    create: (input: {
+      url: string;
+      events: string[];
+      inboxIds?: string[];
+    }): Promise<{ id: string; secret: string }> =>
+      this.request('POST', '/v1/webhooks', {
+        body: { url: input.url, events: input.events, inbox_ids: input.inboxIds },
+      }),
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/webhooks/${segment(id)}`),
   };
 

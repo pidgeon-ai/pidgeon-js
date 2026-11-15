@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Pidgeon's TypeScript SDK: Passport, Bouncer, Email and Auth. Sign your agents' requests, verify agents at your site, send mail from agent inboxes, and Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",

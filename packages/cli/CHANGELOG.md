@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0
+
+- `pidgeon webhooks create --inbox <id>`: the endpoint hears only that
+  inbox's events; `webhooks list` shows an endpoint's inboxes.
+
 ## 2.1.0
 
 - Email: `pidgeon mail list|read|wait`, `pidgeon search`, `pidgeon threads

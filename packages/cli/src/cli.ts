@@ -21,7 +21,7 @@ import {
   signOut,
 } from '@pidgeon-ai/sdk/node';
 
-export const VERSION = '2.1.0';
+export const VERSION = '2.2.0';
 
 export type Io = {
   out: (line: string) => void;
@@ -85,7 +85,7 @@ Email
 
 The account
   pidgeon events [--type <type>] [--limit <n>]
-  pidgeon webhooks list | create <url> --event <type>... | remove <webhook-id>
+  pidgeon webhooks list | create <url> --event <type>... [--inbox <id>] | remove <webhook-id>
   pidgeon api <GET|POST|PATCH|DELETE> <path> [--data <json>]    any /v1 call
 
 Add --json to any command for the API's own JSON.`;
@@ -608,20 +608,26 @@ async function dispatch(positionals: string[], values: Values, io: Io): Promise<
         const list = await pidgeon.webhooks.list();
         show(list, () =>
           list.data.length
-            ? list.data.map((h) => `${h.id}  ${h.url}  ${h.events.join(', ')}`)
+            ? list.data.map(
+                (h) =>
+                  `${h.id}  ${h.url}  ${h.events.join(', ')}${h.inbox_ids ? `  (inboxes: ${h.inbox_ids.join(', ')})` : ''}`,
+              )
             : ['No webhooks.'],
         );
       } else if (sub === 'create') {
         const made = await pidgeon.webhooks.create({
           url: need(arg, 'url (https)'),
           events: values.event ?? [],
+          ...(values.inbox ? { inboxIds: [values.inbox] } : {}),
         });
         show(made, () => [`Made ${made.id}. Secret, shown once: ${made.secret}`]);
       } else if (sub === 'remove') {
         await pidgeon.webhooks.remove(need(arg, 'webhook (its id)'));
         show({ removed: arg }, () => ['Removed.']);
       } else
-        throw new Usage('pidgeon webhooks list | create <url> --event <type>... | remove <id>');
+        throw new Usage(
+          'pidgeon webhooks list | create <url> --event <type>... [--inbox <id>] | remove <id>',
+        );
       return;
     }
     case 'events': {

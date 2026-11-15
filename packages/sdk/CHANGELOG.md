@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0
+
+- `webhooks.create` takes `inboxIds`: the endpoint hears only those inboxes'
+  events. `Webhook` has `inbox_ids`, null for one of the whole account.
+
 ## 2.1.1
 
 - `calendar.create` and `calendar.update` take `attendees` and `sendInvites`,

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+
+- `add_webhook` takes `inbox_ids`: the endpoint hears only those inboxes'
+  events.
+
 ## 1.3.0
 
 - Labels: `update_label` (rename or recolour), `delete_label`.

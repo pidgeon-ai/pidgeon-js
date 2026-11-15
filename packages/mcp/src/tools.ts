@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.3.0';
+export const VERSION = '1.4.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -438,10 +438,16 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       inputSchema: {
         url: z.string().url().describe('A public https:// address.'),
         events: z.array(z.string()).min(1).describe('The event types to deliver.'),
+        inbox_ids: z
+          .array(z.string())
+          .min(1)
+          .optional()
+          .describe('Hear only these inboxes’ events. Left out, the whole account’s.'),
       },
       annotations: WRITE,
     },
-    ({ url, events }) => answer(() => pidgeon.webhooks.create({ url, events })),
+    ({ url, events, inbox_ids }) =>
+      answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids })),
   );
 
   server.registerTool(
