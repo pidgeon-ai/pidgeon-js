@@ -53,8 +53,8 @@ session is refreshed from then on. On a machine with no browser, set
   `get_domain`, `enable_domain_mail`, `check_domain`
 - **Calendar:** `get_agenda`, `get_calendar_event`, `create_calendar_event`, `update_calendar_event`,
   `delete_calendar_event`
-- **Auth:** `list_sites`, `register_site`, `remove_site`, `request_mandate`,
-  `list_mandates`, `revoke_mandate`
+- **Auth:** `list_sites`, `register_site`, `update_site`, `rotate_site_secret`,
+  `remove_site`, `request_mandate`, `list_mandates`, `revoke_mandate`
 
 `send_message`, `reply_to_message`, `create_draft` and `update_draft` take
 `attachment_ids`: files uploaded with an SDK or the API, since no tool

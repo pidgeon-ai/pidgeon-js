@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+
+- The registry entry names the hosted server again: `https://pidgeon.ai/mcp`
+  (Streamable HTTP, sign-in by OAuth), beside the npm package.
+- `update_site` and `rotate_site_secret`.
+
 ## 1.6.0
 
 - `send_message`, `reply_to_message`, `create_draft` and `update_draft` take

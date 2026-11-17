@@ -61,6 +61,30 @@ if (answer.valid && answer.reputation.band !== 'suspended') {
 await pidgeon.report({ verificationId: answer.verification_id, category: 'spam', evidence: '…' });
 ```
 
+### In a Next.js proxy (`@pidgeon-ai/sdk/next`)
+
+```ts
+// proxy.ts (middleware.ts before Next.js 16)
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
+import { bouncer } from '@pidgeon-ai/sdk/next';
+
+const observe = bouncer({ apiKey: process.env.PIDGEON_API_KEY }); // read access is enough
+
+export function proxy(request: NextRequest, event: NextFetchEvent) {
+  observe(request, event); // returns at once, never throws
+  return NextResponse.next();
+}
+```
+
+Observe mode checks every request that carries an agent's signature (or
+claims to be an agent with `Signature-Agent` alone) after the response, with
+`waitUntil`: no visit is slowed, blocked or changed, even when Pidgeon is
+down. Requests without agent headers and CORS preflights are never sent, nor
+the visitor's cookies. Without a key it does nothing. Options: `url`,
+`onAnswer`, `onError`, `timeoutMs`; `enforce` mode is coming. Observe on
+public content; enforce only where an agent acts (sign-up, checkout, your
+API).
+
 ## Email
 
 ```ts
@@ -139,7 +163,8 @@ await signedFetch(
 ```
 
 Your site accepts the request only when it is signed with the key the token
-names, so a copied token is useless on its own:
+names and its `Signature-Agent` is the agent's own directory, so a copied
+token is useless on its own:
 
 ```ts
 import { verifyAgentSignIn } from '@pidgeon-ai/sdk/auth';
@@ -150,6 +175,12 @@ claims.agent;
 claims.account;
 claims.reputation;
 ```
+
+Under a mandate, pass your site's `clientSecret` too: Pidgeon is asked
+whether the mandate still holds, so one the person stopped is refused at
+once (`mandate_ended`) rather than when the token expires. A token under a
+test mandate (asked with a test key) carries `test: true` and verifies like
+any other: refuse it in production.
 
 ### For an MCP server that trusts Pidgeon (ID-JAG)
 

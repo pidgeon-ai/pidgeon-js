@@ -21,7 +21,7 @@ import {
   signOut,
 } from '@pidgeon-ai/sdk/node';
 
-export const VERSION = '2.4.0';
+export const VERSION = '2.5.0';
 
 export type Io = {
   out: (line: string) => void;
@@ -63,6 +63,7 @@ Websites (Bouncer)
 
 Sign in with Pidgeon (Auth)
   pidgeon sites list | create <name> --redirect <uri>... [--pod <pod-id>] | remove <client-id>
+  pidgeon sites update <client-id> [--name <name>] [--redirect <uri>...] | rotate-secret <client-id>
   pidgeon mandates list | revoke <mandate-id>
   pidgeon mandates request --agent <id> --client <client-id> --scope <scope> --description <text> [--days <n>]
 
@@ -501,12 +502,27 @@ async function dispatch(positionals: string[], values: Values, io: Io): Promise<
           `client_id: ${site.client_id}`,
           `client_secret: ${site.client_secret} (shown once; keep it on the server)`,
         ]);
+      } else if (sub === 'update') {
+        const id = need(arg, 'site (its client_id)');
+        if (values.name === undefined && !values.redirect?.length)
+          throw new Usage('Give --name, or --redirect <uri>... (the whole new list), or both.');
+        const site = await pidgeon.sites.update(id, {
+          name: values.name,
+          redirectUris: values.redirect?.length ? values.redirect : undefined,
+        });
+        show(site, () => [`${site.client_id}  ${site.name}  ${site.redirect_uris.join(' ')}`]);
+      } else if (sub === 'rotate-secret') {
+        const site = await pidgeon.sites.rotateSecret(need(arg, 'site (its client_id)'));
+        show(site, () => [
+          `client_secret: ${site.client_secret} (shown once; keep it on the server)`,
+          'The old secret no longer works.',
+        ]);
       } else if (sub === 'remove') {
         await pidgeon.sites.remove(need(arg, 'site (its client_id)'));
         show({ removed: arg }, () => ['Removed.']);
       } else
         throw new Usage(
-          'pidgeon sites list | create <name> --redirect <uri>... | remove <client-id>',
+          'pidgeon sites list | create <name> --redirect <uri>... | update <client-id> [--name <name>] [--redirect <uri>...] | rotate-secret <client-id> | remove <client-id>',
         );
       return;
     }

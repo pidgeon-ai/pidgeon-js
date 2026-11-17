@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.5.0
+
+- `@pidgeon-ai/sdk/next`: `bouncer({ apiKey })` for a Next.js proxy (or any
+  `Request` with `waitUntil`). Observe mode checks each request carrying an
+  agent's signature, or `Signature-Agent` alone, with `POST /v1/verify` after
+  the response; it never throws, delays or changes a response, skips other
+  requests and CORS preflights, and leaves out the visitor's `Cookie` and
+  `Authorization` unless signed. No key: it does nothing.
+- `sites.update(clientId, { name, redirectUris })` and
+  `sites.rotateSecret(clientId)`: edit a site, and give it a new secret
+  (answered once; the old one stops working at once).
+- `verifyAgentSignIn` requires the request's `Signature-Agent` to be the
+  agent's own directory (the token's `agent.directory`), as Pidgeon's token
+  exchange now does: `wrong_directory` otherwise.
+- `SignInError.reason` says which: `wrong_request` (signed for another
+  method, path or host) and `expired` (the signature is too old or dated
+  ahead) are no longer reported as `wrong_key`.
+- `verifyAgentSignIn` takes `clientSecret`: a token issued under a mandate is
+  checked with Pidgeon's `/oauth/introspect`, and one whose mandate was
+  stopped is refused at once (`mandate_ended`), not when the token expires.
+- `sameDirectory(named, directory)`. `PidgeonClaims` has `act`, `mandate`,
+  `scope` and `agent.directory`.
+
 ## 2.4.0
 
 - `signedFetch`, `agentFromEnv().fetch` and `agentFromKeyFile().fetch` send

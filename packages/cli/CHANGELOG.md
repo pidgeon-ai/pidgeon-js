@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.0
+
+- `pidgeon sites update <client-id> [--name] [--redirect <uri>...]` and
+  `pidgeon sites rotate-secret <client-id>`.
+
 ## 2.4.0
 
 - `pidgeon agents rename <id> <name>`, `pidgeon agents revoke <id>`,

@@ -376,7 +376,7 @@ export type Event = {
 
 export type Pod = { id: string; name: string; default: boolean; created_at: string };
 
-/** A site registered for Sign in with Pidgeon. `client_secret` is answered once, at creation. */
+/** A site registered for Sign in with Pidgeon. `client_secret` is answered once, at creation and at each rotation. */
 export type Site = {
   client_id: string;
   name: string;
@@ -393,6 +393,8 @@ export type Mandate = {
   scope: string;
   description: string;
   status: 'requested' | 'granted' | 'declined' | 'revoked';
+  /** Asked with a test key: needs no verified domain, and every token under it says `test: true`. */
+  test: boolean;
   expires_at: string;
   created_at: string;
   /** On a request: the link to send the person, and until when it works. */
@@ -981,6 +983,14 @@ export class Pidgeon {
       this.request('POST', '/v1/auth/clients', {
         body: { name: input.name, redirect_uris: input.redirectUris, pod_id: input.podId },
       }),
+    /** Rename it, or replace its return addresses (the whole list); its id and secret stay. */
+    update: (clientId: string, input: { name?: string; redirectUris?: string[] }): Promise<Site> =>
+      this.request('PATCH', `/v1/auth/clients/${segment(clientId)}`, {
+        body: { name: input.name, redirect_uris: input.redirectUris },
+      }),
+    /** A new `client_secret`, answered once; the old one stops working at once. */
+    rotateSecret: (clientId: string): Promise<Site & { client_secret: string }> =>
+      this.request('POST', `/v1/auth/clients/${segment(clientId)}/rotate-secret`),
     remove: (clientId: string): Promise<void> =>
       this.request('DELETE', `/v1/auth/clients/${segment(clientId)}`),
   };

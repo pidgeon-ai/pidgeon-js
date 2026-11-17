@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.6.0';
+export const VERSION = '1.7.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -1108,6 +1108,40 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     },
     ({ name, redirect_uris, pod_id }) =>
       answer(() => pidgeon.sites.create({ name, redirectUris: redirect_uris, podId: pod_id })),
+  );
+
+  server.registerTool(
+    'update_site',
+    {
+      title: 'Edit a site',
+      description:
+        'Rename a Sign in with Pidgeon site, or replace its return addresses (send the whole new list). Its client_id and secret stay.',
+      inputSchema: {
+        client_id: z.string(),
+        name: z.string().min(1).max(120).optional(),
+        redirect_uris: z
+          .array(z.string().url())
+          .min(1)
+          .max(20)
+          .optional()
+          .describe('The whole new list: https addresses (http on localhost), matched exactly.'),
+      },
+      annotations: WRITE,
+    },
+    ({ client_id, name, redirect_uris }) =>
+      answer(() => pidgeon.sites.update(client_id, { name, redirectUris: redirect_uris })),
+  );
+
+  server.registerTool(
+    'rotate_site_secret',
+    {
+      title: 'Rotate a site’s secret',
+      description:
+        'Give a site a new client_secret, answered once: put it on the site’s server. The old one stops working at once, so the site cannot sign anyone in until it has the new one.',
+      inputSchema: { client_id: z.string() },
+      annotations: DESTROY,
+    },
+    ({ client_id }) => answer(() => pidgeon.sites.rotateSecret(client_id)),
   );
 
   server.registerTool(

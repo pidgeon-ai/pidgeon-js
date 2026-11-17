@@ -67,6 +67,26 @@ export function directoryUrl(
   return `https://${slug}.${host}`;
 }
 
+const DIRECTORY_PATH = '/.well-known/http-message-signatures-directory';
+
+/**
+ * Whether the directory a signature names (its `Signature-Agent`) is
+ * `directory`: the same origin, given bare or with the well-known path. A
+ * key's signature proves the key; this binds it to the operator whose
+ * directory publishes it, so a request cannot claim another operator's.
+ */
+export function sameDirectory(named: string | null | undefined, directory: string): boolean {
+  if (!named) return false;
+  try {
+    const a = new URL(named);
+    const b = new URL(directory);
+    const path = a.pathname.replace(/\/+$/, '');
+    return a.origin === b.origin && (path === '' || path === DIRECTORY_PATH) && !a.search;
+  } catch {
+    return false;
+  }
+}
+
 /** A key's id: its JWK SHA-256 thumbprint (RFC 7638), Web Bot Auth's `keyid`. */
 export async function keyIdOf(publicJwk: PublicJwk): Promise<string> {
   return jwkToKeyID(publicJwk, (bytes) => crypto.subtle.digest('SHA-256', bytes), base64Url);
