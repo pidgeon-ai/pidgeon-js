@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Pidgeon's TypeScript SDK: Passport, Bouncer, Email and Auth. Sign your agents' requests, verify agents at your site, send mail from agent inboxes, and Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",
@@ -46,6 +46,7 @@
     "prepack": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "http-message-sig": "0.3.0",
     "web-bot-auth": "0.2.0",
     "jose": "^6.2.17"
   },

@@ -17,7 +17,8 @@
  * - A fresh nonce in every signature, so a verifier that remembers them
  *   accepts each signature once.
  */
-import { jwkToKeyID, sign, verify, type WebBotVerifier } from 'web-bot-auth';
+import { verifySignature } from 'http-message-sig';
+import { jwkToKeyID, parseSignatureAgentHeader, sign } from 'web-bot-auth';
 import { signerFromJWK, verifierFromJWK } from 'web-bot-auth/crypto';
 
 /** The public half of an agent's key, as published in its directory. */
@@ -176,22 +177,116 @@ export type Verification =
   | {
       ok: true;
       kid: string;
+      /** The directory the signature named and covered (its `Signature-Agent`), or null when it named none. */
       directory: string | null;
       created: Date;
       expires: Date;
       /** The signature's nonce, when it has one: remember it to refuse the same signature twice. */
       nonce: string | null;
+      /** The signature itself, base64url: what to remember when it carries no nonce. */
+      signature: string;
     }
-  | { ok: false; reason: Rejection; kid?: string; detail: string };
+  | { ok: false; reason: Rejection; kid?: string; directory?: string | null; detail: string };
+
+/** The `web-bot-auth` profile's refusal: a policy the signature broke, before or instead of its key. */
+class ProfileError extends Error {}
+
+/** The members of a Signature-Input dictionary: each label and its own text. */
+function inputMembers(input: string): { label: string; text: string }[] {
+  return input
+    .split(/,(?=\s*[A-Za-z*][A-Za-z0-9_.*-]*=\()/)
+    .map((text) => ({ label: /^\s*([^=]+)=/.exec(text)?.[1]?.trim() ?? '', text }))
+    .filter((member) => member.label !== '');
+}
 
 /**
- * Check a request's agent signature. `findKey` turns a key id into the public
- * key Pidgeon published for it, or null; whether that key is revoked, and the
+ * Which signature to check when a request carries several (RFC 9421 §4.3: a
+ * proxy or CDN may add its own): the one tagged `web-bot-auth`, or the only
+ * one there is. Undefined lets the verifier refuse an ambiguous request.
+ */
+function labelToCheck(request: Request): string | undefined {
+  const members = inputMembers(request.headers.get('signature-input') ?? '');
+  if (members.length === 1) return members[0]!.label;
+  return members.find((member) => /;\s*tag="web-bot-auth"/.test(member.text))?.label;
+}
+
+/**
+ * The directory a signature names, from its `Signature-Agent`: the member it
+ * covers (`"signature-agent";key="…"`, the draft's dictionary form) or the
+ * whole header when it covers it bare (the string form our agents and
+ * Cloudflare send). The header is required to be covered when present
+ * (draft-ietf-webbotauth-httpsig-protocol §5.2.1), so a directory is never
+ * taken from an unsigned header.
+ */
+function coveredDirectory(
+  request: Request,
+  components: readonly { name: string; parameters: Record<string, unknown> }[],
+): string | null {
+  const header = request.headers.get('signature-agent');
+  if (header === null) return null;
+  let parsed: ReturnType<typeof parseSignatureAgentHeader>;
+  try {
+    parsed = parseSignatureAgentHeader(header);
+  } catch (error) {
+    throw new ProfileError(error instanceof Error ? error.message : 'Unreadable Signature-Agent.');
+  }
+  const covered = components.filter((c) => c.name === 'signature-agent');
+  if (parsed.kind === 'legacy') {
+    if (!covered.some((c) => Object.keys(c.parameters).length === 0))
+      throw new ProfileError('The signature must cover Signature-Agent.');
+    return parsed.entries[0]?.uri ?? null;
+  }
+  const keys = covered.flatMap((c) =>
+    typeof c.parameters.key === 'string' && Object.keys(c.parameters).length === 1
+      ? [c.parameters.key]
+      : [],
+  );
+  if (keys.length !== 1)
+    throw new ProfileError('The signature must cover exactly one Signature-Agent member.');
+  const entry = parsed.entries.find((candidate) => candidate.label === keys[0]);
+  if (!entry) throw new ProfileError(`Signature-Agent has no member ${keys[0]}.`);
+  return entry.type === 'directory' ? entry.uri : null;
+}
+
+/**
+ * The directory a request's `Signature-Agent` names, read without checking
+ * anything: what a check records about a request it refused. Null when
+ * there is none; the header itself, cut short, when it cannot be read.
+ */
+export function signatureAgentOf(request: Request): string | null {
+  const header = request.headers.get('signature-agent');
+  if (header === null) return null;
+  try {
+    return parseSignatureAgentHeader(header).entries[0]?.uri.slice(0, 512) ?? null;
+  } catch {
+    return header.slice(0, 512);
+  }
+}
+
+/** Why a signature failed, with the reason under the verifier's own words. */
+function detailOf(error: unknown): string {
+  const words: string[] = [];
+  for (let e: unknown = error; e instanceof Error && words.length < 3; e = e.cause)
+    if (e.message) words.push(e.message);
+  return (words.join(': ') || String(error)).slice(0, 300);
+}
+
+/**
+ * Check a request's agent signature, under Web Bot Auth as the working group
+ * wrote it (draft-ietf-webbotauth-httpsig-protocol-01 §5.2): Ed25519, tagged
+ * `web-bot-auth`, with `created`, `expires` and `keyid`, covering the bare
+ * `@authority` or `@target-uri`, and the `Signature-Agent` when there is one.
+ * `alg` and `nonce` are optional, as the draft and RFC 9421 make them, and a
+ * nonce of any length is remembered. On top of the draft, no signature
+ * verifies more than five minutes after it was made.
+ *
+ * `findKey` turns a key id, and the directory the signature names, into the
+ * public key to check it with, or null; whether that key is revoked, and its
  * operator's reputation, are the caller's next questions.
  */
 export async function verifyAgentRequest(
   request: Request,
-  findKey: (kid: string) => Promise<PublicJwk | null>,
+  findKey: (kid: string, directory: string | null) => Promise<PublicJwk | null>,
   options: { now?: Date } = {},
 ): Promise<Verification> {
   if (!request.headers.has('signature') || !request.headers.has('signature-input')) {
@@ -199,34 +294,67 @@ export async function verifyAgentRequest(
   }
 
   let unknown: string | undefined;
+  let named: string | null | undefined;
+  let profile: { kid: string; directory: string | null } | undefined;
   try {
-    const verified = await verify(request, {
-      algorithms: ['ed25519'],
-      maxAge: MAX_LIFETIME_SECONDS,
-      clockSkew: CLOCK_SKEW_SECONDS,
-      now: options.now,
-      resolver: async (candidate): Promise<WebBotVerifier> => {
-        const jwk = await findKey(candidate.keyid);
+    const verified = await verifySignature(request, {
+      label: labelToCheck(request),
+      policy: {
+        algorithms: ['ed25519'],
+        requiredComponents: [],
+        requiredParameters: ['created', 'expires', 'keyid', 'tag'],
+        maxAge: MAX_LIFETIME_SECONDS,
+        clockSkew: CLOCK_SKEW_SECONDS,
+        now: Math.floor((options.now ?? new Date()).getTime() / 1000),
+      },
+      resolveVerifier: async (candidate) => {
+        const { parameters, components } = candidate;
+        const keyid = parameters.keyid;
+        if (typeof keyid !== 'string' || keyid === '')
+          throw new ProfileError('keyid must be a non-empty string.');
+        if (parameters.tag !== 'web-bot-auth')
+          throw new ProfileError('The signature is not tagged web-bot-auth.');
+        if (typeof parameters.created !== 'number' || typeof parameters.expires !== 'number')
+          throw new ProfileError('created and expires must be integers.');
+        if (parameters.created > parameters.expires)
+          throw new ProfileError('created is after expires.');
+        if (parameters.nonce !== undefined && typeof parameters.nonce !== 'string')
+          throw new ProfileError('nonce must be a string.');
+        if (
+          !components.some(
+            (c) =>
+              (c.name === '@authority' || c.name === '@target-uri') &&
+              Object.keys(c.parameters).length === 0,
+          )
+        )
+          throw new ProfileError('The signature must cover @authority or @target-uri.');
+        named = coveredDirectory(request, components);
+        const jwk = await findKey(keyid, named);
         if (!jwk) {
-          unknown = candidate.keyid;
-          throw new Error(`No published key ${candidate.keyid}.`);
+          unknown = keyid;
+          throw new Error(`No published key ${keyid}.`);
         }
+        profile = { kid: keyid, directory: named };
         return verifierFromJWK(jwk);
       },
     });
+    if (!profile) throw new Error('The signature was not resolved.');
+    const nonce = verified.parameters.nonce;
     return {
       ok: true,
-      kid: verified.keyid,
-      directory: verified.signatureAgent?.uri ?? null,
-      created: verified.created,
-      expires: verified.expires,
-      nonce: verified.nonce ?? null,
+      kid: profile.kid,
+      directory: profile.directory,
+      created: new Date(Number(verified.parameters.created) * 1000),
+      expires: new Date(Number(verified.parameters.expires) * 1000),
+      nonce: typeof nonce === 'string' ? nonce : null,
+      signature: base64Url(verified.signature.slice().buffer as ArrayBuffer),
     };
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    if (unknown) return { ok: false, reason: 'unknown_key', kid: unknown, detail };
-    if (/expir|too old|max ?age|future/i.test(detail))
-      return { ok: false, reason: 'expired', detail };
-    return { ok: false, reason: 'invalid', detail };
+    const detail = detailOf(error);
+    if (unknown)
+      return { ok: false, reason: 'unknown_key', kid: unknown, directory: named, detail };
+    if (/expired|too old|max ?age|in the future/i.test(detail))
+      return { ok: false, reason: 'expired', directory: named, detail };
+    return { ok: false, reason: 'invalid', directory: named, detail };
   }
 }

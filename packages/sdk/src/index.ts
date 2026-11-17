@@ -28,10 +28,28 @@ export const DEFAULT_BASE_URL = 'https://pidgeon.ai';
 
 export type Band = 'unverified' | 'new' | 'good' | 'flagged' | 'suspended';
 
-/** What `verify` answers. */
+/**
+ * What a check found, in four results (Patrick, 17 November), never saying
+ * more than is true:
+ * - `verified`: the signature holds and the key is a Pidgeon operator's.
+ * - `signed_known`: it holds against a directory outside Pidgeon on Pidgeon's
+ *   recognised list (`signature_agent.operator` names whose). Not verified.
+ * - `signed_unknown`: it holds against a directory nobody vouches for.
+ * - `refused`: unsigned, a bad signature, expired, revoked or replayed.
+ */
+export type CheckResult = 'verified' | 'signed_known' | 'signed_unknown' | 'refused';
+
+/**
+ * What `verify` answers. `valid` is true for `verified` only, as it always
+ * was: an integration that reads only `valid` sees an agent from outside
+ * Pidgeon as before, not valid with `reason: 'unknown_key'`. Read `result`
+ * for the four.
+ */
 export type VerifyAnswer =
   | {
       valid: true;
+      /** Absent from answers before 17 November 2026. */
+      result?: 'verified';
       verification_id: string;
       agent: { id: string; name: string; purpose: string };
       operator: {
@@ -41,6 +59,8 @@ export type VerifyAnswer =
         verification: 'none' | 'domain' | 'kyc' | 'kyb';
         country: string | null;
         since: string;
+        /** The operator's verified domains. */
+        domains?: string[];
       };
       reputation: { band: Band; seen_at_receivers: number; reports_90d: number; revoked: false };
       /**
@@ -51,6 +71,18 @@ export type VerifyAnswer =
     }
   | {
       valid: false;
+      result: 'signed_known' | 'signed_unknown';
+      verification_id: string;
+      /** Pidgeon published no such key; the directory the signature names did. */
+      reason: 'unknown_key';
+      /** The directory the key came from, and the recognised operator behind it, if any. */
+      signature_agent: { directory: string; host: string; operator: string | null };
+      replay_protected?: boolean;
+    }
+  | {
+      valid: false;
+      /** Absent from answers before 17 November 2026. */
+      result?: 'refused';
       verification_id: string;
       /** `replayed`: this signature was verified before, so the request is a copy. */
       reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked' | 'replayed';

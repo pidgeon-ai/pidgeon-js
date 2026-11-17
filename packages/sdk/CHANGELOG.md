@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.6.0
+
+- `verify` answers `result`, one of four: `verified` (a Pidgeon operator's
+  agent), `signed_known` (signed with a key from an outside directory on
+  Pidgeon's recognised list), `signed_unknown` (an outside directory nobody
+  vouches for) or `refused`. The signed results carry `signature_agent`
+  (`directory`, `host`, `operator`). `valid` is unchanged: true for
+  `verified` only, so code that reads `valid` behaves as before; outside
+  signers still come back `valid: false` with `reason: 'unknown_key'`.
+- `verifyAgentRequest` checks signatures as
+  draft-ietf-webbotauth-httpsig-protocol-01 writes them: `alg` and `nonce`
+  optional, a nonce of any length, and the `web-bot-auth` signature picked
+  when a proxy added another. `findKey` is also given the directory the
+  signature names. Failed verifications carry `directory`; successful ones
+  carry `signature`. `signatureAgentOf(request)` reads a request's directory.
+
 ## 2.5.0
 
 - `@pidgeon-ai/sdk/next`: `bouncer({ apiKey })` for a Next.js proxy (or any

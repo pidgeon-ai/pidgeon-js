@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.7.0';
+export const VERSION = '1.8.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -1048,7 +1048,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Verify an agent’s request',
       description:
-        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent).',
+        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal.',
       inputSchema: {
         method: z.string(),
         url: z.string().url(),

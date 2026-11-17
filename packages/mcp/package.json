@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Pidgeon's MCP server: a coding agent sets an agent up end to end (registered, keyed on your machine, published, its reputation read) and works its inboxes.",
   "license": "Apache-2.0",
   "type": "module",

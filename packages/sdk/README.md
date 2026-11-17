@@ -61,6 +61,13 @@ if (answer.valid && answer.reputation.band !== 'suspended') {
 await pidgeon.report({ verificationId: answer.verification_id, category: 'spam', evidence: '…' });
 ```
 
+`answer.result` is one of four: `verified` (a Pidgeon operator's agent, the
+only one with `valid: true`), `signed_known` (signed with a key from an
+outside directory Pidgeon recognises, e.g. `chatgpt.com`, named in
+`answer.signature_agent.operator`), `signed_unknown` (an outside directory
+nobody vouches for) and `refused` (unsigned, a bad signature, expired,
+revoked or replayed). Only `refused` is a refusal.
+
 ### In a Next.js proxy (`@pidgeon-ai/sdk/next`)
 
 ```ts

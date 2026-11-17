@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.0
+
+- `verify_request` describes the four results Pidgeon answers: `verified`,
+  `signed_known`, `signed_unknown` and `refused`.
+
 ## 1.7.0
 
 - The registry entry names the hosted server again: `https://pidgeon.ai/mcp`
