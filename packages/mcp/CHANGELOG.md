@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.0
+
+- `list_api_keys`, `create_api_key` and `revoke_api_key`: an agent with an admin
+  key of the whole account makes and revokes keys, never stronger than its own.
+- The registry's description names the four products: "The trust layer for AI
+  agents: Passport, Bouncer, Email and Auth, from one MCP server."
+
 ## 1.8.0
 
 - `verify_request` describes the four results Pidgeon answers: `verified`,

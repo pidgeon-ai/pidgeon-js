@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.7.0
+
+- `pidgeon.keys`: `list`, `create` and `revoke` API keys (`/v1/keys`). A key is
+  never stronger than the one making it; a test key makes only test keys.
+
 ## 2.6.0
 
 - `verify` answers `result`, one of four: `verified` (a Pidgeon operator's

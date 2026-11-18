@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.8.0';
+export const VERSION = '1.9.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
