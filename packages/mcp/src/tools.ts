@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.9.0';
+export const VERSION = '1.9.1';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -229,6 +229,21 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       annotations: WRITE,
     },
     ({ inbox_id }) => answer(() => pidgeon.inboxes.holdSuspicious(inbox_id)),
+  );
+
+  server.registerTool(
+    'set_inbox_signature',
+    {
+      title: 'Set an inbox’s signature',
+      description:
+        'Set the lines the mail client adds under mail a person writes from this inbox (a name, a role, a link), plain text up to 2,000 characters; null clears it. Mail an agent sends through the API goes as it was written. Needs the Everything level.',
+      inputSchema: {
+        inbox_id: z.string().uuid(),
+        signature: z.string().max(2000).nullable(),
+      },
+      annotations: WRITE,
+    },
+    ({ inbox_id, signature }) => answer(() => pidgeon.inboxes.setSignature(inbox_id, signature)),
   );
 
   server.registerTool(

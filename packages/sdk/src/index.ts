@@ -164,6 +164,8 @@ export type Inbox = {
   status: 'active' | 'suspended';
   /** Mail the Firewall calls suspicious waits for a person. */
   hold_suspicious: boolean;
+  /** Added under mail a person writes from this address in the mail client. */
+  signature: string | null;
   created_at: string;
 };
 
@@ -642,6 +644,11 @@ export class Pidgeon {
     holdSuspicious: (id: string): Promise<Inbox> =>
       this.request('PATCH', `/v1/email/inboxes/${segment(id)}`, {
         body: { hold_suspicious: true },
+      }),
+    /** Set the lines the mail client adds under mail a person writes from it; null clears it. Needs `admin`. */
+    setSignature: (id: string, signature: string | null): Promise<Inbox> =>
+      this.request('PATCH', `/v1/email/inboxes/${segment(id)}`, {
+        body: { signature },
       }),
     /** Remove an inbox. Its address is retired, never given to anyone again. */
     remove: (id: string): Promise<void> =>

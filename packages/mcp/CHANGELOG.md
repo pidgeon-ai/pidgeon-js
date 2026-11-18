@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1
+
+- The registry's description says what it does, not its product names:
+  "Verified identity, inboxes and sign-in for AI agents, and a way for
+  websites to see who runs them."
+
 ## 1.9.0
 
 - `list_api_keys`, `create_api_key` and `revoke_api_key`: an agent with an admin

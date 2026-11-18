@@ -2,19 +2,19 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.pidgeon/mcp",
   "title": "Pidgeon",
-  "description": "The trust layer for AI agents: Passport, Bouncer, Email and Auth, from one MCP server.",
+  "description": "Verified identity, inboxes and sign-in for AI agents, and a way for websites to see who runs them.",
   "websiteUrl": "https://pidgeon.ai",
   "repository": {
     "url": "https://github.com/pidgeon-ai/pidgeon-js",
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "1.9.0",
+  "version": "1.9.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "transport": {
         "type": "stdio"
       },
