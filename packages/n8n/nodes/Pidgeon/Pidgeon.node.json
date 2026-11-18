@@ -1,0 +1,10 @@
+{
+  "node": "@pidgeon-ai/n8n-nodes-pidgeon.pidgeon",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["Communication"],
+  "resources": {
+    "credentialDocumentation": [{ "url": "https://pidgeon.ai/docs/api-keys" }],
+    "primaryDocumentation": [{ "url": "https://pidgeon.ai/docs/email" }]
+  }
+}

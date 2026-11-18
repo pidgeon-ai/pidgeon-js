@@ -1,7 +1,8 @@
 name: Publish
 
 # Tag-driven, and the tag names the package: `sdk-v2.0.0` publishes
-# `@pidgeon-ai/sdk` 2.0.0, `cli-v2.0.0` the CLI, `mcp-v1.0.0` the MCP server.
+# `@pidgeon-ai/sdk` 2.0.0, `cli-v2.0.0` the CLI, `mcp-v1.0.0` the MCP server,
+# `ai-sdk-v1.0.0` the AI SDK tools, `n8n-v1.0.0` the n8n community node.
 # The release job in the private repository (`scripts/release.ts`) cuts the
 # tags after the sync that put this tree here succeeded. Nobody tags by hand.
 #
@@ -14,14 +15,14 @@ name: Publish
 # skipped, so a rerun of a half-finished release does only the missing half.
 on:
   push:
-    tags: ['sdk-v*', 'cli-v*', 'mcp-v*']
+    tags: ['sdk-v*', 'cli-v*', 'mcp-v*', 'ai-sdk-v*', 'n8n-v*']
   workflow_dispatch:
     inputs:
       package:
         description: Which package to publish
         required: true
         type: choice
-        options: [sdk, cli, mcp]
+        options: [sdk, cli, mcp, ai-sdk, n8n]
 
 permissions:
   contents: read
@@ -44,7 +45,7 @@ jobs:
         run: |
           name="${INPUT:-${GITHUB_REF_NAME%%-v*}}"
           case "$name" in
-            sdk|cli|mcp) ;;
+            sdk|cli|mcp|ai-sdk|n8n) ;;
             *) echo "Unknown package: $name" >&2; exit 1 ;;
           esac
           echo "name=$name" >> "$GITHUB_OUTPUT"

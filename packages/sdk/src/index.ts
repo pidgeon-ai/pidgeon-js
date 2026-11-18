@@ -353,6 +353,19 @@ export type Webhook = {
   disabled_at: string | null;
 };
 
+export type ApiKeyAccess = 'read' | 'draft' | 'send' | 'admin';
+
+export type ApiKey = {
+  id: string;
+  name: string;
+  prefix: string;
+  access: ApiKeyAccess;
+  pod_id: string | null;
+  test: boolean;
+  created_at: string;
+  last_used_at: string | null;
+};
+
 export type BodyChoice = 'original' | 'clean';
 
 /** What to send, or what a draft says. `replyTo` is one of the inbox's messages. */
@@ -1064,6 +1077,22 @@ export class Pidgeon {
     create: (name: string): Promise<Pod> => this.request('POST', '/v1/pods', { body: { name } }),
     /** Remove an empty pod. Not the default pod, and not one with agents, domains or endpoints in it. */
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/pods/${segment(id)}`),
+  };
+
+  /** Your API keys. Making and revoking takes an admin key of the whole account. */
+  readonly keys = {
+    list: (): Promise<{ data: ApiKey[] }> => this.request('GET', '/v1/keys'),
+    /** Answers `key` once. Never stronger than the key making it; a test key makes test keys. */
+    create: (input: {
+      name: string;
+      access?: ApiKeyAccess;
+      podId?: string;
+      test?: boolean;
+    }): Promise<{ id: string; key: string; prefix: string }> =>
+      this.request('POST', '/v1/keys', {
+        body: { name: input.name, access: input.access, pod_id: input.podId, test: input.test },
+      }),
+    revoke: (id: string): Promise<void> => this.request('DELETE', `/v1/keys/${segment(id)}`),
   };
 
   /** Your webhook endpoints. A key of the whole account only. */

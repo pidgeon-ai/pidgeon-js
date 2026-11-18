@@ -517,6 +517,51 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
   );
 
   server.registerTool(
+    'list_api_keys',
+    {
+      title: 'List API keys',
+      description:
+        'The account’s API keys: name, prefix, access level, pod, test or live, last used. Never the keys themselves. Needs a key or sign-in of the whole account.',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.keys.list()),
+  );
+
+  server.registerTool(
+    'create_api_key',
+    {
+      title: 'Make an API key',
+      description:
+        'Make an API key for a server, an agent or a CI job. The answer has `key`, shown this once: put it straight where it will live (a secret store, an environment variable) and keep it out of chat, logs and files. Access is read, draft (writes drafts a person approves, never sends), send or admin, and never more than your own; a test key makes only test keys. Give the narrowest that works. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        name: z.string().min(1).max(60).describe('Where the key will live, e.g. "support agent".'),
+        access: z
+          .enum(['read', 'draft', 'send', 'admin'])
+          .optional()
+          .describe('What it may do; read when left out.'),
+        pod_id: z.string().uuid().optional().describe('Limit it to one pod.'),
+        test: z.boolean().optional().describe('A test key: its mail never leaves Pidgeon.'),
+      },
+      annotations: WRITE,
+    },
+    ({ name, access, pod_id, test }) =>
+      answer(() => pidgeon.keys.create({ name, access, podId: pod_id, test })),
+  );
+
+  server.registerTool(
+    'revoke_api_key',
+    {
+      title: 'Revoke an API key',
+      description:
+        'Revoke a key by its id (from list_api_keys); it stops working at once. Needs the Everything level, of the whole account.',
+      inputSchema: { key_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ key_id }) => answer(async () => (await pidgeon.keys.revoke(key_id), { revoked: key_id })),
+  );
+
+  server.registerTool(
     'list_webhooks',
     {
       title: 'List webhook endpoints',

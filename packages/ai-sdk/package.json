@@ -1,0 +1,56 @@
+{
+  "name": "@pidgeon-ai/ai-sdk",
+  "version": "1.0.0",
+  "description": "Pidgeon as Vercel AI SDK tools: an agent's identity and inboxes, checking other agents, and Sign in with Pidgeon. The same tools as Pidgeon's MCP server.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pidgeon-ai/pidgeon-js.git",
+    "directory": "packages/ai-sdk"
+  },
+  "homepage": "https://pidgeon.ai",
+  "keywords": [
+    "pidgeon",
+    "vercel-ai-sdk",
+    "ai-sdk",
+    "tools",
+    "ai-agents",
+    "agent-identity",
+    "web-bot-auth",
+    "email"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "ai": "^7"
+  },
+  "dependencies": {
+    "@pidgeon-ai/mcp": "workspace:^",
+    "@pidgeon-ai/sdk": "workspace:^",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "ai": "^7.0.173",
+    "typescript": "^5"
+  }
+}
