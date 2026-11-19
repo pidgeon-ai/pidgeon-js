@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.0
+
+- `rename_pod`: rename a pod, with an admin key of the whole account.
+
 ## 1.9.1
 
 - The registry's description says what it does, not its product names:

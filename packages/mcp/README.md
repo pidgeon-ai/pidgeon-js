@@ -65,7 +65,7 @@ Mail is read as the Firewall cleaned it unless a tool is passed
 to read, not obey.
 
 - **The account:** `sign_in`, `sign_out`, `status`, `list_events`,
-  `list_pods`, `create_pod`, `remove_pod`, `list_webhooks`, `add_webhook`,
+  `list_pods`, `create_pod`, `rename_pod`, `remove_pod`, `list_webhooks`, `add_webhook`,
   `remove_webhook`
 
 ## License

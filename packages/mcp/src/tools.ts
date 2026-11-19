@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.9.1';
+export const VERSION = '1.10.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -644,6 +644,21 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       annotations: WRITE,
     },
     ({ name }) => answer(() => pidgeon.pods.create(name)),
+  );
+
+  server.registerTool(
+    'rename_pod',
+    {
+      title: 'Rename a pod',
+      description:
+        'Rename a pod. Its id, and everything in it, stay as they are. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        pod_id: z.string().uuid(),
+        name: z.string().min(1).max(80).describe('Unique in the account.'),
+      },
+      annotations: WRITE,
+    },
+    ({ pod_id, name }) => answer(() => pidgeon.pods.rename(pod_id, name)),
   );
 
   server.registerTool(

@@ -68,6 +68,8 @@ export type VerifyAnswer =
        * when it carries a nonce (every signature these SDKs make does).
        */
       replay_protected?: boolean;
+      /** A signed verdict to hand a sign-up hook (`VerdictClaims`). Absent from answers before 19 November 2026. */
+      verdict?: string;
     }
   | {
       valid: false;
@@ -78,6 +80,8 @@ export type VerifyAnswer =
       /** The directory the key came from, and the recognised operator behind it, if any. */
       signature_agent: { directory: string; host: string; operator: string | null };
       replay_protected?: boolean;
+      /** As for `verified`: a signed verdict to hand a sign-up hook. */
+      verdict?: string;
     }
   | {
       valid: false;
@@ -88,6 +92,59 @@ export type VerifyAnswer =
       reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked' | 'replayed';
       operator?: { id: string; name: string };
     };
+
+/** The header a proxy hands the verdict on in, to the app behind it. */
+export const VERDICT_HEADER = 'pidgeon-verdict';
+
+/** How long a verdict lasts after Pidgeon signs it. */
+export const VERDICT_LIFETIME_SECONDS = 300;
+
+/**
+ * What a verdict says: a compact JWS (RS256, `typ` `pidgeon-verdict+jwt`)
+ * that Pidgeon signs with the key it publishes at
+ * `https://pidgeon.ai/.well-known/jwks.json`, when `/v1/verify` finds a
+ * signature that holds (`verified`, `signed_known`, `signed_unknown`; never
+ * for `refused`). It lets a sign-up hook that cannot see the agent's request
+ * (Supabase, Auth0, WorkOS) trust what the website's proxy saw.
+ */
+export type VerdictClaims = {
+  iss: string;
+  /** The origin the agent signed its request for, as `https://shop.example`. */
+  aud: string;
+  /** The website's Pidgeon account, whose key asked. */
+  receiver: string;
+  /** The check it came from (`verification_id`); a verdict is spent once when checked with Pidgeon. */
+  jti: string;
+  iat: number;
+  exp: number;
+  result: 'verified' | 'signed_known' | 'signed_unknown';
+  /** The signature's key id (its JWK thumbprint). */
+  keyid: string;
+  /** The agent's address as the website saw it, when the website said. */
+  ip?: string;
+  /** `verified` only. */
+  agent?: { id: string; name: string };
+  /** `verified` only. */
+  operator?: {
+    id: string;
+    name: string;
+    kind: 'individual' | 'business';
+    verification: 'none' | 'domain' | 'kyc' | 'kyb';
+    country: string | null;
+  };
+  /** `verified` only: the operator's reputation band when it was signed. */
+  band?: Band;
+  /** The two signed results: the outside directory the key came from. */
+  signature_agent?: { directory: string; host: string; operator: string | null };
+};
+
+/** Why a verdict was refused. */
+export type VerdictRefusal =
+  'invalid' | 'expired' | 'wrong_site' | 'wrong_account' | 'wrong_ip' | 'used' | 'revoked';
+
+/** What `checkVerdict` answers. */
+export type VerdictCheck =
+  { valid: true; verdict: VerdictClaims } | { valid: false; reason: VerdictRefusal };
 
 export type ReportCategory = 'fraud' | 'abuse' | 'scraping' | 'spam' | 'fake_signups' | 'other';
 
@@ -525,10 +582,34 @@ export class Pidgeon {
 
   // ---------------------------------------------------------------- Bouncer
 
-  /** Who stands behind an agent's request, and how they stand. Forward it as you received it. */
-  verify(request: IncomingRequest): Promise<VerifyAnswer> {
+  /**
+   * Who stands behind an agent's request, and how they stand. Forward it as
+   * you received it. `ip`, the agent's address as your server saw it, is
+   * written into the answer's `verdict`, so a hook that sees the address can
+   * hold the verdict to it.
+   */
+  verify(request: IncomingRequest, options: { ip?: string } = {}): Promise<VerifyAnswer> {
     return this.request('POST', '/v1/verify', {
-      body: { request: { method: request.method, url: request.url, headers: headersOf(request) } },
+      body: {
+        request: { method: request.method, url: request.url, headers: headersOf(request) },
+        ...(options.ip ? { ip: options.ip } : {}),
+      },
+    });
+  }
+
+  /**
+   * Check a verdict with Pidgeon, for a sign-up hook: signed by Pidgeon, for
+   * this account (and `origin`, and `ip`, when given), not expired, its key
+   * and agent not revoked since, and never checked before. Spending it is
+   * what an offline check (`verifyVerdict`, `@pidgeon-ai/sdk/verdict`)
+   * cannot do.
+   */
+  checkVerdict(
+    verdict: string,
+    options: { origin?: string; ip?: string } = {},
+  ): Promise<VerdictCheck> {
+    return this.request('POST', '/v1/verify/verdict', {
+      body: { verdict, ...options },
     });
   }
 
@@ -1082,6 +1163,9 @@ export class Pidgeon {
   readonly pods = {
     list: (): Promise<{ data: Pod[] }> => this.request('GET', '/v1/pods'),
     create: (name: string): Promise<Pod> => this.request('POST', '/v1/pods', { body: { name } }),
+    /** Rename a pod. Its id, and everything in it, stay as they are. */
+    rename: (id: string, name: string): Promise<Pod> =>
+      this.request('PATCH', `/v1/pods/${segment(id)}`, { body: { name } }),
     /** Remove an empty pod. Not the default pod, and not one with agents, domains or endpoints in it. */
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/pods/${segment(id)}`),
   };

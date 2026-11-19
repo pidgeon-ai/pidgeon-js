@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.8.0
+
+- `pidgeon.pods.rename(id, name)` (`PATCH /v1/pods/{id}`).
+- Verdicts at sign-up: `verify` answers `verdict` for every result but
+  `refused`, a token Pidgeon signs for five minutes, for a sign-up hook that
+  cannot see the request. `verify(request, { ip })` writes the agent's
+  address into it. `@pidgeon-ai/sdk/verdict`: `verifyVerdict` checks one
+  offline against Pidgeon's keys; `pidgeon.checkVerdict` checks and spends
+  one with Pidgeon (`/v1/verify/verdict`). `@pidgeon-ai/sdk/next`:
+  `verdictFor` gets one in a proxy, on the sign-up's own request.
+
 ## 2.7.0
 
 - `pidgeon.keys`: `list`, `create` and `revoke` API keys (`/v1/keys`). A key is

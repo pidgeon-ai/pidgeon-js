@@ -23,6 +23,8 @@
  */
 import { Pidgeon, DEFAULT_BASE_URL, type VerifyAnswer } from './index.ts';
 
+export { VERDICT_HEADER } from './index.ts';
+
 /** The work a request may leave running after its response: `NextFetchEvent`, a Worker's `ExecutionContext`. */
 export type WaitUntil = { waitUntil(promise: Promise<unknown>): void };
 
@@ -134,4 +136,56 @@ export function bouncer(options: BouncerOptions): (request: Request, event?: Wai
       }
     }
   };
+}
+
+/**
+ * For a sign-up behind a hook that cannot see the agent's request (Supabase,
+ * Auth0, WorkOS): verify the agent now, before the response, and answer the
+ * verdict to hand on, or null when the request is not an agent's, the
+ * signature did not hold, or Pidgeon could not be asked. Awaited, so call it
+ * only on the sign-up's own request, not on every page.
+ *
+ * ```ts
+ * // proxy.ts, on POST /signup
+ * const headers = new Headers(request.headers);
+ * headers.delete(VERDICT_HEADER); // never pass on one the visitor sent
+ * const verdict = await verdictFor(request, { apiKey: process.env.PIDGEON_API_KEY });
+ * if (verdict) headers.set(VERDICT_HEADER, verdict);
+ * return NextResponse.next({ request: { headers } });
+ * ```
+ */
+export async function verdictFor(
+  request: Request,
+  options: Omit<BouncerOptions, 'mode' | 'onAnswer'> & {
+    /** The agent's address as your platform reports it (on Vercel, `ipAddress(request)` from `@vercel/functions`). */
+    ip?: string | null;
+  },
+): Promise<string | null> {
+  const apiKey = options.apiKey?.trim();
+  if (!apiKey || !carriesAgentHeaders(request)) return null;
+  const timeoutMs = options.timeoutMs ?? 5_000;
+  const baseFetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const pidgeon = new Pidgeon({
+    apiKey,
+    baseUrl: options.baseUrl,
+    fetch: (input, init) => baseFetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) }),
+  });
+  try {
+    const url = options.url ? options.url(request) : request.url;
+    const answer = await pidgeon.verify(
+      { method: request.method, url, headers: headersForVerify(request) },
+      options.ip ? { ip: options.ip } : {},
+    );
+    return 'verdict' in answer && answer.verdict ? answer.verdict : null;
+  } catch (error) {
+    try {
+      (options.onError ?? ((e: unknown) => console.warn('Pidgeon Bouncer: no verdict', e)))(
+        error,
+        request,
+      );
+    } catch {
+      // A failing handler must not fail the sign-up.
+    }
+    return null;
+  }
 }
