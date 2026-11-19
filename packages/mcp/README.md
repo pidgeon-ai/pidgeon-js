@@ -40,7 +40,7 @@ session is refreshed from then on. On a machine with no browser, set
 - **Passport:** `set_up_agent`, `create_agent_key`, `list_agents`,
   `get_agent`, `get_reputation`, `rename_agent`, `revoke_agent_key`,
   `revoke_agent`
-- **Bouncer:** `verify_request`, `report_agent`
+- **Bouncer:** `verify_request`, `report_agent`, `get_site_rules`, `set_site_rules`
 - **Email:** `list_inboxes`, `get_inbox`, `hold_suspicious_mail`, `create_inbox`, `remove_inbox`,
   `list_messages`, `get_message`, `await_message`, `search_messages`,
   `update_message`, `send_message`, `reply_to_message`, `list_threads`,

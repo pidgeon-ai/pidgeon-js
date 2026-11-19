@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.11.0';
+export const VERSION = '1.12.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -1144,15 +1144,69 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Verify an agent’s request',
       description:
-        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal.',
+        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal. Every answer also says what the site rule for the `place` decided: `decision` (`allow`, `limit`, `block`, or `watch` with `would`) and `rule`, one line saying why.',
       inputSchema: {
         method: z.string(),
         url: z.string().url(),
         headers: z.record(z.string(), z.string()),
+        place: z
+          .enum(['signup', 'checkout', 'api', 'other'])
+          .optional()
+          .describe('Where on the site the agent is, for the site rule; `other` by default.'),
       },
       annotations: READ,
     },
-    ({ method, url, headers }) => answer(() => pidgeon.verify({ method, url, headers })),
+    ({ method, url, headers, place }) =>
+      answer(() => pidgeon.verify({ method, url, headers }, place ? { place } : {})),
+  );
+
+  server.registerTool(
+    'get_site_rules',
+    {
+      title: 'Get the site rules',
+      description:
+        'For a website: Bouncer’s site rules. Each place (`signup`, `checkout`, `api`, `other`) has `require` (`any`: any agent but a flagged operator’s; `known`: verified or signed by a recognised directory; `verified`: verified by Pidgeon only) and `enforce` (false: it only watches, and checks say what it would have done).',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.siteRules.get()),
+  );
+
+  server.registerTool(
+    'set_site_rules',
+    {
+      title: 'Set the site rules',
+      description:
+        'For a website: change Bouncer’s site rules for some places; the rest stay. Start with `enforce` false to watch what a rule would do in the checks, then turn it on. Agents Pidgeon can’t identify are never blocked (`limit`: the site’s own rules decide), and other pages never block. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        signup: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        checkout: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        api: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        other: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+      },
+      annotations: WRITE,
+    },
+    (rules) => answer(() => pidgeon.siteRules.set(rules)),
   );
 
   server.registerTool(

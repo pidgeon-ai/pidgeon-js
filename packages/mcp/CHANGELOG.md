@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0
+
+- `get_site_rules` and `set_site_rules`: Bouncer's site rules, per place.
+- `verify_request` takes `place`, and its answer says what the site rule decided.
+
 ## 1.11.0
 
 - `move_to_pod`: move an agent, address, domain, webhook endpoint or site into a pod.

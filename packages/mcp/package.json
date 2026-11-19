@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Pidgeon's MCP server, the trust layer for AI agents: Passport, Bouncer, Email and Auth from one server.",
   "license": "Apache-2.0",
   "type": "module",

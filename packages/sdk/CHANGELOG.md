@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.10.0
+
+- Site rules for Bouncer: `pidgeon.siteRules.get()` and `.set()` (`/v1/site-rules`).
+- `verify(request, { place })`: `signup`, `checkout`, `api` or `other`. Every answer carries
+  `place`, `decision` (`allow`, `limit`, `block` or `watch`), `would` and `rule`, and so
+  does the verdict (`VerdictClaims`).
+- `bouncer({ mode: 'enforce', place })` (`@pidgeon-ai/sdk/next`): a place's check is awaited
+  and a blocked agent answered with a 403. `verdictFor` sends `place: 'signup'` unless told
+  otherwise.
+
 ## 2.9.0
 
 - `pidgeon.pods.move(podId, { type, id })` (`POST /v1/pods/{id}/move`): move an agent

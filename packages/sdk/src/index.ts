@@ -39,59 +39,92 @@ export type Band = 'unverified' | 'new' | 'good' | 'flagged' | 'suspended';
  */
 export type CheckResult = 'verified' | 'signed_known' | 'signed_unknown' | 'refused';
 
+/** Where on a website a check happens: a site rule is set per place. */
+export type Place = 'signup' | 'checkout' | 'api' | 'other';
+
+/** Who a place lets through: `any` agent but a flagged operator's, `known` (verified or recognised), or `verified` only. */
+export type Requirement = 'any' | 'known' | 'verified';
+
+/**
+ * What a website's rule decided about a check:
+ * - `allow`: Pidgeon vouches for the agent under the rule; the site may skip its own friction.
+ * - `limit`: Pidgeon couldn't identify it, so the site's own rules decide.
+ * - `block`: turn it away.
+ * - `watch`: the place only watches; `would` says what it would have decided.
+ */
+export type Decision = 'allow' | 'limit' | 'block' | 'watch';
+
+/** One place's rule. */
+export type PlaceRule = { require: Requirement; enforce: boolean };
+
+/** A website's rules: one per place. */
+export type SiteRules = Record<Place, PlaceRule>;
+
+/** What the rule made of a check. Absent from answers before 20 November 2026. */
+export type RuleOutcome = {
+  place: Place;
+  decision: Decision;
+  /** While watching: what the rule would have decided. */
+  would?: Exclude<Decision, 'watch'>;
+  /** One line: the place, its rule, and the agent. */
+  rule: string;
+};
+
 /**
  * What `verify` answers. `valid` is true for `verified` only, as it always
  * was: an integration that reads only `valid` sees an agent from outside
  * Pidgeon as before, not valid with `reason: 'unknown_key'`. Read `result`
  * for the four.
  */
-export type VerifyAnswer =
-  | {
-      valid: true;
-      /** Absent from answers before 17 November 2026. */
-      result?: 'verified';
-      verification_id: string;
-      agent: { id: string; name: string; purpose: string };
-      operator: {
-        id: string;
-        name: string;
-        kind: 'individual' | 'business';
-        verification: 'none' | 'domain' | 'kyc' | 'kyb';
-        country: string | null;
-        since: string;
-        /** The operator's verified domains. */
-        domains?: string[];
-      };
-      reputation: { band: Band; seen_at_receivers: number; reports_90d: number; revoked: false };
-      /**
-       * Whether Pidgeon will refuse this signature if it is sent again: true
-       * when it carries a nonce (every signature these SDKs make does).
-       */
-      replay_protected?: boolean;
-      /** A signed verdict to hand a sign-up hook (`VerdictClaims`). Absent from answers before 19 November 2026. */
-      verdict?: string;
-    }
-  | {
-      valid: false;
-      result: 'signed_known' | 'signed_unknown';
-      verification_id: string;
-      /** Pidgeon published no such key; the directory the signature names did. */
-      reason: 'unknown_key';
-      /** The directory the key came from, and the recognised operator behind it, if any. */
-      signature_agent: { directory: string; host: string; operator: string | null };
-      replay_protected?: boolean;
-      /** As for `verified`: a signed verdict to hand a sign-up hook. */
-      verdict?: string;
-    }
-  | {
-      valid: false;
-      /** Absent from answers before 17 November 2026. */
-      result?: 'refused';
-      verification_id: string;
-      /** `replayed`: this signature was verified before, so the request is a copy. */
-      reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked' | 'replayed';
-      operator?: { id: string; name: string };
-    };
+export type VerifyAnswer = Partial<RuleOutcome> &
+  (
+    | {
+        valid: true;
+        /** Absent from answers before 17 November 2026. */
+        result?: 'verified';
+        verification_id: string;
+        agent: { id: string; name: string; purpose: string };
+        operator: {
+          id: string;
+          name: string;
+          kind: 'individual' | 'business';
+          verification: 'none' | 'domain' | 'kyc' | 'kyb';
+          country: string | null;
+          since: string;
+          /** The operator's verified domains. */
+          domains?: string[];
+        };
+        reputation: { band: Band; seen_at_receivers: number; reports_90d: number; revoked: false };
+        /**
+         * Whether Pidgeon will refuse this signature if it is sent again: true
+         * when it carries a nonce (every signature these SDKs make does).
+         */
+        replay_protected?: boolean;
+        /** A signed verdict to hand a sign-up hook (`VerdictClaims`). Absent from answers before 19 November 2026. */
+        verdict?: string;
+      }
+    | {
+        valid: false;
+        result: 'signed_known' | 'signed_unknown';
+        verification_id: string;
+        /** Pidgeon published no such key; the directory the signature names did. */
+        reason: 'unknown_key';
+        /** The directory the key came from, and the recognised operator behind it, if any. */
+        signature_agent: { directory: string; host: string; operator: string | null };
+        replay_protected?: boolean;
+        /** As for `verified`: a signed verdict to hand a sign-up hook. */
+        verdict?: string;
+      }
+    | {
+        valid: false;
+        /** Absent from answers before 17 November 2026. */
+        result?: 'refused';
+        verification_id: string;
+        /** `replayed`: this signature was verified before, so the request is a copy. */
+        reason: 'unsigned' | 'invalid' | 'unknown_key' | 'expired' | 'revoked' | 'replayed';
+        operator?: { id: string; name: string };
+      }
+  );
 
 /** The header a proxy hands the verdict on in, to the app behind it. */
 export const VERDICT_HEADER = 'pidgeon-verdict';
@@ -136,6 +169,11 @@ export type VerdictClaims = {
   band?: Band;
   /** The two signed results: the outside directory the key came from. */
   signature_agent?: { directory: string; host: string; operator: string | null };
+  /** The site's rule when it was signed (absent from verdicts before 20 November 2026): act on `decision`. */
+  place?: Place;
+  decision?: Decision;
+  would?: Exclude<Decision, 'watch'>;
+  rule?: string;
 };
 
 /** Why a verdict was refused. */
@@ -548,7 +586,7 @@ export class Pidgeon {
 
   /** Any `/v1` call: the methods below are this with the path and body filled in. */
   async request<T>(
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     path: string,
     options: {
       body?: unknown;
@@ -590,11 +628,15 @@ export class Pidgeon {
    * written into the answer's `verdict`, so a hook that sees the address can
    * hold the verdict to it.
    */
-  verify(request: IncomingRequest, options: { ip?: string } = {}): Promise<VerifyAnswer> {
+  verify(
+    request: IncomingRequest,
+    options: { ip?: string; place?: Place } = {},
+  ): Promise<VerifyAnswer> {
     return this.request('POST', '/v1/verify', {
       body: {
         request: { method: request.method, url: request.url, headers: headersOf(request) },
         ...(options.ip ? { ip: options.ip } : {}),
+        ...(options.place ? { place: options.place } : {}),
       },
     });
   }
@@ -1180,6 +1222,18 @@ export class Pidgeon {
       this.request('POST', `/v1/pods/${segment(id)}/move`, { body: thing }),
     /** Remove an empty pod. Not the default pod, and not one with agents, domains or endpoints in it. */
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/pods/${segment(id)}`),
+  };
+
+  /**
+   * Bouncer's site rules: per place, who gets in and whether the rule acts
+   * or only watches. Reading takes any key; setting takes an admin key of the
+   * whole account.
+   */
+  readonly siteRules = {
+    get: (): Promise<SiteRules> => this.request('GET', '/v1/site-rules'),
+    /** Change some places; the rest stay as they are. Answers every place. */
+    set: (rules: Partial<Record<Place, Partial<PlaceRule>>>): Promise<SiteRules> =>
+      this.request('PUT', '/v1/site-rules', { body: rules }),
   };
 
   /** Your API keys. Making and revoking takes an admin key of the whole account. */
