@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.9.0
+
+- `pidgeon.pods.move(podId, { type, id })` (`POST /v1/pods/{id}/move`): move an agent
+  (with its addresses and mail), an address, a domain, a webhook endpoint or a site into a pod.
+- `webhooks.create({ podId })`, and `Webhook.pod_id`. A key of one pod lists, adds and
+  removes its own pod's webhooks.
+
 ## 2.8.0
 
 - `pidgeon.pods.rename(id, name)` (`PATCH /v1/pods/{id}`).

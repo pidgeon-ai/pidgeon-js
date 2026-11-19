@@ -406,8 +406,10 @@ export type Webhook = {
   id: string;
   url: string;
   events: WebhookEventType[];
-  /** The inboxes it hears; null when it hears the whole account. */
+  /** The inboxes it hears; null when it hears its pod, or the whole account. */
   inbox_ids: string[] | null;
+  /** Its pod: the default pod's hear the whole account, another's that pod. */
+  pod_id: string;
   created_at: string;
   disabled_at: string | null;
 };
@@ -1166,6 +1168,16 @@ export class Pidgeon {
     /** Rename a pod. Its id, and everything in it, stay as they are. */
     rename: (id: string, name: string): Promise<Pod> =>
       this.request('PATCH', `/v1/pods/${segment(id)}`, { body: { name } }),
+    /**
+     * Move an agent, an address (`inbox`), a domain, a webhook endpoint or a
+     * site (by client id) into a pod. An agent takes its addresses and their
+     * mail with it; an address that belongs to an agent moves only with it.
+     */
+    move: (
+      id: string,
+      thing: { type: 'agent' | 'inbox' | 'domain' | 'webhook' | 'site'; id: string },
+    ): Promise<{ type: string; id: string; pod_id: string; moved_inboxes?: string[] }> =>
+      this.request('POST', `/v1/pods/${segment(id)}/move`, { body: thing }),
     /** Remove an empty pod. Not the default pod, and not one with agents, domains or endpoints in it. */
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/pods/${segment(id)}`),
   };
@@ -1191,15 +1203,23 @@ export class Pidgeon {
     list: (): Promise<{ data: Webhook[] }> => this.request('GET', '/v1/webhooks'),
     /**
      * Answers `secret` once: check each delivery's signature with it (`verifyWebhook`).
-     * With `inboxIds` it hears only those inboxes' events; without, the whole account's.
+     * With `inboxIds` it hears only those inboxes' events. `podId` puts it in a
+     * pod, where it hears that pod's events; left out, the default pod, where it
+     * hears the whole account. A key of one pod adds to its own pod only.
      */
     create: (input: {
       url: string;
       events: WebhookEventType[];
       inboxIds?: string[];
+      podId?: string;
     }): Promise<{ id: string; secret: string }> =>
       this.request('POST', '/v1/webhooks', {
-        body: { url: input.url, events: input.events, inbox_ids: input.inboxIds },
+        body: {
+          url: input.url,
+          events: input.events,
+          inbox_ids: input.inboxIds,
+          pod_id: input.podId,
+        },
       }),
     remove: (id: string): Promise<void> => this.request('DELETE', `/v1/webhooks/${segment(id)}`),
   };

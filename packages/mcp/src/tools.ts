@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.10.0';
+export const VERSION = '1.11.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -581,7 +581,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'List webhook endpoints',
       description:
-        'Where the account’s events are delivered, and which events each asked for. Never their secrets. Needs a key or sign-in of the whole account.',
+        'Where the account’s events are delivered, which events each asked for, and its pod. Never their secrets. A key of one pod sees its own pod’s.',
       inputSchema: {},
       annotations: READ,
     },
@@ -593,7 +593,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Add a webhook endpoint',
       description:
-        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, Auth’s mandate.requested, mandate.granted, mandate.declined and mandate.revoked, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). Needs the Everything level, of the whole account.',
+        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, Auth’s mandate.requested, mandate.granted, mandate.declined and mandate.revoked, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). In the default pod it hears the whole account; in another pod, that pod’s events. Needs the Everything level; a key of one pod adds to its own pod only.',
       inputSchema: {
         url: z.string().url().describe('A public https:// address.'),
         events: z.array(z.enum(WEBHOOK_EVENTS)).min(1).describe('The event types to deliver.'),
@@ -601,12 +601,17 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
           .array(z.string().uuid())
           .min(1)
           .optional()
-          .describe('Hear only these inboxes’ events. Left out, the whole account’s.'),
+          .describe('Hear only these inboxes’ events.'),
+        pod_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe('Its pod. Left out, the default pod, which hears the whole account.'),
       },
       annotations: WRITE,
     },
-    ({ url, events, inbox_ids }) =>
-      answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids })),
+    ({ url, events, inbox_ids, pod_id }) =>
+      answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids, podId: pod_id })),
   );
 
   server.registerTool(
@@ -614,7 +619,7 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     {
       title: 'Remove a webhook endpoint',
       description:
-        'Stop delivering to an endpoint. Needs the Everything level, of the whole account.',
+        'Stop delivering to an endpoint. Needs the Everything level; a key of one pod removes its own pod’s only.',
       inputSchema: { webhook_id: z.string().uuid() },
       annotations: DESTROY,
     },
@@ -659,6 +664,22 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       annotations: WRITE,
     },
     ({ pod_id, name }) => answer(() => pidgeon.pods.rename(pod_id, name)),
+  );
+
+  server.registerTool(
+    'move_to_pod',
+    {
+      title: 'Move into a pod',
+      description:
+        'Move an agent, an address (inbox), a domain, a webhook endpoint or a site (by its client id) into another pod of the account. An agent takes its addresses and their mail with it; an address that belongs to an agent moves only with it. API keys do not move. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        pod_id: z.string().uuid().describe('The pod to move it into.'),
+        type: z.enum(['agent', 'inbox', 'domain', 'webhook', 'site']),
+        id: z.string().min(1).describe('Its id; a site’s client id.'),
+      },
+      annotations: WRITE,
+    },
+    ({ pod_id, type, id }) => answer(() => pidgeon.pods.move(pod_id, { type, id })),
   );
 
   server.registerTool(

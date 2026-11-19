@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0
+
+- `move_to_pod`: move an agent, address, domain, webhook endpoint or site into a pod.
+- `add_webhook` takes `pod_id`; a key of one pod lists, adds and removes its own pod's
+  webhooks.
+
 ## 1.10.0
 
 - `rename_pod`: rename a pod, with an admin key of the whole account.
