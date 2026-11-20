@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.12.0
+
+- Domains from the API (`/v1/domains`): `domains.create(domain, { podId })`,
+  `domains.verify(id)` and `domains.remove(id)`. `domains.list()` and `domains.get(id)`
+  now read `/v1/domains`, which answers what they did and more (the pod, the DNS records
+  to publish). A key of one pod reaches its own pod's domains only.
+
 ## 2.11.1
 
 - The package's description, keywords and README lead with what Pidgeon is now:

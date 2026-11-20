@@ -9,12 +9,12 @@
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "1.13.0",
+  "version": "1.14.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "1.13.0",
+      "version": "1.14.0",
       "transport": {
         "type": "stdio"
       },

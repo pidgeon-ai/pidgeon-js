@@ -399,6 +399,18 @@ export type MailDomain = {
   }[];
 };
 
+/**
+ * A domain as `/v1/domains` answers it: whether it is proved, its mail, and
+ * every DNS record to publish (`purpose` `ownership` is the `_pidgeon` TXT
+ * record that proves it; mail's follow once mail is on).
+ */
+export type Domain = MailDomain & {
+  pod_id: string;
+  verified: boolean;
+  verified_at: string | null;
+  created_at: string;
+};
+
 export type AppPassword = {
   id: string;
   inbox_id: string;
@@ -1081,11 +1093,22 @@ export class Pidgeon {
       }),
   };
 
-  /** Inboxes on your own domains. A key of the whole account only. */
+  /**
+   * Your domains, waiting and proved: add one (in a pod, for a platform's
+   * customer), publish its `records`, `verify`, then turn mail on for inboxes
+   * at it. A key of one pod reaches its own pod's domains only.
+   */
   readonly domains = {
-    list: (): Promise<{ data: MailDomain[] }> => this.request('GET', '/v1/email/domains'),
-    get: (id: string): Promise<MailDomain> =>
-      this.request('GET', `/v1/email/domains/${segment(id)}`),
+    list: (): Promise<{ data: Domain[] }> => this.request('GET', '/v1/domains'),
+    get: (id: string): Promise<Domain> => this.request('GET', `/v1/domains/${segment(id)}`),
+    /** Add a domain; answers it with the `_pidgeon` TXT record that proves it. */
+    create: (domain: string, options: { podId?: string } = {}): Promise<Domain> =>
+      this.request('POST', '/v1/domains', { body: { domain, pod_id: options.podId } }),
+    /** Look for the TXT record now; `verified` is true once it is found. */
+    verify: (id: string): Promise<Domain> =>
+      this.request('POST', `/v1/domains/${segment(id)}/verify`, { body: {} }),
+    /** Remove a domain; a proved one's mail is turned off first, and none may be left at it (`409`). */
+    remove: (id: string): Promise<void> => this.request('DELETE', `/v1/domains/${segment(id)}`),
     /** Turn mail on for a domain you proved; answers the DNS records to set. */
     enableMail: (id: string): Promise<MailDomain> =>
       this.request('POST', `/v1/email/domains/${segment(id)}/mail`, { body: {} }),

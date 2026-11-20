@@ -13,7 +13,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.13.0';
+export const VERSION = '1.14.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -712,7 +712,7 @@ export function registerApiTools(
     {
       title: 'List your domains',
       description:
-        'The domains the account has proved, and whether mail is on for each. Needs a key or sign-in of the whole account, not of one pod.',
+        'The account’s domains, waiting for their record and proved, each with its pod and whether mail is on. A key of one pod sees its own pod’s only.',
       inputSchema: {},
       annotations: READ,
     },
@@ -724,7 +724,7 @@ export function registerApiTools(
     {
       title: 'Get a domain',
       description:
-        'One domain: its mail status and the DNS records to set for it. Needs a key or sign-in of the whole account.',
+        'One domain: whether it is proved, its mail status, and every DNS record to publish for it (the `ownership` TXT record, and mail’s once mail is on).',
       inputSchema: { domain_id: z.string().uuid() },
       annotations: READ,
     },
@@ -732,11 +732,55 @@ export function registerApiTools(
   );
 
   server.registerTool(
+    'add_domain',
+    {
+      title: 'Add a domain',
+      description:
+        'Add a domain such as acme.com, in a pod if you name one (a platform’s customer). Answers the TXT record a person publishes at the domain’s DNS host to prove it (nothing is changed there), then verify_domain. Needs the Everything level; a key of one pod adds to its own pod only.',
+      inputSchema: {
+        domain: z.string().min(3).max(253),
+        pod_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe('The pod it goes in; left out, the default pod.'),
+      },
+      annotations: WRITE,
+    },
+    ({ domain, pod_id }) => answer(() => pidgeon.domains.create(domain, { podId: pod_id })),
+  );
+
+  server.registerTool(
+    'verify_domain',
+    {
+      title: 'Verify a domain',
+      description:
+        'Look now for the domain’s `_pidgeon` TXT record, once it is published. Answers the domain; `verified` is true once the record is found, and false (not an error) until then.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: WRITE,
+    },
+    ({ domain_id }) => answer(() => pidgeon.domains.verify(domain_id)),
+  );
+
+  server.registerTool(
+    'remove_domain',
+    {
+      title: 'Remove a domain',
+      description:
+        'Remove a domain: a typo, or a user who left. A proved one’s mail is turned off first, and it stays while an inbox is at it. Removing the account’s last proved domain can lower its level. Needs the Everything level; a key of one pod removes its own pod’s only.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ domain_id }) =>
+      answer(async () => (await pidgeon.domains.remove(domain_id), { removed: domain_id })),
+  );
+
+  server.registerTool(
     'enable_domain_mail',
     {
       title: 'Turn mail on for a domain',
       description:
-        'Turn mail on for a domain the account has proved, so inboxes can be made on it. Answers the DNS records a person sets at the domain’s DNS host (nothing is changed there), then check_domain. Needs the Everything level, of the whole account.',
+        'Turn mail on for a domain the account has proved, so inboxes can be made on it. Answers the DNS records a person sets at the domain’s DNS host (nothing is changed there), then check_domain. Needs the Everything level; a key of one pod reaches its own pod’s domains only.',
       inputSchema: { domain_id: z.string().uuid() },
       annotations: WRITE,
     },
@@ -748,7 +792,7 @@ export function registerApiTools(
     {
       title: 'Check a domain’s records',
       description:
-        'Ask DNS and the mail service now where a domain whose mail is on stands, after its records were set. Changes nothing. Needs a key or sign-in of the whole account.',
+        'Ask DNS and the mail service now where a domain whose mail is on stands, after its records were set. Changes nothing. A key of one pod reaches its own pod’s domains only.',
       inputSchema: { domain_id: z.string().uuid() },
       annotations: READ,
     },
@@ -1289,94 +1333,5 @@ export function registerApiTools(
     },
     ({ mandate_id }) =>
       answer(async () => (await pidgeon.mandates.revoke(mandate_id), { revoked: mandate_id })),
-  );
-
-  // ----------------------------------------------------------------- Bouncer
-
-  server.registerTool(
-    'verify_request',
-    {
-      title: 'Verify an agent’s request',
-      description:
-        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for), `declared` (not signed, but its User-Agent names an agent on Pidgeon’s list such as ChatGPT-User; `declared` names it, its vendor, and whether its address is the vendor’s) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal. Every answer also says what the site rule for the `place` decided: `decision` (`allow`, `limit`, `block`, or `watch` with `would`) and `rule`, one line saying why.',
-      inputSchema: {
-        method: z.string(),
-        url: z.string().url(),
-        headers: z.record(z.string(), z.string()),
-        place: z
-          .enum(['signup', 'checkout', 'api', 'other'])
-          .optional()
-          .describe('Where on the site the agent is, for the site rule; `other` by default.'),
-      },
-      annotations: READ,
-    },
-    ({ method, url, headers, place }) =>
-      answer(() => pidgeon.verify({ method, url, headers }, place ? { place } : {})),
-  );
-
-  server.registerTool(
-    'get_site_rules',
-    {
-      title: 'Get the site rules',
-      description:
-        'For a website: Bouncer’s site rules. Each place (`signup`, `checkout`, `api`, `other`) has `require` (`any`: any agent but a flagged operator’s; `known`: verified or signed by a recognised directory; `verified`: verified by Pidgeon only) and `enforce` (false: it only watches, and checks say what it would have done).',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.siteRules.get()),
-  );
-
-  server.registerTool(
-    'set_site_rules',
-    {
-      title: 'Set the site rules',
-      description:
-        'For a website: change Bouncer’s site rules for some places; the rest stay. Start with `enforce` false to watch what a rule would do in the checks, then turn it on. Agents Pidgeon can’t identify are never blocked (`limit`: the site’s own rules decide), and other pages never block. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        signup: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        checkout: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        api: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        other: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-      },
-      annotations: WRITE,
-    },
-    (rules) => answer(() => pidgeon.siteRules.set(rules)),
-  );
-
-  server.registerTool(
-    'report_agent',
-    {
-      title: 'Report an agent',
-      description:
-        'For a website: report the agent behind one of your verifications. One upheld report, or open reports from two websites, flag its operator. Needs a verified domain and send access.',
-      inputSchema: {
-        verification_id: z.string().uuid(),
-        category: z.enum(['fraud', 'abuse', 'scraping', 'spam', 'fake_signups', 'other']),
-        evidence: z.string().min(10).max(4000).describe('What the agent did, in words.'),
-      },
-      annotations: WRITE,
-    },
-    ({ verification_id, category, evidence }) =>
-      answer(() => pidgeon.report({ verificationId: verification_id, category, evidence })),
   );
 }

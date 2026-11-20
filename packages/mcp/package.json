@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/mcp",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Pidgeon's MCP server. Email inboxes for AI agents: give each agent its own address on @pidgeon.email or your domain, or white-label inboxes for every user of your platform. Plus Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",

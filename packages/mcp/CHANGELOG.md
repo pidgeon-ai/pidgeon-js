@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.0
+
+- Bouncer is set aside for now (email first): `verify_request`, `get_site_rules`,
+  `set_site_rules` and `report_agent` are no longer tools. The API and SDKs keep them.
+- `add_domain`, `verify_domain` and `remove_domain`: add a domain (to a pod), prove it
+  with the record it answers, and remove one still waiting for its record
+  (`/v1/domains`).
+
 ## 1.13.0
 
 - Email first: the instructions open with inboxes (create an inbox, send, wait
