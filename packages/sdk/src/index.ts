@@ -23,21 +23,38 @@ import {
 } from './credential.ts';
 
 export * from './credential.ts';
+export { DECLARED_AGENT_TOKENS, declaredAgentToken } from './declared-agents.ts';
 
 export const DEFAULT_BASE_URL = 'https://pidgeon.ai';
 
 export type Band = 'unverified' | 'new' | 'good' | 'flagged' | 'suspended';
 
 /**
- * What a check found, in four results (Patrick, 17 November), never saying
- * more than is true:
+ * What a check found (Patrick, 17 and 20 November), never saying more than
+ * is true:
  * - `verified`: the signature holds and the key is a Pidgeon operator's.
  * - `signed_known`: it holds against a directory outside Pidgeon on Pidgeon's
  *   recognised list (`signature_agent.operator` names whose). Not verified.
  * - `signed_unknown`: it holds against a directory nobody vouches for.
+ * - `declared`: not signed, but its User-Agent names an agent on Pidgeon's
+ *   list (`declared` says which, and whether its address is the vendor's).
+ *   Since 20 November 2026; such a request was `refused`, `unsigned` before.
  * - `refused`: unsigned, a bad signature, expired, revoked or replayed.
  */
-export type CheckResult = 'verified' | 'signed_known' | 'signed_unknown' | 'refused';
+export type CheckResult = 'verified' | 'signed_known' | 'signed_unknown' | 'declared' | 'refused';
+
+/**
+ * Who a `declared` agent says it is: the token of its User-Agent, its
+ * vendor, what it is for, and whether its address is in the vendor's
+ * published ranges (`confirmed`, `mismatch`), or could not be checked
+ * (`unchecked`: no address sent, or the vendor publishes none).
+ */
+export type DeclaredAs = {
+  name: string;
+  operator: string;
+  purpose: 'user' | 'search' | 'training';
+  ip: 'confirmed' | 'mismatch' | 'unchecked';
+};
 
 /** Where on a website a check happens: a site rule is set per place. */
 export type Place = 'signup' | 'checkout' | 'api' | 'other';
@@ -117,6 +134,14 @@ export type VerifyAnswer = Partial<RuleOutcome> &
       }
     | {
         valid: false;
+        result: 'declared';
+        verification_id: string;
+        /** It carries no signature. */
+        reason: 'unsigned';
+        declared: DeclaredAs;
+      }
+    | {
+        valid: false;
         /** Absent from answers before 17 November 2026. */
         result?: 'refused';
         verification_id: string;
@@ -125,6 +150,22 @@ export type VerifyAnswer = Partial<RuleOutcome> &
         operator?: { id: string; name: string };
       }
   );
+
+/**
+ * One visit for `pidgeon.visits.record`: the request's method, the URL the
+ * agent called (leave the query string out: it is never stored), its
+ * User-Agent, the visitor's address (checked against the vendor's published
+ * ranges, not stored), where on your site it was, and when (ISO 8601, within
+ * the last hour).
+ */
+export type Visit = {
+  method: string;
+  url: string;
+  user_agent: string;
+  ip?: string;
+  place?: Place;
+  at?: string;
+};
 
 /** The header a proxy hands the verdict on in, to the app behind it. */
 export const VERDICT_HEADER = 'pidgeon-verdict';
@@ -1234,6 +1275,18 @@ export class Pidgeon {
     /** Change some places; the rest stay as they are. Answers every place. */
     set: (rules: Partial<Record<Place, Partial<PlaceRule>>>): Promise<SiteRules> =>
       this.request('PUT', '/v1/site-rules', { body: rules }),
+  };
+
+  /**
+   * Visits of agents that only name themselves (`declared`), recorded in a
+   * batch after the responses, not counted as verifications. Up to 100 a
+   * call; a User-Agent not on Pidgeon's list is skipped, not stored. Send
+   * signed requests to `verify`. `bouncer()` (`@pidgeon-ai/sdk/next`) does
+   * this for you.
+   */
+  readonly visits = {
+    record: (visits: Visit[]): Promise<{ recorded: number; skipped: number }> =>
+      this.request('POST', '/v1/visits', { body: { visits } }),
   };
 
   /** Your API keys. Making and revoking takes an admin key of the whole account. */

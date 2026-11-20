@@ -17,9 +17,14 @@
  * ```
  *
  * `observe` mode (the default) asks Pidgeon about every request that
- * carries an agent's signature, after the response is on its way
+ * carries an agent's signature, or whose User-Agent names an agent that
+ * doesn't sign (ChatGPT-User, Claude-User, Perplexity-User: `declared`),
+ * after the response is on its way
  * (`waitUntil`): the visit is never slowed or blocked, and the check shows up
- * in your dashboard. It never throws into your request.
+ * in your dashboard. It never throws into your request. A signed request is
+ * checked (`POST /v1/verify`); an agent that only names itself is recorded
+ * with others in a batch a second later (`POST /v1/visits`), without its
+ * query string, and isn't counted as a verification.
  *
  * `enforce` mode acts on your site rules (Bouncer → Rules in the dashboard).
  * `place` names where a request is; for those, the check is awaited and a
@@ -37,12 +42,17 @@
  * }
  * ```
  */
-import { Pidgeon, DEFAULT_BASE_URL, type Place, type VerifyAnswer } from './index.ts';
+import { declaredAgentToken } from './declared-agents.ts';
+import { Pidgeon, DEFAULT_BASE_URL, type Place, type VerifyAnswer, type Visit } from './index.ts';
 
 export { VERDICT_HEADER } from './index.ts';
+export { DECLARED_AGENT_TOKENS, declaredAgentToken } from './declared-agents.ts';
 
-/** The work a request may leave running after its response: `NextFetchEvent`, a Worker's `ExecutionContext`. */
-export type WaitUntil = { waitUntil(promise: Promise<unknown>): void };
+/**
+ * The work a request may leave running after its response: `NextFetchEvent`,
+ * a Worker's `ExecutionContext`, Netlify's `Context` (whose `ip` is read).
+ */
+export type WaitUntil = { waitUntil(promise: Promise<unknown>): void; ip?: string };
 
 type CommonOptions = {
   /** An API key with `read` access. Without one the helper does nothing, so local development and previews are untouched. */
@@ -50,17 +60,36 @@ type CommonOptions = {
   baseUrl?: string;
   /** The URL the agent called, when your proxy sees another (a different host behind a load balancer). Defaults to `request.url`. */
   url?: (request: Request) => string;
-  /** Called with Pidgeon's answer, after the response. */
+  /** Called with Pidgeon's answer to each check of a signed request, after the response. */
   onAnswer?: (answer: VerifyAnswer, request: Request) => void | Promise<void>;
   /** Called when the check failed (Pidgeon unreachable, slow, or your key refused). Defaults to `console.warn`. */
   onError?: (error: unknown, request: Request) => void;
   /** How long a check may take before it is given up, in milliseconds. 5,000 by default. */
   timeoutMs?: number;
+  /**
+   * The visitor's address, for checking a declared agent against its
+   * vendor's published ranges. By default Netlify's `context.ip`, or on
+   * Vercel `x-real-ip` (which Vercel sets, and a visitor can't). Elsewhere,
+   * pass it, or the address goes unchecked.
+   */
+  ip?: (request: Request) => string | null | undefined;
   fetch?: typeof fetch;
 };
 
 /** `observe`: record every agent's request with Pidgeon, never act on it. */
-export type BouncerOptions = CommonOptions & { mode?: 'observe' };
+export type BouncerOptions = CommonOptions & {
+  mode?: 'observe';
+  /**
+   * Where on your site a request is (`signup`, `checkout`, `api`), or null
+   * for anywhere else: recorded with each visit, so the dashboard shows which
+   * agents reached sign-up or checkout. Observe mode never acts on it.
+   */
+  place?: (request: Request) => Place | null;
+};
+
+/** The most visits sent at once, and how long the first waits for others. */
+const BATCH = 100;
+const BATCH_WAIT_MS = 1_000;
 
 /**
  * `enforce`: act on your site rules where `place` names a place. A `block`
@@ -98,6 +127,37 @@ const PRIVATE_HEADERS = ['cookie', 'authorization', 'proxy-authorization'];
 export function carriesAgentHeaders(request: Request): boolean {
   if (request.method === 'OPTIONS') return false;
   return AGENT_HEADERS.some((name) => request.headers.has(name));
+}
+
+/**
+ * Whether a request is one Bouncer reports: it carries an agent's headers
+ * (above), or its User-Agent names an agent that doesn't sign
+ * (`DECLARED_AGENT_TOKENS`), which Pidgeon records as `declared`. A person's
+ * visit never is, nor is a CORS preflight.
+ */
+export function isAgentRequest(request: Request): boolean {
+  if (request.method === 'OPTIONS') return false;
+  return (
+    carriesAgentHeaders(request) || declaredAgentToken(request.headers.get('user-agent')) !== null
+  );
+}
+
+/** The visitor's address, as the platform reports it: see `ip` in the options. */
+function addressOf(
+  request: Request,
+  event: WaitUntil | undefined,
+  ip: CommonOptions['ip'],
+): string | null {
+  try {
+    if (ip) return ip(request) ?? null;
+    if (typeof event?.ip === 'string' && event.ip) return event.ip;
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env;
+    if (env?.VERCEL) return request.headers.get('x-real-ip');
+  } catch {
+    // An address is a nicety: without one the check goes on, unchecked.
+  }
+  return null;
 }
 
 /**
@@ -147,12 +207,64 @@ export function bouncer(
         error instanceof Error ? error.message : error,
       ));
 
+  const fail = (error: unknown, request: Request | null) => {
+    try {
+      onError(error, request as Request);
+    } catch {
+      // A failing handler must not fail the request either.
+    }
+  };
+
+  // Declared agents' visits, sent together: the first waits a second for others, with the
+  // request's `waitUntil` holding the instance open; a full batch goes at once.
+  let queue: Visit[] = [];
+  let waiting = false;
+  const send = async (): Promise<void> => {
+    while (queue.length) {
+      const batch = queue.slice(0, BATCH);
+      queue = queue.slice(BATCH);
+      try {
+        await pidgeon.visits.record(batch);
+      } catch (error) {
+        fail(error, null);
+      }
+    }
+  };
+  const record = (
+    request: Request,
+    url: URL,
+    event: WaitUntil | undefined,
+    place: Place | null,
+  ) => {
+    const ip = addressOf(request, event, options.ip);
+    queue.push({
+      method: request.method,
+      // The query string never leaves your site: Pidgeon stores the path only.
+      url: `${url.origin}${url.pathname}`,
+      user_agent: request.headers.get('user-agent') ?? '',
+      ...(ip ? { ip } : {}),
+      ...(place ? { place } : {}),
+      at: new Date().toISOString(),
+    });
+    let work: Promise<void> | null = null;
+    if (queue.length >= BATCH) work = send();
+    else if (!waiting) {
+      waiting = true;
+      work = new Promise((resolve) => setTimeout(resolve, BATCH_WAIT_MS)).then(() => {
+        waiting = false;
+        return send();
+      });
+    }
+    if (work && event) event.waitUntil(work);
+  };
+
   const check = async (
     request: Request,
     url: string,
     place?: Place,
   ): Promise<VerifyAnswer | null> => {
     try {
+      // Only signed requests are checked here, with no address: their verdict then names none.
       const answer = await pidgeon.verify(
         { method: request.method, url, headers: headersForVerify(request) },
         place ? { place } : {},
@@ -173,10 +285,15 @@ export function bouncer(
     const enforce = options;
     return async (request, event) => {
       try {
-        if (!carriesAgentHeaders(request)) return null;
+        if (!isAgentRequest(request)) return null;
         const url = new URL(enforce.url ? enforce.url(request) : request.url);
         if (`${url.origin}${url.pathname}` === verifyEndpoint) return null;
         const place = enforce.place(request);
+        // An agent that only names itself is never blocked (your rules decide `limit`): recorded, not awaited.
+        if (!carriesAgentHeaders(request)) {
+          record(request, url, event, place);
+          return null;
+        }
         if (!place) {
           const work = check(request, url.toString()).then(() => undefined);
           if (event) event.waitUntil(work);
@@ -198,11 +315,16 @@ export function bouncer(
 
   return (request, event) => {
     try {
-      if (!carriesAgentHeaders(request)) return;
+      if (!isAgentRequest(request)) return;
       const url = new URL(options.url ? options.url(request) : request.url);
       // Pidgeon's own endpoint, should a proxy in front of it carry this step: never check the check.
       if (`${url.origin}${url.pathname}` === verifyEndpoint) return;
-      const work = check(request, url.toString()).then(() => undefined);
+      const place = options.place?.(request) ?? null;
+      if (!carriesAgentHeaders(request)) {
+        record(request, url, event, place);
+        return;
+      }
+      const work = check(request, url.toString(), place ?? undefined).then(() => undefined);
       if (event) event.waitUntil(work);
     } catch (error) {
       try {

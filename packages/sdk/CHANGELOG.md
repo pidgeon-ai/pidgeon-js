@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.11.0
+
+- Declared agents: `verify` answers a fifth `result`, `declared`, for an unsigned request
+  whose User-Agent names an AI agent on Pidgeon's list (ChatGPT-User, Claude-User,
+  Perplexity-User, …), with `declared` (`name`, `operator`, `purpose`, and `ip`:
+  `confirmed`, `mismatch` or `unchecked` against the vendor's published addresses). Such a
+  request was `refused`, `unsigned` before. Never `valid`, and no verdict.
+- `bouncer()` (`@pidgeon-ai/sdk/next`) reports declared agents too, with the visitor's
+  address (Netlify's `context.ip`, Vercel's `x-real-ip`, or the new `ip` option).
+  `isAgentRequest`, `DECLARED_AGENT_TOKENS` and `declaredAgentToken` are exported.
+- `pidgeon.visits.record(visits)` (`POST /v1/visits`): record declared agents' visits, up
+  to 100 at a time, not counted as verifications. `bouncer()` sends declared agents there,
+  in batches a second apart, with the URL's path only, instead of checking each one.
+- `bouncer({ place })` in observe mode records where each visit was, for the dashboard.
+
 ## 2.10.0
 
 - Site rules for Bouncer: `pidgeon.siteRules.get()` and `.set()` (`/v1/site-rules`).
