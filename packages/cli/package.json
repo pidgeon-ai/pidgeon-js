@@ -1,7 +1,7 @@
 {
   "name": "@pidgeon-ai/cli",
-  "version": "2.5.0",
-  "description": "Pidgeon from a terminal: sign in, set agents up with keys made on your machine, and send from their inboxes.",
+  "version": "2.5.1",
+  "description": "Email inboxes for AI agents, from a terminal: make an inbox on @pidgeon.email or your domain, send, and wait for the reply. Pods for platforms, and Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
@@ -11,11 +11,15 @@
   },
   "homepage": "https://pidgeon.ai",
   "keywords": [
-    "pidgeon",
+    "email",
+    "inbox",
     "ai-agents",
+    "agent-email",
+    "mcp",
+    "multi-tenant",
+    "white-label",
     "cli",
-    "agent-identity",
-    "email"
+    "pidgeon"
   ],
   "engines": {
     "node": ">=20"

@@ -1,7 +1,7 @@
 {
   "name": "@pidgeon-ai/ai-sdk",
-  "version": "1.0.0",
-  "description": "Pidgeon as Vercel AI SDK tools: an agent's identity and inboxes, checking other agents, and Sign in with Pidgeon. The same tools as Pidgeon's MCP server.",
+  "version": "1.0.1",
+  "description": "Email inboxes for AI agents, as Vercel AI SDK tools: send, wait for the reply and answer, on @pidgeon.email or your domain. The same tools as Pidgeon's MCP server.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -11,14 +11,17 @@
   },
   "homepage": "https://pidgeon.ai",
   "keywords": [
-    "pidgeon",
+    "email",
+    "inbox",
+    "ai-agents",
+    "agent-email",
+    "mcp",
+    "multi-tenant",
+    "white-label",
     "vercel-ai-sdk",
     "ai-sdk",
     "tools",
-    "ai-agents",
-    "agent-identity",
-    "web-bot-auth",
-    "email"
+    "pidgeon"
   ],
   "engines": {
     "node": ">=20"

@@ -1,15 +1,17 @@
 {
   "name": "@pidgeon-ai/n8n-nodes-pidgeon",
-  "version": "1.0.0",
-  "description": "Pidgeon in n8n: inboxes for AI agents (send, reply, read and wait for mail, a trigger for mail that arrives) and verifying the agents that reach your site.",
+  "version": "1.0.1",
+  "description": "Email inboxes for AI agents in n8n: send, reply, read and wait for mail, and a trigger for the mail that arrives.",
   "keywords": [
     "n8n-community-node-package",
-    "n8n",
-    "pidgeon",
     "email",
     "inbox",
     "ai-agents",
-    "agent-identity",
+    "agent-email",
+    "multi-tenant",
+    "white-label",
+    "n8n",
+    "pidgeon",
     "webhook"
   ],
   "license": "MIT",

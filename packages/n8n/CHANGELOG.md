@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- The node's description, the package's and the README lead with email inboxes
+  for AI agents. Agent Request → Verify still works.
+
 ## 1.0.0
 
 Rebuilt for the new Pidgeon (`/v1`); 0.x spoke the old email API.

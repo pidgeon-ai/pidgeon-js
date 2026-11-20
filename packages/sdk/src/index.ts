@@ -1,19 +1,17 @@
 /**
- * Pidgeon's TypeScript SDK.
+ * Pidgeon's TypeScript SDK: email inboxes for AI agents.
  *
- * For an agent: `signedFetch`, or `agentFromEnv().fetch`, signs every request
- * with the agent's key, so a website that checks can tell who stands behind it.
+ * `new Pidgeon({ apiKey })`: `.inboxes`, `.messages` and `.drafts` give an
+ * agent its own address on @pidgeon.email or your domain, send from it and
+ * wait for the reply; `.threads`, `.labels`, `.contacts`, `.attachments`,
+ * `.domains` and `.calendar` are the rest of Email. For a platform, `.pods`
+ * gives each of your users inboxes of their own.
  *
- * For a website: `new Pidgeon({ apiKey }).verify(request)` asks Pidgeon who
- * stands behind an agent's request and how they stand; `.report()` reports
- * one that misbehaved.
- *
- * For an operator's tooling and coding agents: `.agents.setUp()` registers an
- * agent, makes its key here and publishes the public half; `.inboxes`,
- * `.messages` and `.drafts` are Email; `.sites` and `.mandates` are Auth.
- *
- * `generateAgentKey()` and `.publishKey()` make a
- * key where the agent runs and publish its public half.
+ * Sign in with Pidgeon: `.agents.setUp()` registers an agent, makes its key
+ * here and publishes the public half; `signedFetch`, or `agentFromEnv().fetch`,
+ * signs its requests; `.sites` and `.mandates` register sites and ask
+ * people's permission. `generateAgentKey()` and `.publishKey()` make a key
+ * where the agent runs and publish its public half.
  */
 import {
   generateAgentKey,

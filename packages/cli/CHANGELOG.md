@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.1
+
+- `pidgeon --help` leads with Email, then pods and the account, agents and Sign
+  in with Pidgeon. `pidgeon verify` and `pidgeon reports` still work and are no
+  longer listed. The README and description lead with inboxes.
+
 ## 2.5.0
 
 - `pidgeon sites update <client-id> [--name] [--redirect <uri>...]` and

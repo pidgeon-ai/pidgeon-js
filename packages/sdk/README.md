@@ -1,8 +1,8 @@
 # @pidgeon-ai/sdk
 
-Pidgeon's TypeScript SDK for its four products: Passport (your agents' keys
-and reputation), Bouncer (verify agents at your site), Email (inboxes for
-agents) and Auth (Sign in with Pidgeon). https://pidgeon.ai
+Email inboxes for AI agents. Give each agent its own address on
+@pidgeon.email or your own domain, or give every user of your platform inboxes
+of their own. Plus Sign in with Pidgeon. https://pidgeon.ai
 
 ```sh
 npm install @pidgeon-ai/sdk
@@ -11,97 +11,30 @@ npm install @pidgeon-ai/sdk
 Version 2 is for the new Pidgeon. Code written for 1.x (the old email API at
 `/api/v1`) keeps working on 1.68.0 until that API is retired.
 
-## Set an agent up
+## Give an agent an inbox
 
 ```ts
 import { Pidgeon } from '@pidgeon-ai/sdk';
 
 const pidgeon = new Pidgeon({ apiKey: process.env.PIDGEON_API_KEY! });
 
-// Registers the agent, makes its key here, and publishes the public half
-// signed with it. Keep key.privateJwk where the agent runs: Pidgeon never sees it.
-const { agent, key } = await pidgeon.agents.setUp({
-  name: 'Booking agent',
-  purpose: 'Books tables.',
-});
-
-const { reputation } = await pidgeon.agents.get(agent.id);
-reputation.band; // unverified, new, good, flagged or suspended
-```
-
-From a terminal or a coding agent, `@pidgeon-ai/cli` and `@pidgeon-ai/mcp`
-do the same, and keep the key in a file on your machine
-(`@pidgeon-ai/sdk/node`: `setUpAgent`, `agentFromKeyFile`).
-
-## Sign your agent's requests
-
-```ts
-import { agentFromEnv } from '@pidgeon-ai/sdk';
-
-// PIDGEON_AGENT_KEY is the private JWK, PIDGEON_DIRECTORY the agent's directory.
-const agent = agentFromEnv();
-await agent.fetch('https://shop.example/api/orders', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ sku: 'tea' }),
-});
-```
-
-Each call is signed afresh: the signature covers the host, method, path and
-query, carries a new nonce, and lasts a minute. Pidgeon accepts a signature
-once, so sign again to retry; never resend old signature headers.
-
-## Verify an agent at your site (Bouncer)
-
-```ts
-const answer = await pidgeon.verify(request);
-if (answer.valid && answer.reputation.band !== 'suspended') {
-  // answer.agent, answer.operator
-}
-await pidgeon.report({ verificationId: answer.verification_id, category: 'spam', evidence: '…' });
-```
-
-`answer.result` is one of four: `verified` (a Pidgeon operator's agent, the
-only one with `valid: true`), `signed_known` (signed with a key from an
-outside directory Pidgeon recognises, e.g. `chatgpt.com`, named in
-`answer.signature_agent.operator`), `signed_unknown` (an outside directory
-nobody vouches for) and `refused` (unsigned, a bad signature, expired,
-revoked or replayed). Only `refused` is a refusal.
-
-### In a Next.js proxy (`@pidgeon-ai/sdk/next`)
-
-```ts
-// proxy.ts (middleware.ts before Next.js 16)
-import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
-import { bouncer } from '@pidgeon-ai/sdk/next';
-
-const observe = bouncer({ apiKey: process.env.PIDGEON_API_KEY }); // read access is enough
-
-export function proxy(request: NextRequest, event: NextFetchEvent) {
-  observe(request, event); // returns at once, never throws
-  return NextResponse.next();
-}
-```
-
-Observe mode checks every request that carries an agent's signature (or
-claims to be an agent with `Signature-Agent` alone) after the response, with
-`waitUntil`: no visit is slowed, blocked or changed, even when Pidgeon is
-down. Requests without agent headers and CORS preflights are never sent, nor
-the visitor's cookies. Without a key it does nothing. Options: `url`,
-`onAnswer`, `onError`, `timeoutMs`; `enforce` mode is coming. Observe on
-public content; enforce only where an agent acts (sign-up, checkout, your
-API).
-
-## Email
-
-```ts
-const inbox = await pidgeon.inboxes.create({ name: 'bookings', agentId: agent.id });
+const inbox = await pidgeon.inboxes.create({ name: 'bookings' }); // bookings@pidgeon.email
 await pidgeon.messages.send(inbox.id, {
   to: ['ana@example.com'],
   subject: 'Table for two',
   text: 'Friday at 8?',
 });
 
+// Wait for the reply (up to 50 seconds a call):
+const { data: replies } = await pidgeon.messages.await(inbox.id);
+```
+
+On your own domain, pass `domain` once mail is on for it
+(`pidgeon.domains.enableMail`).
+
+## Email
+
+```ts
 // A person looks first:
 const draft = await pidgeon.drafts.create(inbox.id, {
   to: ['ana@example.com'],
@@ -142,7 +75,56 @@ and `pidgeon.request(method, path, …)` for any `/v1` call. A refusal throws
 
 Webhooks: `verifyWebhook(secret, rawBody, request.headers.get('pidgeon-signature'))`.
 
+## For platforms
+
+Give every user of your platform inboxes of their own, white-labelled on their
+own domain. Each user gets a pod; a key of that pod reaches only its mail.
+
+```ts
+const pod = await pidgeon.pods.create('Acme Ltd');
+// acme.com is the user's domain, with mail on, in their pod.
+const inbox = await pidgeon.inboxes.create({ name: 'support', podId: pod.id, domain: 'acme.com' });
+const { key } = await pidgeon.keys.create({ name: 'Acme', access: 'send', podId: pod.id });
+```
+
 ## Sign in with Pidgeon (`@pidgeon-ai/sdk/auth`)
+
+Agents sign in to websites as themselves, with a key of their own.
+
+### Set an agent up
+
+```ts
+// Registers the agent, makes its key here, and publishes the public half
+// signed with it. Keep key.privateJwk where the agent runs: Pidgeon never sees it.
+const { agent, key } = await pidgeon.agents.setUp({
+  name: 'Booking agent',
+  purpose: 'Books tables.',
+});
+```
+
+From a terminal or a coding agent, `@pidgeon-ai/cli` and `@pidgeon-ai/mcp`
+do the same, and keep the key in a file on your machine
+(`@pidgeon-ai/sdk/node`: `setUpAgent`, `agentFromKeyFile`).
+
+### Sign its requests
+
+```ts
+import { agentFromEnv } from '@pidgeon-ai/sdk';
+
+// PIDGEON_AGENT_KEY is the private JWK, PIDGEON_DIRECTORY the agent's directory.
+const agent = agentFromEnv();
+await agent.fetch('https://shop.example/api/orders', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ sku: 'tea' }),
+});
+```
+
+Each call is signed afresh: the signature covers the host, method, path and
+query, carries a new nonce, and lasts a minute. Pidgeon accepts a signature
+once, so sign again to retry; never resend old signature headers.
+
+### Your site
 
 Register your site with `pidgeon.sites.create({ name, redirectUris })`; ask a
 person to let your agent act for them with `pidgeon.mandates.create(…)`.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- The description, keywords and README lead with email inboxes for AI agents.
+  The tools come in the MCP server's new order, Email first.
+
 ## 1.0.0
 
 - Rebuilt for the new Pidgeon: the tools are the hosted MCP server's

@@ -1,9 +1,8 @@
 # @pidgeon-ai/ai-sdk
 
-Pidgeon as [Vercel AI SDK](https://ai-sdk.dev) tools. Pidgeon gives an AI
-agent an identity apart from its owner: inboxes it sends and receives mail
-from, a signing key websites can check, its operator's reputation, and Sign in
-with Pidgeon. These tools let a model work all of it with your API key.
+Email inboxes for AI agents, as [Vercel AI SDK](https://ai-sdk.dev) tools.
+Give each agent its own address on @pidgeon.email or your domain: the model
+sends, waits for the reply and answers in the thread, with your API key.
 https://pidgeon.ai
 
 ```sh
@@ -39,14 +38,13 @@ a person of the account before it goes.
 - **Email:** inboxes, sending, replying, drafts and approval, waiting for
   mail, search, conversations, labels, contacts, attachments, rules,
   suppressions, domains, and each inbox's calendar.
-- **Passport:** the account's agents, their keys, and the reputation websites
-  see. Registering an agent makes a key, which belongs where the agent runs:
-  use `@pidgeon-ai/sdk` (`pidgeon.agents.setUp`) or the MCP server's
+- **Pods and the account:** a pod for each user of your platform, with
+  inboxes of their own; API keys, webhooks and the event log.
+- **Agents:** the account's agents, their keys and their reputation.
+  Registering an agent makes a key, which belongs where the agent runs: use
+  `@pidgeon-ai/sdk` (`pidgeon.agents.setUp`) or the MCP server's
   `set_up_agent` for that.
-- **Bouncer:** `verify_request` asks who stands behind another agent's
-  request; `report_agent` reports one that misbehaved.
-- **Auth:** Sign in with Pidgeon's sites and mandates.
-- **The account:** pods, API keys, webhooks and the event log.
+- **Sign in with Pidgeon:** sites and mandates.
 
 They are the tools of Pidgeon's hosted MCP server (`https://pidgeon.ai/mcp`),
 with the same names, descriptions and inputs: this package builds them from

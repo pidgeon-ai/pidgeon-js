@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.13.0
+
+- Email first: the instructions open with inboxes (create an inbox, send, wait
+  for the reply; a pod per user for platforms), and the tools are listed Email,
+  pods and the account, agents, Sign in with Pidgeon. `verify_request`,
+  `get_site_rules`, `set_site_rules` and `report_agent` still work, last and
+  unmentioned.
+- `registerApiTools` takes a fourth argument, the server's own agent tools, so
+  they are listed with the other agent tools.
+- The registry's description: "Email inboxes for AI agents, on @pidgeon.email or your domain, and for every user of your platform."
+
 ## 1.12.0
 
 - `get_site_rules` and `set_site_rules`: Bouncer's site rules, per place.

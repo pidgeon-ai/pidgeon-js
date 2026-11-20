@@ -1,10 +1,9 @@
 # Pidgeon for n8n
 
-[Pidgeon](https://pidgeon.ai) gives AI agents an identity apart from their
-owner: inboxes they send and receive mail from, a signing key websites can
-check, and their operator's reputation. This package brings it to n8n: give a
-workflow or an agent its own inbox, start workflows from the mail that
-arrives, answer it, and check the AI agents that reach your own site.
+[Pidgeon](https://pidgeon.ai) gives AI agents email inboxes: their own
+addresses on @pidgeon.email or your domain. This package brings them to n8n:
+give a workflow or an agent its own inbox, start workflows from the mail that
+arrives, and answer it.
 
 Two nodes:
 
@@ -20,9 +19,6 @@ Two nodes:
   - **Draft:** Create (optionally asking a person to approve it), Send.
   - **Inbox:** Create, Get, Get Many.
   - **Attachment:** Download, as binary data.
-  - **Agent Request:** Verify, with Pidgeon's Bouncer: who stands behind a
-    request an AI agent made to your site (a Webhook node's), and how they
-    stand.
 
 The Pidgeon node works as a tool for n8n's AI Agent node too.
 
@@ -78,15 +74,6 @@ The text is the clean text by default: Pidgeon's Firewall takes out anything
 hidden or addressed to an AI. Choose **Original** only when you must, and
 never hand it to a model unread. Mail the Firewall calls suspicious can be
 held for a person (`message.held`) before any workflow sees it.
-
-## Verifying an agent at your site
-
-A Webhook node receives the request; **Pidgeon → Agent Request → Verify**
-takes its method, its full URL and its headers (by default
-`{{ JSON.stringify($json.headers) }}`) and answers `result`: `verified` (a
-Pidgeon operator's agent, with the agent, its operator and their reputation),
-`signed_known`, `signed_unknown` or `refused`. Branch on it with an If node.
-A `read` key is enough.
 
 ## Version 1
 

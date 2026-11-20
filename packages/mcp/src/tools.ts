@@ -1,9 +1,11 @@
 /**
  * The MCP tools that only call Pidgeon's API, shared by the server on the
  * developer's machine (`server.ts`, stdio) and the hosted one at
- * `https://pidgeon.ai/mcp`: reading agents and reputation, Email's inboxes,
- * drafts, rules, domains and storage, and the account's pods and event log. Nothing here touches the file system,
- * so the app can run it. Tools that make keys live where keys are made.
+ * `https://pidgeon.ai/mcp`: Email's inboxes, mail, drafts, conversations,
+ * rules, domains, storage and calendars; the account's pods, keys, webhooks
+ * and event log; agents and their keys; and Sign in with Pidgeon. Nothing here
+ * touches the file system, so the app can run it. Tools that make keys live
+ * where keys are made.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
@@ -11,7 +13,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.12.0';
+export const VERSION = '1.13.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -91,111 +93,59 @@ export const READ = { readOnlyHint: true, openWorldHint: true } as const;
 export const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: true } as const;
 export const DESTROY = { readOnlyHint: false, destructiveHint: true, openWorldHint: true } as const;
 
-/** Register every tool that is only an API call. `signInHint` is what to say when the caller is not signed in. */
-export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint?: string): void {
+/**
+ * Register every tool that is only an API call, in the order Pidgeon is sold
+ * (Patrick, 20 November: email inboxes for AI agents): Email, then pods and
+ * the account, then agents, then Sign in with Pidgeon, then Bouncer's tools,
+ * which stay for the clients that call them but are no longer offered.
+ * `signInHint` is what to say when the caller is not signed in;
+ * `agentSetupTools` registers a server's own tools for setting agents up
+ * (they make keys, so they live where keys are made) at the head of the
+ * agents' tools.
+ */
+export function registerApiTools(
+  server: McpServer,
+  pidgeon: Pidgeon,
+  signInHint?: string,
+  agentSetupTools?: () => void,
+): void {
   const answer = (work: () => Promise<unknown>) => run(work, signInHint);
 
-  server.registerTool(
-    'list_agents',
-    {
-      title: 'List agents',
-      description: 'The account’s agents.',
-      inputSchema: { cursor: z.string().optional() },
-      annotations: READ,
-    },
-    ({ cursor }) => answer(() => pidgeon.agents.list({ cursor })),
-  );
+  // ----------------------------------------------------------------- Email
 
   server.registerTool(
-    'get_agent',
+    'create_inbox',
     {
-      title: 'Read an agent',
+      title: 'Make an inbox',
       description:
-        'An agent: its published keys (public facts only), its directory and its operator’s reputation.',
-      inputSchema: { agent_id: z.string().uuid() },
-      annotations: READ,
-    },
-    ({ agent_id }) => answer(() => pidgeon.agents.get(agent_id)),
-  );
-
-  server.registerTool(
-    'get_reputation',
-    {
-      title: 'Read reputation',
-      description:
-        'How websites treat the account’s agents: the band (unverified, new, good, flagged, suspended), what it means, and what would raise it. Reputation belongs to the operator, so every agent of the account shares it.',
+        'Make an inbox. `name` is the part before the @. Pass agent_id to make it that agent’s: its mail then carries its signed declaration (binding needs a verified domain).',
       inputSchema: {
-        agent_id: z
+        name: z.string().min(1).max(64),
+        kind: z.enum(['agent', 'events']).default('agent'),
+        agent_id: z.string().uuid().optional(),
+        display_name: z.string().max(120).optional(),
+        pod_id: z.string().uuid().optional(),
+        domain: z
           .string()
-          .uuid()
           .optional()
-          .describe('Any of the account’s agents; the first if left out.'),
-      },
-      annotations: READ,
-    },
-    ({ agent_id }) =>
-      answer(async () => {
-        const id = agent_id ?? (await pidgeon.agents.list({ limit: 1 })).data[0]?.id;
-        if (!id)
-          return {
-            reputation: null,
-            note: 'The account has no agents yet: register one first (set_up_agent, or register_agent on the hosted server).',
-          };
-        const agent = await pidgeon.agents.get(id);
-        return { agent_id: agent.id, ...agent.reputation };
-      }),
-  );
-
-  server.registerTool(
-    'rename_agent',
-    {
-      title: 'Rename an agent',
-      description:
-        'Change an agent’s name, what it does, or both: what websites see when it arrives. Needs the Everything level.',
-      inputSchema: {
-        agent_id: z.string().uuid(),
-        name: z.string().min(1).max(80).optional(),
-        purpose: z.string().max(280).optional().describe('What it does, in a sentence.'),
+          .describe(
+            'One of your domains with mail on (enable_domain_mail); pidgeon.email if left out.',
+          ),
       },
       annotations: WRITE,
     },
-    ({ agent_id, name, purpose }) =>
-      answer(() => pidgeon.agents.update(agent_id, { name, purpose })),
+    (args) =>
+      answer(() =>
+        pidgeon.inboxes.create({
+          domain: args.domain,
+          name: args.name,
+          kind: args.kind,
+          agentId: args.agent_id,
+          displayName: args.display_name,
+          podId: args.pod_id,
+        }),
+      ),
   );
-
-  server.registerTool(
-    'revoke_agent_key',
-    {
-      title: 'Revoke an agent’s key',
-      description:
-        'Revoke one of an agent’s keys, by its kid (get_agent lists them): requests signed with it stop verifying at once. Its other keys stay. Ask the person first. Needs the Everything level.',
-      inputSchema: { agent_id: z.string().uuid(), kid: z.string().min(1) },
-      annotations: DESTROY,
-    },
-    ({ agent_id, kid }) =>
-      answer(async () => {
-        await pidgeon.agents.revokeKey(agent_id, kid);
-        return { revoked: kid };
-      }),
-  );
-
-  server.registerTool(
-    'revoke_agent',
-    {
-      title: 'Revoke an agent',
-      description:
-        'Revoke an agent and every key it has: no request it signs verifies again, and it cannot be undone. Ask the person first. Needs the Everything level.',
-      inputSchema: { agent_id: z.string().uuid() },
-      annotations: DESTROY,
-    },
-    ({ agent_id }) =>
-      answer(async () => {
-        await pidgeon.agents.revoke(agent_id);
-        return { revoked: agent_id };
-      }),
-  );
-
-  // ----------------------------------------------------------------- Email
 
   server.registerTool(
     'list_inboxes',
@@ -244,40 +194,6 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       annotations: WRITE,
     },
     ({ inbox_id, signature }) => answer(() => pidgeon.inboxes.setSignature(inbox_id, signature)),
-  );
-
-  server.registerTool(
-    'create_inbox',
-    {
-      title: 'Make an inbox',
-      description:
-        'Make an inbox. `name` is the part before the @. Pass agent_id to make it that agent’s: its mail then carries its signed declaration (binding needs a verified domain).',
-      inputSchema: {
-        name: z.string().min(1).max(64),
-        kind: z.enum(['agent', 'events']).default('agent'),
-        agent_id: z.string().uuid().optional(),
-        display_name: z.string().max(120).optional(),
-        pod_id: z.string().uuid().optional(),
-        domain: z
-          .string()
-          .optional()
-          .describe(
-            'One of your domains with mail on (enable_domain_mail); pidgeon.email if left out.',
-          ),
-      },
-      annotations: WRITE,
-    },
-    (args) =>
-      answer(() =>
-        pidgeon.inboxes.create({
-          domain: args.domain,
-          name: args.name,
-          kind: args.kind,
-          agentId: args.agent_id,
-          displayName: args.display_name,
-          podId: args.pod_id,
-        }),
-      ),
   );
 
   server.registerTool(
@@ -376,327 +292,6 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     ({ draft_id }) => answer(() => pidgeon.drafts.requestApproval(draft_id)),
   );
 
-  server.registerTool(
-    'list_rules',
-    {
-      title: 'List mail rules',
-      description:
-        'The account’s send and receive rules. Needs a key or sign-in of the whole account.',
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.rules.list()),
-  );
-
-  server.registerTool(
-    'add_rule',
-    {
-      title: 'Add a mail rule',
-      description:
-        'Allow or block an address, or a domain and its subdomains, for sending or receiving; for one inbox, or every inbox when inbox_id is left out. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        direction: z.enum(['send', 'receive']),
-        action: z.enum(['allow', 'block']),
-        pattern: z.string().describe('ana@example.com, or example.com'),
-        inbox_id: z.string().uuid().optional(),
-      },
-      annotations: WRITE,
-    },
-    ({ direction, action, pattern, inbox_id }) =>
-      answer(() => pidgeon.rules.create({ direction, action, pattern, inboxId: inbox_id })),
-  );
-
-  server.registerTool(
-    'remove_rule',
-    {
-      title: 'Remove a mail rule',
-      description:
-        'Remove a send or receive rule. Needs the Everything level, of the whole account.',
-      inputSchema: { rule_id: z.string().uuid() },
-      annotations: DESTROY,
-    },
-    ({ rule_id }) =>
-      answer(async () => (await pidgeon.rules.remove(rule_id), { removed: rule_id })),
-  );
-
-  server.registerTool(
-    'list_suppressions',
-    {
-      title: 'List the do-not-send list',
-      description:
-        'Addresses the account will not send to: bounces, complaints, and ones added by hand. Needs a key or sign-in of the whole account.',
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.suppressions.list()),
-  );
-
-  server.registerTool(
-    'add_suppression',
-    {
-      title: 'Stop sending to an address',
-      description:
-        'Put an address on the do-not-send list: no inbox of the account sends to it. Needs the Everything level, of the whole account.',
-      inputSchema: { address: z.string().email() },
-      annotations: WRITE,
-    },
-    ({ address }) => answer(() => pidgeon.suppressions.add(address)),
-  );
-
-  server.registerTool(
-    'remove_suppression',
-    {
-      title: 'Send to an address again',
-      description:
-        'Take an address off the do-not-send list. One that bounced or complained may do so again. Needs the Everything level, of the whole account.',
-      inputSchema: { address: z.string().email() },
-      annotations: DESTROY,
-    },
-    ({ address }) =>
-      answer(async () => (await pidgeon.suppressions.remove(address), { removed: address })),
-  );
-
-  server.registerTool(
-    'get_storage',
-    {
-      title: 'See how much storage is used',
-      description: 'How much of the account’s 10 GB its mail and files use, in bytes.',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.storage()),
-  );
-
-  server.registerTool(
-    'list_domains',
-    {
-      title: 'List your domains',
-      description:
-        'The domains the account has proved, and whether mail is on for each. Needs a key or sign-in of the whole account, not of one pod.',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.domains.list()),
-  );
-
-  server.registerTool(
-    'get_domain',
-    {
-      title: 'Get a domain',
-      description:
-        'One domain: its mail status and the DNS records to set for it. Needs a key or sign-in of the whole account.',
-      inputSchema: { domain_id: z.string().uuid() },
-      annotations: READ,
-    },
-    ({ domain_id }) => answer(() => pidgeon.domains.get(domain_id)),
-  );
-
-  server.registerTool(
-    'enable_domain_mail',
-    {
-      title: 'Turn mail on for a domain',
-      description:
-        'Turn mail on for a domain the account has proved, so inboxes can be made on it. Answers the DNS records a person sets at the domain’s DNS host (nothing is changed there), then check_domain. Needs the Everything level, of the whole account.',
-      inputSchema: { domain_id: z.string().uuid() },
-      annotations: WRITE,
-    },
-    ({ domain_id }) => answer(() => pidgeon.domains.enableMail(domain_id)),
-  );
-
-  server.registerTool(
-    'check_domain',
-    {
-      title: 'Check a domain’s records',
-      description:
-        'Ask DNS and the mail service now where a domain whose mail is on stands, after its records were set. Changes nothing. Needs a key or sign-in of the whole account.',
-      inputSchema: { domain_id: z.string().uuid() },
-      annotations: READ,
-    },
-    ({ domain_id }) => answer(() => pidgeon.domains.check(domain_id)),
-  );
-
-  // --------------------------------------------------------- the account
-
-  server.registerTool(
-    'list_events',
-    {
-      title: 'Read the event log',
-      description:
-        'What happened in the account, newest first: mail sent, received and held, conversations, the calendar, API keys, sign-ins and mandates, reports and reputation, pods and members.',
-      inputSchema: {
-        type: z.string().optional(),
-        limit: z.number().int().min(1).max(100).optional(),
-        cursor: z.string().optional(),
-      },
-      annotations: READ,
-    },
-    (args) => answer(() => pidgeon.events.list(args)),
-  );
-
-  server.registerTool(
-    'list_api_keys',
-    {
-      title: 'List API keys',
-      description:
-        'The account’s API keys: name, prefix, access level, pod, test or live, last used. Never the keys themselves. Needs a key or sign-in of the whole account.',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.keys.list()),
-  );
-
-  server.registerTool(
-    'create_api_key',
-    {
-      title: 'Make an API key',
-      description:
-        'Make an API key for a server, an agent or a CI job. The answer has `key`, shown this once: put it straight where it will live (a secret store, an environment variable) and keep it out of chat, logs and files. Access is read, draft (writes drafts a person approves, never sends), send or admin, and never more than your own; a test key makes only test keys. Give the narrowest that works. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        name: z.string().min(1).max(60).describe('Where the key will live, e.g. "support agent".'),
-        access: z
-          .enum(['read', 'draft', 'send', 'admin'])
-          .optional()
-          .describe('What it may do; read when left out.'),
-        pod_id: z.string().uuid().optional().describe('Limit it to one pod.'),
-        test: z.boolean().optional().describe('A test key: its mail never leaves Pidgeon.'),
-      },
-      annotations: WRITE,
-    },
-    ({ name, access, pod_id, test }) =>
-      answer(() => pidgeon.keys.create({ name, access, podId: pod_id, test })),
-  );
-
-  server.registerTool(
-    'revoke_api_key',
-    {
-      title: 'Revoke an API key',
-      description:
-        'Revoke a key by its id (from list_api_keys); it stops working at once. Needs the Everything level, of the whole account.',
-      inputSchema: { key_id: z.string().uuid() },
-      annotations: DESTROY,
-    },
-    ({ key_id }) => answer(async () => (await pidgeon.keys.revoke(key_id), { revoked: key_id })),
-  );
-
-  server.registerTool(
-    'list_webhooks',
-    {
-      title: 'List webhook endpoints',
-      description:
-        'Where the account’s events are delivered, which events each asked for, and its pod. Never their secrets. A key of one pod sees its own pod’s.',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.webhooks.list()),
-  );
-
-  server.registerTool(
-    'add_webhook',
-    {
-      title: 'Add a webhook endpoint',
-      description:
-        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, Auth’s mandate.requested, mandate.granted, mandate.declined and mandate.revoked, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). In the default pod it hears the whole account; in another pod, that pod’s events. Needs the Everything level; a key of one pod adds to its own pod only.',
-      inputSchema: {
-        url: z.string().url().describe('A public https:// address.'),
-        events: z.array(z.enum(WEBHOOK_EVENTS)).min(1).describe('The event types to deliver.'),
-        inbox_ids: z
-          .array(z.string().uuid())
-          .min(1)
-          .optional()
-          .describe('Hear only these inboxes’ events.'),
-        pod_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe('Its pod. Left out, the default pod, which hears the whole account.'),
-      },
-      annotations: WRITE,
-    },
-    ({ url, events, inbox_ids, pod_id }) =>
-      answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids, podId: pod_id })),
-  );
-
-  server.registerTool(
-    'remove_webhook',
-    {
-      title: 'Remove a webhook endpoint',
-      description:
-        'Stop delivering to an endpoint. Needs the Everything level; a key of one pod removes its own pod’s only.',
-      inputSchema: { webhook_id: z.string().uuid() },
-      annotations: DESTROY,
-    },
-    ({ webhook_id }) =>
-      answer(async () => (await pidgeon.webhooks.remove(webhook_id), { removed: webhook_id })),
-  );
-
-  server.registerTool(
-    'list_pods',
-    {
-      title: 'List pods',
-      description:
-        'The account’s pods: tenants inside it, each holding its own agents, domains, inboxes, keys, webhooks and sites. Every account has a default one.',
-      inputSchema: {},
-      annotations: READ,
-    },
-    () => answer(() => pidgeon.pods.list()),
-  );
-
-  server.registerTool(
-    'create_pod',
-    {
-      title: 'Make a pod',
-      description:
-        'Make a pod, for example one per customer of a platform. Pass its id as pod_id when registering an agent or a site there. Needs the Everything level, of the whole account.',
-      inputSchema: { name: z.string().min(1).max(80).describe('Unique in the account.') },
-      annotations: WRITE,
-    },
-    ({ name }) => answer(() => pidgeon.pods.create(name)),
-  );
-
-  server.registerTool(
-    'rename_pod',
-    {
-      title: 'Rename a pod',
-      description:
-        'Rename a pod. Its id, and everything in it, stay as they are. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        pod_id: z.string().uuid(),
-        name: z.string().min(1).max(80).describe('Unique in the account.'),
-      },
-      annotations: WRITE,
-    },
-    ({ pod_id, name }) => answer(() => pidgeon.pods.rename(pod_id, name)),
-  );
-
-  server.registerTool(
-    'move_to_pod',
-    {
-      title: 'Move into a pod',
-      description:
-        'Move an agent, an address (inbox), a domain, a webhook endpoint or a site (by its client id) into another pod of the account. An agent takes its addresses and their mail with it; an address that belongs to an agent moves only with it. API keys do not move. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        pod_id: z.string().uuid().describe('The pod to move it into.'),
-        type: z.enum(['agent', 'inbox', 'domain', 'webhook', 'site']),
-        id: z.string().min(1).describe('Its id; a site’s client id.'),
-      },
-      annotations: WRITE,
-    },
-    ({ pod_id, type, id }) => answer(() => pidgeon.pods.move(pod_id, { type, id })),
-  );
-
-  server.registerTool(
-    'remove_pod',
-    {
-      title: 'Remove a pod',
-      description:
-        'Remove an empty pod. The default pod stays, and so does a pod with agents, domains or webhook endpoints in it. Needs the Everything level, of the whole account.',
-      inputSchema: { pod_id: z.string().uuid() },
-      annotations: DESTROY,
-    },
-    ({ pod_id }) =>
-      answer(async () => {
-        await pidgeon.pods.remove(pod_id);
-        return { removed: pod_id };
-      }),
-  );
   // ------------------------------------------------------------ Reading mail
   // Names kept from the old MCP server where the tool still exists: agents
   // have them in their prompts.
@@ -1021,6 +616,145 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
       answer(async () => (await pidgeon.contacts.remove(contact_id), { deleted: contact_id })),
   );
 
+  // ------------------------------------------- Rules, suppressions, domains
+
+  server.registerTool(
+    'list_rules',
+    {
+      title: 'List mail rules',
+      description:
+        'The account’s send and receive rules. Needs a key or sign-in of the whole account.',
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.rules.list()),
+  );
+
+  server.registerTool(
+    'add_rule',
+    {
+      title: 'Add a mail rule',
+      description:
+        'Allow or block an address, or a domain and its subdomains, for sending or receiving; for one inbox, or every inbox when inbox_id is left out. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        direction: z.enum(['send', 'receive']),
+        action: z.enum(['allow', 'block']),
+        pattern: z.string().describe('ana@example.com, or example.com'),
+        inbox_id: z.string().uuid().optional(),
+      },
+      annotations: WRITE,
+    },
+    ({ direction, action, pattern, inbox_id }) =>
+      answer(() => pidgeon.rules.create({ direction, action, pattern, inboxId: inbox_id })),
+  );
+
+  server.registerTool(
+    'remove_rule',
+    {
+      title: 'Remove a mail rule',
+      description:
+        'Remove a send or receive rule. Needs the Everything level, of the whole account.',
+      inputSchema: { rule_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ rule_id }) =>
+      answer(async () => (await pidgeon.rules.remove(rule_id), { removed: rule_id })),
+  );
+
+  server.registerTool(
+    'list_suppressions',
+    {
+      title: 'List the do-not-send list',
+      description:
+        'Addresses the account will not send to: bounces, complaints, and ones added by hand. Needs a key or sign-in of the whole account.',
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.suppressions.list()),
+  );
+
+  server.registerTool(
+    'add_suppression',
+    {
+      title: 'Stop sending to an address',
+      description:
+        'Put an address on the do-not-send list: no inbox of the account sends to it. Needs the Everything level, of the whole account.',
+      inputSchema: { address: z.string().email() },
+      annotations: WRITE,
+    },
+    ({ address }) => answer(() => pidgeon.suppressions.add(address)),
+  );
+
+  server.registerTool(
+    'remove_suppression',
+    {
+      title: 'Send to an address again',
+      description:
+        'Take an address off the do-not-send list. One that bounced or complained may do so again. Needs the Everything level, of the whole account.',
+      inputSchema: { address: z.string().email() },
+      annotations: DESTROY,
+    },
+    ({ address }) =>
+      answer(async () => (await pidgeon.suppressions.remove(address), { removed: address })),
+  );
+
+  server.registerTool(
+    'get_storage',
+    {
+      title: 'See how much storage is used',
+      description: 'How much of the account’s 10 GB its mail and files use, in bytes.',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.storage()),
+  );
+
+  server.registerTool(
+    'list_domains',
+    {
+      title: 'List your domains',
+      description:
+        'The domains the account has proved, and whether mail is on for each. Needs a key or sign-in of the whole account, not of one pod.',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.domains.list()),
+  );
+
+  server.registerTool(
+    'get_domain',
+    {
+      title: 'Get a domain',
+      description:
+        'One domain: its mail status and the DNS records to set for it. Needs a key or sign-in of the whole account.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: READ,
+    },
+    ({ domain_id }) => answer(() => pidgeon.domains.get(domain_id)),
+  );
+
+  server.registerTool(
+    'enable_domain_mail',
+    {
+      title: 'Turn mail on for a domain',
+      description:
+        'Turn mail on for a domain the account has proved, so inboxes can be made on it. Answers the DNS records a person sets at the domain’s DNS host (nothing is changed there), then check_domain. Needs the Everything level, of the whole account.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: WRITE,
+    },
+    ({ domain_id }) => answer(() => pidgeon.domains.enableMail(domain_id)),
+  );
+
+  server.registerTool(
+    'check_domain',
+    {
+      title: 'Check a domain’s records',
+      description:
+        'Ask DNS and the mail service now where a domain whose mail is on stands, after its records were set. Changes nothing. Needs a key or sign-in of the whole account.',
+      inputSchema: { domain_id: z.string().uuid() },
+      annotations: READ,
+    },
+    ({ domain_id }) => answer(() => pidgeon.domains.check(domain_id)),
+  );
+
   // ---------------------------------------------------------------- Calendar
 
   server.registerTool(
@@ -1137,93 +871,294 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     },
     ({ event_id }) => answer(() => pidgeon.calendar.get(event_id)),
   );
-  // ----------------------------------------------------------------- Bouncer
+
+  // --------------------------------------------------------- the account
 
   server.registerTool(
-    'verify_request',
+    'list_pods',
     {
-      title: 'Verify an agent’s request',
+      title: 'List pods',
       description:
-        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for), `declared` (not signed, but its User-Agent names an agent on Pidgeon’s list such as ChatGPT-User; `declared` names it, its vendor, and whether its address is the vendor’s) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal. Every answer also says what the site rule for the `place` decided: `decision` (`allow`, `limit`, `block`, or `watch` with `would`) and `rule`, one line saying why.',
-      inputSchema: {
-        method: z.string(),
-        url: z.string().url(),
-        headers: z.record(z.string(), z.string()),
-        place: z
-          .enum(['signup', 'checkout', 'api', 'other'])
-          .optional()
-          .describe('Where on the site the agent is, for the site rule; `other` by default.'),
-      },
-      annotations: READ,
-    },
-    ({ method, url, headers, place }) =>
-      answer(() => pidgeon.verify({ method, url, headers }, place ? { place } : {})),
-  );
-
-  server.registerTool(
-    'get_site_rules',
-    {
-      title: 'Get the site rules',
-      description:
-        'For a website: Bouncer’s site rules. Each place (`signup`, `checkout`, `api`, `other`) has `require` (`any`: any agent but a flagged operator’s; `known`: verified or signed by a recognised directory; `verified`: verified by Pidgeon only) and `enforce` (false: it only watches, and checks say what it would have done).',
+        'The account’s pods: tenants inside it, each holding its own agents, domains, inboxes, keys, webhooks and sites. Every account has a default one.',
       inputSchema: {},
       annotations: READ,
     },
-    () => answer(() => pidgeon.siteRules.get()),
+    () => answer(() => pidgeon.pods.list()),
   );
 
   server.registerTool(
-    'set_site_rules',
+    'create_pod',
     {
-      title: 'Set the site rules',
+      title: 'Make a pod',
       description:
-        'For a website: change Bouncer’s site rules for some places; the rest stay. Start with `enforce` false to watch what a rule would do in the checks, then turn it on. Agents Pidgeon can’t identify are never blocked (`limit`: the site’s own rules decide), and other pages never block. Needs the Everything level, of the whole account.',
-      inputSchema: {
-        signup: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        checkout: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        api: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-        other: z
-          .object({
-            require: z.enum(['any', 'known', 'verified']).optional(),
-            enforce: z.boolean().optional(),
-          })
-          .optional(),
-      },
+        'Make a pod, for example one per user of your platform, so each has inboxes of their own. Pass its id as pod_id when making an inbox, an agent or a site there. Needs the Everything level, of the whole account.',
+      inputSchema: { name: z.string().min(1).max(80).describe('Unique in the account.') },
       annotations: WRITE,
     },
-    (rules) => answer(() => pidgeon.siteRules.set(rules)),
+    ({ name }) => answer(() => pidgeon.pods.create(name)),
   );
 
   server.registerTool(
-    'report_agent',
+    'rename_pod',
     {
-      title: 'Report an agent',
+      title: 'Rename a pod',
       description:
-        'For a website: report the agent behind one of your verifications. One upheld report, or open reports from two websites, flag its operator. Needs a verified domain and send access.',
+        'Rename a pod. Its id, and everything in it, stay as they are. Needs the Everything level, of the whole account.',
       inputSchema: {
-        verification_id: z.string().uuid(),
-        category: z.enum(['fraud', 'abuse', 'scraping', 'spam', 'fake_signups', 'other']),
-        evidence: z.string().min(10).max(4000).describe('What the agent did, in words.'),
+        pod_id: z.string().uuid(),
+        name: z.string().min(1).max(80).describe('Unique in the account.'),
       },
       annotations: WRITE,
     },
-    ({ verification_id, category, evidence }) =>
-      answer(() => pidgeon.report({ verificationId: verification_id, category, evidence })),
+    ({ pod_id, name }) => answer(() => pidgeon.pods.rename(pod_id, name)),
+  );
+
+  server.registerTool(
+    'move_to_pod',
+    {
+      title: 'Move into a pod',
+      description:
+        'Move an agent, an address (inbox), a domain, a webhook endpoint or a site (by its client id) into another pod of the account. An agent takes its addresses and their mail with it; an address that belongs to an agent moves only with it. API keys do not move. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        pod_id: z.string().uuid().describe('The pod to move it into.'),
+        type: z.enum(['agent', 'inbox', 'domain', 'webhook', 'site']),
+        id: z.string().min(1).describe('Its id; a site’s client id.'),
+      },
+      annotations: WRITE,
+    },
+    ({ pod_id, type, id }) => answer(() => pidgeon.pods.move(pod_id, { type, id })),
+  );
+
+  server.registerTool(
+    'remove_pod',
+    {
+      title: 'Remove a pod',
+      description:
+        'Remove an empty pod. The default pod stays, and so does a pod with agents, domains or webhook endpoints in it. Needs the Everything level, of the whole account.',
+      inputSchema: { pod_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ pod_id }) =>
+      answer(async () => {
+        await pidgeon.pods.remove(pod_id);
+        return { removed: pod_id };
+      }),
+  );
+
+  server.registerTool(
+    'list_events',
+    {
+      title: 'Read the event log',
+      description:
+        'What happened in the account, newest first: mail sent, received and held, conversations, the calendar, API keys, sign-ins and mandates, reports and reputation, pods and members.',
+      inputSchema: {
+        type: z.string().optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+        cursor: z.string().optional(),
+      },
+      annotations: READ,
+    },
+    (args) => answer(() => pidgeon.events.list(args)),
+  );
+
+  server.registerTool(
+    'list_api_keys',
+    {
+      title: 'List API keys',
+      description:
+        'The account’s API keys: name, prefix, access level, pod, test or live, last used. Never the keys themselves. Needs a key or sign-in of the whole account.',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.keys.list()),
+  );
+
+  server.registerTool(
+    'create_api_key',
+    {
+      title: 'Make an API key',
+      description:
+        'Make an API key for a server, an agent or a CI job. The answer has `key`, shown this once: put it straight where it will live (a secret store, an environment variable) and keep it out of chat, logs and files. Access is read, draft (writes drafts a person approves, never sends), send or admin, and never more than your own; a test key makes only test keys. Give the narrowest that works. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        name: z.string().min(1).max(60).describe('Where the key will live, e.g. "support agent".'),
+        access: z
+          .enum(['read', 'draft', 'send', 'admin'])
+          .optional()
+          .describe('What it may do; read when left out.'),
+        pod_id: z.string().uuid().optional().describe('Limit it to one pod.'),
+        test: z.boolean().optional().describe('A test key: its mail never leaves Pidgeon.'),
+      },
+      annotations: WRITE,
+    },
+    ({ name, access, pod_id, test }) =>
+      answer(() => pidgeon.keys.create({ name, access, podId: pod_id, test })),
+  );
+
+  server.registerTool(
+    'revoke_api_key',
+    {
+      title: 'Revoke an API key',
+      description:
+        'Revoke a key by its id (from list_api_keys); it stops working at once. Needs the Everything level, of the whole account.',
+      inputSchema: { key_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ key_id }) => answer(async () => (await pidgeon.keys.revoke(key_id), { revoked: key_id })),
+  );
+
+  server.registerTool(
+    'list_webhooks',
+    {
+      title: 'List webhook endpoints',
+      description:
+        'Where the account’s events are delivered, which events each asked for, and its pod. Never their secrets. A key of one pod sees its own pod’s.',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.webhooks.list()),
+  );
+
+  server.registerTool(
+    'add_webhook',
+    {
+      title: 'Add a webhook endpoint',
+      description:
+        'Deliver events to a public https address. The answer has `secret`, shown this once: whoever receives the deliveries checks each signature with it, so hand it to them and keep it out of anything else. Event types: report.created, reputation.changed, operator.reputation_changed, Auth’s mandate.requested, mandate.granted, mandate.declined and mandate.revoked, and Email’s message.*, draft.*, thread.*, inbox.*, email.domain_* and calendar.event.* (listed at /docs/webhooks). In the default pod it hears the whole account; in another pod, that pod’s events. Needs the Everything level; a key of one pod adds to its own pod only.',
+      inputSchema: {
+        url: z.string().url().describe('A public https:// address.'),
+        events: z.array(z.enum(WEBHOOK_EVENTS)).min(1).describe('The event types to deliver.'),
+        inbox_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .optional()
+          .describe('Hear only these inboxes’ events.'),
+        pod_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe('Its pod. Left out, the default pod, which hears the whole account.'),
+      },
+      annotations: WRITE,
+    },
+    ({ url, events, inbox_ids, pod_id }) =>
+      answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids, podId: pod_id })),
+  );
+
+  server.registerTool(
+    'remove_webhook',
+    {
+      title: 'Remove a webhook endpoint',
+      description:
+        'Stop delivering to an endpoint. Needs the Everything level; a key of one pod removes its own pod’s only.',
+      inputSchema: { webhook_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ webhook_id }) =>
+      answer(async () => (await pidgeon.webhooks.remove(webhook_id), { removed: webhook_id })),
+  );
+
+  // ---------------------------------------------------------------- Agents
+
+  agentSetupTools?.();
+
+  server.registerTool(
+    'list_agents',
+    {
+      title: 'List agents',
+      description: 'The account’s agents.',
+      inputSchema: { cursor: z.string().optional() },
+      annotations: READ,
+    },
+    ({ cursor }) => answer(() => pidgeon.agents.list({ cursor })),
+  );
+
+  server.registerTool(
+    'get_agent',
+    {
+      title: 'Read an agent',
+      description:
+        'An agent: its published keys (public facts only), its directory and its operator’s reputation.',
+      inputSchema: { agent_id: z.string().uuid() },
+      annotations: READ,
+    },
+    ({ agent_id }) => answer(() => pidgeon.agents.get(agent_id)),
+  );
+
+  server.registerTool(
+    'get_reputation',
+    {
+      title: 'Read reputation',
+      description:
+        'How websites treat the account’s agents: the band (unverified, new, good, flagged, suspended), what it means, and what would raise it. Reputation belongs to the operator, so every agent of the account shares it.',
+      inputSchema: {
+        agent_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe('Any of the account’s agents; the first if left out.'),
+      },
+      annotations: READ,
+    },
+    ({ agent_id }) =>
+      answer(async () => {
+        const id = agent_id ?? (await pidgeon.agents.list({ limit: 1 })).data[0]?.id;
+        if (!id)
+          return {
+            reputation: null,
+            note: 'The account has no agents yet: register one first (set_up_agent, or register_agent on the hosted server).',
+          };
+        const agent = await pidgeon.agents.get(id);
+        return { agent_id: agent.id, ...agent.reputation };
+      }),
+  );
+
+  server.registerTool(
+    'rename_agent',
+    {
+      title: 'Rename an agent',
+      description:
+        'Change an agent’s name, what it does, or both: what websites see when it arrives. Needs the Everything level.',
+      inputSchema: {
+        agent_id: z.string().uuid(),
+        name: z.string().min(1).max(80).optional(),
+        purpose: z.string().max(280).optional().describe('What it does, in a sentence.'),
+      },
+      annotations: WRITE,
+    },
+    ({ agent_id, name, purpose }) =>
+      answer(() => pidgeon.agents.update(agent_id, { name, purpose })),
+  );
+
+  server.registerTool(
+    'revoke_agent_key',
+    {
+      title: 'Revoke an agent’s key',
+      description:
+        'Revoke one of an agent’s keys, by its kid (get_agent lists them): requests signed with it stop verifying at once. Its other keys stay. Ask the person first. Needs the Everything level.',
+      inputSchema: { agent_id: z.string().uuid(), kid: z.string().min(1) },
+      annotations: DESTROY,
+    },
+    ({ agent_id, kid }) =>
+      answer(async () => {
+        await pidgeon.agents.revokeKey(agent_id, kid);
+        return { revoked: kid };
+      }),
+  );
+
+  server.registerTool(
+    'revoke_agent',
+    {
+      title: 'Revoke an agent',
+      description:
+        'Revoke an agent and every key it has: no request it signs verifies again, and it cannot be undone. Ask the person first. Needs the Everything level.',
+      inputSchema: { agent_id: z.string().uuid() },
+      annotations: DESTROY,
+    },
+    ({ agent_id }) =>
+      answer(async () => {
+        await pidgeon.agents.revoke(agent_id);
+        return { revoked: agent_id };
+      }),
   );
 
   // -------------------------------------------------------------------- Auth
@@ -1354,5 +1289,94 @@ export function registerApiTools(server: McpServer, pidgeon: Pidgeon, signInHint
     },
     ({ mandate_id }) =>
       answer(async () => (await pidgeon.mandates.revoke(mandate_id), { revoked: mandate_id })),
+  );
+
+  // ----------------------------------------------------------------- Bouncer
+
+  server.registerTool(
+    'verify_request',
+    {
+      title: 'Verify an agent’s request',
+      description:
+        'For a website: who stands behind a request an agent sent, and how they stand. Pass the request exactly as it arrived (method, full URL, headers including Signature, Signature-Input and Signature-Agent). `result` is one of four: `verified` (a Pidgeon operator’s agent: `valid` true, with the operator and its reputation), `signed_known` (signed with a key from an outside directory on Pidgeon’s recognised list, named in `signature_agent.operator`; not verified by Pidgeon), `signed_unknown` (signed with a key from an outside directory nobody vouches for), `declared` (not signed, but its User-Agent names an agent on Pidgeon’s list such as ChatGPT-User; `declared` names it, its vendor, and whether its address is the vendor’s) or `refused` (unsigned, a bad signature, expired, revoked or replayed; `reason` says which). Only `refused` is a refusal. Every answer also says what the site rule for the `place` decided: `decision` (`allow`, `limit`, `block`, or `watch` with `would`) and `rule`, one line saying why.',
+      inputSchema: {
+        method: z.string(),
+        url: z.string().url(),
+        headers: z.record(z.string(), z.string()),
+        place: z
+          .enum(['signup', 'checkout', 'api', 'other'])
+          .optional()
+          .describe('Where on the site the agent is, for the site rule; `other` by default.'),
+      },
+      annotations: READ,
+    },
+    ({ method, url, headers, place }) =>
+      answer(() => pidgeon.verify({ method, url, headers }, place ? { place } : {})),
+  );
+
+  server.registerTool(
+    'get_site_rules',
+    {
+      title: 'Get the site rules',
+      description:
+        'For a website: Bouncer’s site rules. Each place (`signup`, `checkout`, `api`, `other`) has `require` (`any`: any agent but a flagged operator’s; `known`: verified or signed by a recognised directory; `verified`: verified by Pidgeon only) and `enforce` (false: it only watches, and checks say what it would have done).',
+      inputSchema: {},
+      annotations: READ,
+    },
+    () => answer(() => pidgeon.siteRules.get()),
+  );
+
+  server.registerTool(
+    'set_site_rules',
+    {
+      title: 'Set the site rules',
+      description:
+        'For a website: change Bouncer’s site rules for some places; the rest stay. Start with `enforce` false to watch what a rule would do in the checks, then turn it on. Agents Pidgeon can’t identify are never blocked (`limit`: the site’s own rules decide), and other pages never block. Needs the Everything level, of the whole account.',
+      inputSchema: {
+        signup: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        checkout: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        api: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+        other: z
+          .object({
+            require: z.enum(['any', 'known', 'verified']).optional(),
+            enforce: z.boolean().optional(),
+          })
+          .optional(),
+      },
+      annotations: WRITE,
+    },
+    (rules) => answer(() => pidgeon.siteRules.set(rules)),
+  );
+
+  server.registerTool(
+    'report_agent',
+    {
+      title: 'Report an agent',
+      description:
+        'For a website: report the agent behind one of your verifications. One upheld report, or open reports from two websites, flag its operator. Needs a verified domain and send access.',
+      inputSchema: {
+        verification_id: z.string().uuid(),
+        category: z.enum(['fraud', 'abuse', 'scraping', 'spam', 'fake_signups', 'other']),
+        evidence: z.string().min(10).max(4000).describe('What the agent did, in words.'),
+      },
+      annotations: WRITE,
+    },
+    ({ verification_id, category, evidence }) =>
+      answer(() => pidgeon.report({ verificationId: verification_id, category, evidence })),
   );
 }

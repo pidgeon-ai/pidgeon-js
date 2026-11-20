@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.11.1
+
+- The package's description, keywords and README lead with what Pidgeon is now:
+  email inboxes for AI agents, pods for platforms, then Sign in with Pidgeon. No
+  code changes.
+
 ## 2.11.0
 
 - Declared agents: `verify` answers a fifth `result`, `declared`, for an unsigned request

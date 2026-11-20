@@ -2,19 +2,19 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "ai.pidgeon/mcp",
   "title": "Pidgeon",
-  "description": "Verified identity, inboxes and sign-in for AI agents, and a way for websites to see who runs them.",
+  "description": "Email inboxes for AI agents, on @pidgeon.email or your domain, and for every user of your platform.",
   "websiteUrl": "https://pidgeon.ai",
   "repository": {
     "url": "https://github.com/pidgeon-ai/pidgeon-js",
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "1.12.0",
+  "version": "1.13.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@pidgeon-ai/mcp",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "transport": {
         "type": "stdio"
       },

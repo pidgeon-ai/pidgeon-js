@@ -1,6 +1,7 @@
 /**
- * `pidgeon`, the command line (CLI 2.0): Passport, Email and the account from
- * a terminal. Every command is a call through `@pidgeon-ai/sdk`; signing in
+ * `pidgeon`, the command line (CLI 2.0): Email, pods and the account, agents
+ * and Sign in with Pidgeon from a terminal. `verify` and `reports` stay for
+ * the scripts that use them, out of the help (Patrick, 20 November). Every command is a call through `@pidgeon-ai/sdk`; signing in
  * and agent keys are `@pidgeon-ai/sdk/node`'s, shared with the MCP server.
  *
  * `run` is the whole program, with its input and output passed in, so it is
@@ -21,7 +22,7 @@ import {
   signOut,
 } from '@pidgeon-ai/sdk/node';
 
-export const VERSION = '2.5.0';
+export const VERSION = '2.5.1';
 
 export type Io = {
   out: (line: string) => void;
@@ -33,39 +34,13 @@ export type Io = {
   openBrowser?: boolean;
 };
 
-const HELP = `pidgeon ${VERSION}: Pidgeon from a terminal.
+const HELP = `pidgeon ${VERSION}: email inboxes for AI agents, from a terminal.
 
 Signing in
   pidgeon login [--scope admin|send|draft|read] [--no-browser]
   pidgeon logout
   pidgeon status
   Or set PIDGEON_API_KEY; it wins over a session. PIDGEON_BASE_URL points elsewhere.
-
-Agents (Passport)
-  pidgeon agents list [--limit <n>] [--cursor <cursor>]
-  pidgeon agents create <name> [--purpose <text>] [--pod <pod-id>]
-      Registers the agent, makes its key on this machine, publishes the public
-      half signed with it, and keeps the key here (pidgeon keys list).
-  pidgeon agents show <agent-id>          its keys and its operator's reputation
-  pidgeon agents rename <agent-id> <name> [--purpose <text>]
-  pidgeon agents revoke <agent-id>        it and every key it has; cannot be undone
-  pidgeon keys create <agent-id>          a new key for it, made here
-  pidgeon keys list                       the keys this machine keeps
-  pidgeon keys revoke <agent-id> <kid>    requests signed with it stop verifying
-  pidgeon keys proof <agent-id> --directory <url> --url <publish-url> [--name <agent name>]
-      For the hosted MCP server: makes the key here, keeps it, and prints the
-      public half and the signed proof that publishing needs. No sign-in.
-
-Websites (Bouncer)
-  pidgeon verify --method <GET|POST…> --url <url> --header '<name>: <value>'...
-      Who stands behind a request an agent sent, as your server received it.
-  pidgeon reports create <verification-id> --category <fraud|abuse|scraping|spam|fake_signups|other> --evidence <text>
-
-Sign in with Pidgeon (Auth)
-  pidgeon sites list | create <name> --redirect <uri>... [--pod <pod-id>] | remove <client-id>
-  pidgeon sites update <client-id> [--name <name>] [--redirect <uri>...] | rotate-secret <client-id>
-  pidgeon mandates list | revoke <mandate-id>
-  pidgeon mandates request --agent <id> --client <client-id> --scope <scope> --description <text> [--days <n>]
 
 Email
   pidgeon inboxes list [--limit <n>] [--cursor <cursor>]
@@ -89,11 +64,32 @@ Email
   pidgeon app-passwords create <inbox-id> <name>   for a mail app (IMAP, SMTP, CalDAV)
   pidgeon app-passwords list <inbox-id> | revoke <app-password-id>
 
-The account
+Pods and the account
+  pidgeon pods list | create <name> | remove <pod-id>   a pod for each user of your platform
   pidgeon events [--type <type>] [--limit <n>] [--cursor <cursor>]
-  pidgeon pods list | create <name> | remove <pod-id>
   pidgeon webhooks list | create <url> --event <type>... [--inbox <id>...] | remove <webhook-id>
   pidgeon api <GET|POST|PATCH|DELETE> <path> [--data <json>]    any /v1 call
+
+Agents
+  pidgeon agents list [--limit <n>] [--cursor <cursor>]
+  pidgeon agents create <name> [--purpose <text>] [--pod <pod-id>]
+      Registers the agent, makes its key on this machine, publishes the public
+      half signed with it, and keeps the key here (pidgeon keys list).
+  pidgeon agents show <agent-id>          its keys and its reputation
+  pidgeon agents rename <agent-id> <name> [--purpose <text>]
+  pidgeon agents revoke <agent-id>        it and every key it has; cannot be undone
+  pidgeon keys create <agent-id>          a new key for it, made here
+  pidgeon keys list                       the keys this machine keeps
+  pidgeon keys revoke <agent-id> <kid>    requests signed with it stop verifying
+  pidgeon keys proof <agent-id> --directory <url> --url <publish-url> [--name <agent name>]
+      For the hosted MCP server: makes the key here, keeps it, and prints the
+      public half and the signed proof that publishing needs. No sign-in.
+
+Sign in with Pidgeon
+  pidgeon sites list | create <name> --redirect <uri>... [--pod <pod-id>] | remove <client-id>
+  pidgeon sites update <client-id> [--name <name>] [--redirect <uri>...] | rotate-secret <client-id>
+  pidgeon mandates list | revoke <mandate-id>
+  pidgeon mandates request --agent <id> --client <client-id> --scope <scope> --description <text> [--days <n>]
 
 A list prints a page at a time; when there is more, its last line is the
 --cursor that reads the next page.

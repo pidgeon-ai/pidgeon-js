@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { DEFAULT_BASE_URL, Pidgeon } from '@pidgeon-ai/sdk';
 import { registerApiTools } from '@pidgeon-ai/mcp/tools';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.1';
 
 export type PidgeonToolsOptions = {
   /** A Pidgeon API key. `PIDGEON_API_KEY` when left out. */

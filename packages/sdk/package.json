@@ -1,7 +1,7 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "2.11.0",
-  "description": "Pidgeon's TypeScript SDK: Passport, Bouncer, Email and Auth. Sign your agents' requests, verify agents at your site, send mail from agent inboxes, and Sign in with Pidgeon.",
+  "version": "2.11.1",
+  "description": "Pidgeon's TypeScript SDK. Email inboxes for AI agents: give each agent its own address on @pidgeon.email or your domain, or white-label inboxes for every user of your platform. Plus Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
@@ -55,13 +55,16 @@
     "jose": "^6.2.17"
   },
   "keywords": [
-    "ai-agents",
-    "web-bot-auth",
-    "http-message-signatures",
-    "agent-identity",
     "email",
+    "inbox",
+    "ai-agents",
+    "agent-email",
+    "mcp",
+    "multi-tenant",
+    "white-label",
+    "email-api",
     "oauth",
-    "mcp"
+    "openid-connect"
   ],
   "devDependencies": {
     "@types/node": "^24.10.1",
