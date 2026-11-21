@@ -13,7 +13,7 @@ import { z } from 'zod';
 
 import { PidgeonError, WEBHOOK_EVENTS, type Pidgeon } from '@pidgeon-ai/sdk';
 
-export const VERSION = '1.14.0';
+export const VERSION = '1.15.0';
 
 export const json = (value: unknown): CallToolResult => ({
   content: [{ type: 'text', text: JSON.stringify(value ?? { ok: true }, null, 2) }],
@@ -89,9 +89,38 @@ const asMessage = (args: MessageArgs) => ({
   attachmentIds: args.attachment_ids,
 });
 
-export const READ = { readOnlyHint: true, openWorldHint: true } as const;
-export const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: true } as const;
-export const DESTROY = { readOnlyHint: false, destructiveHint: true, openWorldHint: true } as const;
+/*
+ * Every tool says all three hints, as OpenAI's plugin guidelines read them
+ * (developers.openai.com/plugins/plugin-guidelines §6.3 and
+ * /plugins/deploy/app-review, read 20 November):
+ *
+ * - destructive: deletes, overwrites what a person wrote, revokes access,
+ *   turns on what a key cannot turn off, or sends mail that cannot be called
+ *   back. Being able to undo it does not make it additive.
+ * - open world: reaches past the account, to a recipient, a DNS lookup or a
+ *   URL anyone names. Everything else stays inside the account.
+ */
+export const READ = { readOnlyHint: true, destructiveHint: false, openWorldHint: false } as const;
+/** Reads what the public internet says (DNS). */
+export const READ_OUTSIDE = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: true,
+} as const;
+export const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+/** Adds something that reaches past the account: a DNS lookup, deliveries to a URL. */
+export const WRITE_OUTSIDE = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  openWorldHint: true,
+} as const;
+export const DESTROY = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  openWorldHint: false,
+} as const;
+/** Mail, or a calendar invitation, to anyone: it cannot be called back once it goes. */
+export const SEND = { readOnlyHint: false, destructiveHint: true, openWorldHint: true } as const;
 
 /**
  * Register every tool that is only an API call, in the order Pidgeon is sold
@@ -118,7 +147,7 @@ export function registerApiTools(
     {
       title: 'Make an inbox',
       description:
-        'Make an inbox. `name` is the part before the @. Pass agent_id to make it that agent’s: its mail then carries its signed declaration (binding needs a verified domain).',
+        'Make an inbox. `name` is the part before the @. Optionally pass agent_id to link it to that agent identity: its mail then carries its signed declaration, and the agent signs in to websites under its address (linking needs a verified domain).',
       inputSchema: {
         name: z.string().min(1).max(64),
         kind: z.enum(['agent', 'events']).default('agent'),
@@ -176,7 +205,7 @@ export function registerApiTools(
       description:
         'Hold mail the Firewall calls suspicious in this inbox for a person to read first. A key turns this on, never off.',
       inputSchema: { inbox_id: z.string().uuid() },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ inbox_id }) => answer(() => pidgeon.inboxes.holdSuspicious(inbox_id)),
   );
@@ -191,9 +220,24 @@ export function registerApiTools(
         inbox_id: z.string().uuid(),
         signature: z.string().max(2000).nullable(),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ inbox_id, signature }) => answer(() => pidgeon.inboxes.setSignature(inbox_id, signature)),
+  );
+
+  server.registerTool(
+    'set_inbox_agent',
+    {
+      title: 'Link an inbox to an agent identity',
+      description:
+        'Link the inbox to one of the account’s agent identities in the same pod (list_agents), so its mail carries that agent’s signed declaration and the agent signs in to websites under its address; null unlinks it. Optional: an inbox works without one. Needs a verified domain and the Everything level.',
+      inputSchema: {
+        inbox_id: z.string().uuid(),
+        agent_id: z.string().uuid().nullable(),
+      },
+      annotations: DESTROY,
+    },
+    ({ inbox_id, agent_id }) => answer(() => pidgeon.inboxes.setAgent(inbox_id, agent_id)),
   );
 
   server.registerTool(
@@ -215,7 +259,7 @@ export function registerApiTools(
       description:
         'Send from an inbox now. The answer’s status is sent, or held when the account’s reputation needs a person to approve it first.',
       inputSchema: { inbox_id: z.string().uuid(), ...messageShape },
-      annotations: WRITE,
+      annotations: SEND,
     },
     ({ inbox_id, ...message }) => answer(() => pidgeon.messages.send(inbox_id, asMessage(message))),
   );
@@ -249,7 +293,7 @@ export function registerApiTools(
       title: 'Edit a draft',
       description: 'Replace a draft’s addresses and body; it stays in its conversation.',
       inputSchema: { draft_id: z.string().uuid(), ...withoutReplyTo },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ draft_id, ...message }) => answer(() => pidgeon.drafts.update(draft_id, asMessage(message))),
   );
@@ -275,7 +319,7 @@ export function registerApiTools(
         draft_id: z.string().uuid(),
         send_at: z.string().datetime({ offset: true }).optional(),
       },
-      annotations: WRITE,
+      annotations: SEND,
     },
     ({ draft_id, send_at }) => answer(() => pidgeon.drafts.send(draft_id, { sendAt: send_at })),
   );
@@ -387,7 +431,7 @@ export function registerApiTools(
         cc: z.array(z.string().email()).optional(),
         attachment_ids: messageShape.attachment_ids,
       },
-      annotations: WRITE,
+      annotations: SEND,
     },
     ({ message_id, text, html, cc, attachment_ids }) =>
       answer(async () => {
@@ -509,7 +553,7 @@ export function registerApiTools(
         name: z.string().min(1).max(60).optional(),
         colour: z.string().optional().describe('A palette name such as slate, red or green.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ label_id, name, colour }) => answer(() => pidgeon.labels.update(label_id, { name, colour })),
   );
@@ -543,7 +587,7 @@ export function registerApiTools(
       title: 'Take a label off',
       description: 'Take a label off a conversation.',
       inputSchema: { thread_id: z.string().uuid(), label_id: z.string().uuid() },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ thread_id, label_id }) => answer(() => pidgeon.threads.removeLabel(thread_id, label_id)),
   );
@@ -586,7 +630,7 @@ export function registerApiTools(
         name: z.string().max(200).nullable().optional().describe('`null` clears it.'),
         notes: z.string().max(5000).nullable().optional().describe('`null` clears it.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ contact_id, name, notes }) =>
       answer(() => pidgeon.contacts.update(contact_id, { name, notes })),
@@ -757,7 +801,7 @@ export function registerApiTools(
       description:
         'Look now for the domain’s `_pidgeon` TXT record, once it is published. Answers the domain; `verified` is true once the record is found, and false (not an error) until then.',
       inputSchema: { domain_id: z.string().uuid() },
-      annotations: WRITE,
+      annotations: WRITE_OUTSIDE,
     },
     ({ domain_id }) => answer(() => pidgeon.domains.verify(domain_id)),
   );
@@ -794,7 +838,7 @@ export function registerApiTools(
       description:
         'Ask DNS and the mail service now where a domain whose mail is on stands, after its records were set. Changes nothing. A key of one pod reaches its own pod’s domains only.',
       inputSchema: { domain_id: z.string().uuid() },
-      annotations: READ,
+      annotations: READ_OUTSIDE,
     },
     ({ domain_id }) => answer(() => pidgeon.domains.check(domain_id)),
   );
@@ -838,7 +882,7 @@ export function registerApiTools(
         attendees: z.array(z.string().email()).max(50).optional(),
         send_invites: z.boolean().optional(),
       },
-      annotations: WRITE,
+      annotations: SEND,
     },
     (args) =>
       answer(() =>
@@ -872,7 +916,7 @@ export function registerApiTools(
         attendees: z.array(z.string().email()).max(50).optional(),
         send_invites: z.boolean().optional(),
       },
-      annotations: WRITE,
+      annotations: SEND,
     },
     (args) =>
       answer(() =>
@@ -896,7 +940,7 @@ export function registerApiTools(
       description:
         'Remove an event from the calendar. `send_invites: true` sends the attendees a cancellation first.',
       inputSchema: { event_id: z.string().uuid(), send_invites: z.boolean().optional() },
-      annotations: DESTROY,
+      annotations: SEND,
     },
     ({ event_id, send_invites }) =>
       answer(async () => {
@@ -952,7 +996,7 @@ export function registerApiTools(
         pod_id: z.string().uuid(),
         name: z.string().min(1).max(80).describe('Unique in the account.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ pod_id, name }) => answer(() => pidgeon.pods.rename(pod_id, name)),
   );
@@ -968,7 +1012,7 @@ export function registerApiTools(
         type: z.enum(['agent', 'inbox', 'domain', 'webhook', 'site']),
         id: z.string().min(1).describe('Its id; a site’s client id.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ pod_id, type, id }) => answer(() => pidgeon.pods.move(pod_id, { type, id })),
   );
@@ -1082,7 +1126,7 @@ export function registerApiTools(
           .optional()
           .describe('Its pod. Left out, the default pod, which hears the whole account.'),
       },
-      annotations: WRITE,
+      annotations: WRITE_OUTSIDE,
     },
     ({ url, events, inbox_ids, pod_id }) =>
       answer(() => pidgeon.webhooks.create({ url, events, inboxIds: inbox_ids, podId: pod_id })),
@@ -1101,15 +1145,16 @@ export function registerApiTools(
       answer(async () => (await pidgeon.webhooks.remove(webhook_id), { removed: webhook_id })),
   );
 
-  // ---------------------------------------------------------------- Agents
+  // ------------------------------------------------------- Agent identities
 
   agentSetupTools?.();
 
   server.registerTool(
     'list_agents',
     {
-      title: 'List agents',
-      description: 'The account’s agents.',
+      title: 'List agent identities',
+      description:
+        'The account’s agent identities: who its agents are when they sign mail and sign in.',
       inputSchema: { cursor: z.string().optional() },
       annotations: READ,
     },
@@ -1119,9 +1164,9 @@ export function registerApiTools(
   server.registerTool(
     'get_agent',
     {
-      title: 'Read an agent',
+      title: 'Read an agent identity',
       description:
-        'An agent: its published keys (public facts only), its directory and its operator’s reputation.',
+        'An agent identity: its published keys (public facts only), its directory and its operator’s reputation.',
       inputSchema: { agent_id: z.string().uuid() },
       annotations: READ,
     },
@@ -1133,13 +1178,13 @@ export function registerApiTools(
     {
       title: 'Read reputation',
       description:
-        'How websites treat the account’s agents: the band (unverified, new, good, flagged, suspended), what it means, and what would raise it. Reputation belongs to the operator, so every agent of the account shares it.',
+        'How websites treat the account’s agents: the band (unverified, new, good, flagged, suspended), what it means, and what would raise it. Reputation belongs to the operator, so every agent identity of the account shares it.',
       inputSchema: {
         agent_id: z
           .string()
           .uuid()
           .optional()
-          .describe('Any of the account’s agents; the first if left out.'),
+          .describe('Any of the account’s agent identities; the first if left out.'),
       },
       annotations: READ,
     },
@@ -1149,7 +1194,7 @@ export function registerApiTools(
         if (!id)
           return {
             reputation: null,
-            note: 'The account has no agents yet: register one first (set_up_agent, or register_agent on the hosted server).',
+            note: 'The account has no agent identities yet: register one first (set_up_agent, or register_agent on the hosted server).',
           };
         const agent = await pidgeon.agents.get(id);
         return { agent_id: agent.id, ...agent.reputation };
@@ -1159,15 +1204,15 @@ export function registerApiTools(
   server.registerTool(
     'rename_agent',
     {
-      title: 'Rename an agent',
+      title: 'Rename an agent identity',
       description:
-        'Change an agent’s name, what it does, or both: what websites see when it arrives. Needs the Everything level.',
+        'Change an agent identity’s name, what it does, or both: what websites see when it arrives. Needs the Everything level.',
       inputSchema: {
         agent_id: z.string().uuid(),
         name: z.string().min(1).max(80).optional(),
         purpose: z.string().max(280).optional().describe('What it does, in a sentence.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ agent_id, name, purpose }) =>
       answer(() => pidgeon.agents.update(agent_id, { name, purpose })),
@@ -1176,9 +1221,9 @@ export function registerApiTools(
   server.registerTool(
     'revoke_agent_key',
     {
-      title: 'Revoke an agent’s key',
+      title: 'Revoke an agent identity’s key',
       description:
-        'Revoke one of an agent’s keys, by its kid (get_agent lists them): requests signed with it stop verifying at once. Its other keys stay. Ask the person first. Needs the Everything level.',
+        'Revoke one of an agent identity’s keys, by its kid (get_agent lists them): requests signed with it stop verifying at once. Its other keys stay. Ask the person first. Needs the Everything level.',
       inputSchema: { agent_id: z.string().uuid(), kid: z.string().min(1) },
       annotations: DESTROY,
     },
@@ -1192,9 +1237,9 @@ export function registerApiTools(
   server.registerTool(
     'revoke_agent',
     {
-      title: 'Revoke an agent',
+      title: 'Revoke an agent identity',
       description:
-        'Revoke an agent and every key it has: no request it signs verifies again, and it cannot be undone. Ask the person first. Needs the Everything level.',
+        'Revoke an agent identity and every key it has: no request it signs verifies again, and it cannot be undone. Ask the person first. Needs the Everything level.',
       inputSchema: { agent_id: z.string().uuid() },
       annotations: DESTROY,
     },
@@ -1255,7 +1300,7 @@ export function registerApiTools(
           .optional()
           .describe('The whole new list: https addresses (http on localhost), matched exactly.'),
       },
-      annotations: WRITE,
+      annotations: DESTROY,
     },
     ({ client_id, name, redirect_uris }) =>
       answer(() => pidgeon.sites.update(client_id, { name, redirectUris: redirect_uris })),

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.13.0
+
+- `inboxes.setAgent(id, agentId)`: link an existing inbox to an agent identity in its pod,
+  so its mail is signed as that agent, or pass `null` to unlink it (`PATCH
+/v1/email/inboxes/{id}`, `agent_id`). Needs `admin` and a verified domain.
+- `agents.*` and `Agent` are described as agent identities: who an agent is when it signs
+  mail and signs in. Linking an inbox to one stays optional. Nothing else changed.
+- `domains.remove` says what it does now: a proved domain's mail is turned off first, and
+  it stays while an inbox is at it.
+
 ## 2.12.0
 
 - Domains from the API (`/v1/domains`): `domains.create(domain, { podId })`,

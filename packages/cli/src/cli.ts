@@ -22,7 +22,7 @@ import {
   signOut,
 } from '@pidgeon-ai/sdk/node';
 
-export const VERSION = '2.5.1';
+export const VERSION = '2.5.2';
 
 export type Io = {
   out: (line: string) => void;
@@ -44,7 +44,7 @@ Signing in
 
 Email
   pidgeon inboxes list [--limit <n>] [--cursor <cursor>]
-  pidgeon inboxes create <name> [--kind agent|events] [--agent <id>] [--domain <your domain>] [--pod <pod-id>]
+  pidgeon inboxes create <name> [--kind agent|events] [--agent <agent-identity-id>] [--domain <your domain>] [--pod <pod-id>]
   pidgeon inboxes remove <inbox-id>
   pidgeon send <inbox-id> --to <address>... [--cc <address>...] [--bcc <address>...] --subject <text>
       (--text <body> | --html <body>) [--reply-to <message-id>]
@@ -70,11 +70,11 @@ Pods and the account
   pidgeon webhooks list | create <url> --event <type>... [--inbox <id>...] | remove <webhook-id>
   pidgeon api <GET|POST|PATCH|DELETE> <path> [--data <json>]    any /v1 call
 
-Agents
+Agent identities (optional: who an agent is when it signs mail and signs in)
   pidgeon agents list [--limit <n>] [--cursor <cursor>]
   pidgeon agents create <name> [--purpose <text>] [--pod <pod-id>]
-      Registers the agent, makes its key on this machine, publishes the public
-      half signed with it, and keeps the key here (pidgeon keys list).
+      Registers the agent identity, makes its key on this machine, publishes
+      the public half signed with it, and keeps the key here (pidgeon keys list).
   pidgeon agents show <agent-id>          its keys and its reputation
   pidgeon agents rename <agent-id> <name> [--purpose <text>]
   pidgeon agents revoke <agent-id>        it and every key it has; cannot be undone

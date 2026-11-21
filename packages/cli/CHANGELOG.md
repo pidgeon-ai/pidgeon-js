@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.2
+
+- `pidgeon --help` calls agents' records agent identities, optional for an inbox;
+  `inboxes create --agent` takes an agent identity's id.
+
 ## 2.5.1
 
 - `pidgeon --help` leads with Email, then pods and the account, agents and Sign

@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/cli",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "Email inboxes for AI agents, from a terminal: make an inbox on @pidgeon.email or your domain, send, and wait for the reply. Pods for platforms, and Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",

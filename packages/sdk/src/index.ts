@@ -267,7 +267,7 @@ export type ListOptions = { limit?: number; cursor?: string };
 /** What `messages.search` narrows by, beside the words. */
 export type SearchOptions = ListOptions & { inboxId?: string; body?: BodyChoice };
 
-/** An agent, as `/v1/agents` answers it. */
+/** An agent identity, as `/v1/agents` answers it: who an agent is when it signs mail and signs in. */
 export type Agent = {
   id: string;
   name: string;
@@ -278,7 +278,7 @@ export type Agent = {
   revoked_at: string | null;
 };
 
-/** One agent in full: its published keys, its directory, and its operator's reputation. */
+/** One agent identity in full: its published keys, its directory, and its operator's reputation. */
 export type AgentDetail = Agent & {
   directory: string;
   keys: { kid: string; created_at: string; expires_at: string | null; revoked_at: string | null }[];
@@ -726,7 +726,7 @@ export class Pidgeon {
   // --------------------------------------------------------------- Passport
 
   /**
-   * Publish an agent's public key. The request is signed with the key itself,
+   * Publish an agent identity's public key. The request is signed with the key itself,
    * which is how Pidgeon knows you hold it; the private half never leaves you.
    */
   async publishKey(input: {
@@ -745,10 +745,12 @@ export class Pidgeon {
     });
   }
 
+  /** Agent identities (once Passport): optional; an inbox works without one. */
   readonly agents = {
+    /** The account's agent identities, a page at a time. */
     list: (options: ListOptions = {}): Promise<Page<Agent>> =>
       this.request('GET', '/v1/agents', { query: options }),
-    /** Register an agent. It has no key until you make one where it runs and publish it. */
+    /** Register an agent identity. It has no key until you make one where it runs and publish it. */
     create: (input: {
       name: string;
       purpose?: string;
@@ -757,20 +759,20 @@ export class Pidgeon {
       this.request('POST', '/v1/agents', {
         body: { name: input.name, purpose: input.purpose ?? '', pod_id: input.podId },
       }),
-    /** The agent, its keys, its directory and its operator's reputation. */
+    /** The agent identity, its keys, its directory and its operator's reputation. */
     get: (id: string): Promise<AgentDetail> => this.request('GET', `/v1/agents/${segment(id)}`),
-    /** Rename the agent, or change what it does: what websites see when it arrives. */
+    /** Rename the agent identity, or change what its agent does: what websites see when it arrives. */
     update: (id: string, input: { name?: string; purpose?: string }): Promise<Agent> =>
       this.request('PATCH', `/v1/agents/${segment(id)}`, {
         body: { name: input.name, purpose: input.purpose },
       }),
-    /** Revoke the agent and every key it has. None verifies again; it cannot be undone. */
+    /** Revoke the agent identity and every key it has. None verifies again; it cannot be undone. */
     revoke: (id: string): Promise<void> => this.request('DELETE', `/v1/agents/${segment(id)}`),
-    /** Revoke one of the agent's keys, by its `kid`. Its other keys stay. */
+    /** Revoke one of the agent identity's keys, by its `kid`. Its other keys stay. */
     revokeKey: (id: string, kid: string): Promise<void> =>
       this.request('DELETE', `/v1/agents/${segment(id)}/keys/${segment(kid)}`),
     /**
-     * Register an agent, make its key here, and publish the public half
+     * Register an agent identity, make its key here, and publish the public half
      * signed with it. Keep `key.privateJwk` where the agent runs: it is the
      * agent's identity, and Pidgeon never sees it.
      */
@@ -796,7 +798,10 @@ export class Pidgeon {
     list: (options: ListOptions = {}): Promise<Page<Inbox>> =>
       this.request('GET', '/v1/email/inboxes', { query: options }),
     get: (id: string): Promise<Inbox> => this.request('GET', `/v1/email/inboxes/${segment(id)}`),
-    /** `name` is the part before the @. Bind an agent's inbox to it with `agentId`. */
+    /**
+     * `name` is the part before the @. Optionally link it to an agent identity
+     * with `agentId`: its mail is then signed as that agent.
+     */
     create: (input: {
       name: string;
       kind?: InboxKind;
@@ -825,6 +830,14 @@ export class Pidgeon {
     setSignature: (id: string, signature: string | null): Promise<Inbox> =>
       this.request('PATCH', `/v1/email/inboxes/${segment(id)}`, {
         body: { signature },
+      }),
+    /**
+     * Link the inbox to an agent identity in its pod, so its mail is signed as
+     * that agent; null unlinks it. Needs `admin` and a verified domain.
+     */
+    setAgent: (id: string, agentId: string | null): Promise<Inbox> =>
+      this.request('PATCH', `/v1/email/inboxes/${segment(id)}`, {
+        body: { agent_id: agentId },
       }),
     /** Remove an inbox. Its address is retired, never given to anyone again. */
     remove: (id: string): Promise<void> =>

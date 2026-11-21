@@ -51,7 +51,7 @@ Sending: send_message sends now; create_draft then request_approval when a perso
 
 A platform that gives each of its users inboxes makes a pod per user (create_pod) and passes its id as pod_id to create_inbox; a key of that pod reaches only that pod's mail.
 
-An agent can also sign in to websites as itself with its own key (Sign in with Pidgeon): set_up_agent with a name and what it does registers it, makes its key on this machine, publishes the public half and keeps the private key in a file here; it is never shown to you. create_inbox with agent_id then makes the inbox that agent's. A site that lets people and agents sign in with Pidgeon registers with register_site.`;
+An agent can also sign in to websites as itself with its own key (Sign in with Pidgeon): set_up_agent with a name and what it does registers its agent identity, makes its key on this machine, publishes the public half and keeps the private key in a file here; it is never shown to you. create_inbox with agent_id then links the inbox to that agent identity (optional: an inbox works without one). A site that lets people and agents sign in with Pidgeon registers with register_site.`;
 
 export function createServer(options: Options = {}): McpServer {
   const env = options.env ?? process.env;
@@ -153,9 +153,9 @@ export function createServer(options: Options = {}): McpServer {
     server.registerTool(
       'set_up_agent',
       {
-        title: 'Set an agent up',
+        title: 'Set up an agent identity',
         description:
-          'Register an agent, make its signing key on this machine, publish the public half (signed with the key, which proves it is held), and keep the private key in a file only this user can read. Answers the agent, its key id, its directory and the key file — never the key. The agent signs its requests with that file: `agentFromKeyFile(path)` in @pidgeon-ai/sdk/node, or PIDGEON_AGENT_KEY (the file’s private_jwk) and PIDGEON_DIRECTORY anywhere else.',
+          'Register an agent identity, make its signing key on this machine, publish the public half (signed with the key, which proves it is held), and keep the private key in a file only this user can read. Answers the agent, its key id, its directory and the key file — never the key. The agent signs its requests with that file: `agentFromKeyFile(path)` in @pidgeon-ai/sdk/node, or PIDGEON_AGENT_KEY (the file’s private_jwk) and PIDGEON_DIRECTORY anywhere else.',
         inputSchema: {
           name: z.string().min(1).max(80).describe('What websites see the agent called.'),
           purpose: z.string().max(280).optional().describe('What it does, in a sentence.'),
@@ -171,7 +171,7 @@ export function createServer(options: Options = {}): McpServer {
             kid: made.kid,
             key_file: made.keyFile,
             directory: made.agent.directory,
-            next: 'create_inbox with agent_id gives it an address; get_reputation shows how websites see it.',
+            next: 'create_inbox with agent_id links an address to it; get_reputation shows how websites see it.',
           };
         }),
     );
@@ -179,9 +179,9 @@ export function createServer(options: Options = {}): McpServer {
     server.registerTool(
       'create_agent_key',
       {
-        title: 'Make a new key for an agent',
+        title: 'Make a new key for an agent identity',
         description:
-          'Make a new key on this machine for an agent already registered, publish it signed with itself, and keep it here, replacing the key file this machine had for the agent. The old key stays valid until it is revoked in the dashboard.',
+          'Make a new key on this machine for an agent identity already registered, publish it signed with itself, and keep it here, replacing the key file this machine had for the agent. The old key stays valid until it is revoked in the dashboard.',
         inputSchema: { agent_id: z.string().uuid() },
         annotations: WRITE,
       },

@@ -50,7 +50,7 @@ session is refreshed from then on. On a machine with no browser, set
 ## Tools
 
 - **Email:** `create_inbox`, `list_inboxes`, `get_inbox`, `hold_suspicious_mail`,
-  `set_inbox_signature`, `remove_inbox`, `send_message`, `create_draft`,
+  `set_inbox_signature`, `set_inbox_agent`, `remove_inbox`, `send_message`, `create_draft`,
   `get_draft`, `update_draft`, `delete_draft`, `send_draft`, `request_approval`,
   `list_messages`, `get_message`, `await_message`, `search_messages`,
   `update_message`, `reply_to_message`, `list_threads`, `get_thread`,
@@ -66,7 +66,7 @@ session is refreshed from then on. On a machine with no browser, set
   `create_pod`, `rename_pod`, `move_to_pod`, `remove_pod`, `list_events`,
   `list_api_keys`, `create_api_key`, `revoke_api_key`, `list_webhooks`,
   `add_webhook`, `remove_webhook`
-- **Agents:** `set_up_agent`, `create_agent_key`, `list_agents`, `get_agent`,
+- **Agent identities:** `set_up_agent`, `create_agent_key`, `list_agents`, `get_agent`,
   `get_reputation`, `rename_agent`, `revoke_agent_key`, `revoke_agent`
 - **Sign in with Pidgeon:** `list_sites`, `register_site`, `update_site`,
   `rotate_site_secret`, `remove_site`, `request_mandate`, `list_mandates`,

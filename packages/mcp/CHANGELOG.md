@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.15.0
+
+- `set_inbox_agent`: link an inbox to an agent identity in its pod, or `null` to unlink
+  it (`PATCH /v1/email/inboxes/{id}`, `agent_id`).
+- The agent tools are titled and described as agent identities (`register_agent`,
+  `list_agents`, `get_agent`, `rename_agent`, `revoke_agent`, `revoke_agent_key`,
+  `set_up_agent`, `create_agent_key`); their names are unchanged. `create_inbox` says
+  linking `agent_id` is optional.
+- Every tool states all three hints (read only, destructive, open world) as OpenAI's
+  plugin guidelines read them.
+- `remove_domain`, `enable_domain_mail` and `check_domain` say what a key of one pod
+  reaches.
+
 ## 1.14.0
 
 - Bouncer is set aside for now (email first): `verify_request`, `get_site_rules`,

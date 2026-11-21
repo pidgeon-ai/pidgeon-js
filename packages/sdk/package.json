@@ -1,6 +1,6 @@
 {
   "name": "@pidgeon-ai/sdk",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "Pidgeon's TypeScript SDK. Email inboxes for AI agents: give each agent its own address on @pidgeon.email or your domain, or white-label inboxes for every user of your platform. Plus Sign in with Pidgeon.",
   "license": "Apache-2.0",
   "type": "module",
